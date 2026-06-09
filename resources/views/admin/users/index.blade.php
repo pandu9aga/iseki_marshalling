@@ -31,6 +31,8 @@
 <script>
     $(document).ready(function() {
         var table = $('#usersTable').DataTable({
+            pageLength: 50,
+            lengthMenu: [10, 25, 50, 100],
             processing: true,
             serverSide: true,
             ajax: "{{ url('admin/users') }}",

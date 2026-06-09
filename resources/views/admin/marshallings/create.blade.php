@@ -16,7 +16,7 @@
                             <select name="Id_Type" class="form-control" required>
                                 <option value="">Select Type</option>
                                 @foreach($types as $type)
-                                <option value="{{ $type->Id_Type }}">{{ $type->Type }}</option>
+                                <option value="{{ $type->Id_Type }}" {{ $selectedTypeId == $type->Id_Type ? 'selected' : '' }}>{{ $type->Type }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -38,7 +38,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Difference</label>
-                            <input type="text" name="Difference" class="form-control" required>
+                            <input type="text" name="Difference" class="form-control">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Location Rack</label>

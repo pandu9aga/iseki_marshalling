@@ -25,6 +25,8 @@ class Record_List extends Model
         'Sequence_No',
         'Qty_Record',
         'Time_Record',
+        'Image_Ng',
+        'Status_Ng',
     ];
 
     public function record()

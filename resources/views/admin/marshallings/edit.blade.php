@@ -39,7 +39,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Difference</label>
-                            <input type="text" name="Difference" class="form-control" value="{{ $marshalling->Difference }}" required>
+                            <input type="text" name="Difference" class="form-control" value="{{ $marshalling->Difference }}">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Location Rack</label>

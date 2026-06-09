@@ -29,13 +29,28 @@
         .sidebar .sidebar-wrapper .nav .nav-item.active a .far {
             color: #e91e63 !important;
         }
-        .btn-primary, .btn-info {
+        .btn-primary {
             background-color: #e91e63 !important;
             border-color: #e91e63 !important;
         }
-        .btn-primary:hover, .btn-info:hover {
+        .main-panel {
+            overflow-y: auto;
+        }
+        .main-panel > .container,
+        .main-panel > .container-fluid {
+            overflow: visible;
+        }
+        .btn-primary:hover {
             background-color: #c2185b !important;
             border-color: #c2185b !important;
+        }
+        .btn-info {
+            background-color: #1e65e9ff !important;
+            border-color: #1e65e9ff !important;
+        }
+        .btn-info:hover {
+            background-color: #1865c2ff !important;
+            border-color: #1865c2ff !important;
         }
         .text-primary {
             color: #e91e63 !important;
@@ -60,9 +75,6 @@
         }
         .nav-pills .nav-link.active {
             background-color: #e91e63;
-        }
-        .main-panel > .container-fluid.py-3 {
-            padding-top: 20px;
         }
     </style>
     @yield('style')
@@ -108,14 +120,8 @@
                         </li>
                         <li class="nav-item {{ request()->routeIs('admin.types.*') ? 'active' : '' }}">
                             <a href="{{ route('admin.types.index') }}">
-                                <i class="fas fa-tractor"></i>
+                                <i class="fas fa-car"></i>
                                 <p>Type Traktor</p>
-                            </a>
-                        </li>
-                        <li class="nav-item {{ request()->routeIs('admin.marshallings.*') ? 'active' : '' }}">
-                            <a href="{{ route('admin.marshallings.index') }}">
-                                <i class="fas fa-list-alt"></i>
-                                <p>Marshalling</p>
                             </a>
                         </li>
                         <li class="nav-item {{ request()->routeIs('admin.records.*') ? 'active' : '' }}">

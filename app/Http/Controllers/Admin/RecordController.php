@@ -40,6 +40,16 @@ class RecordController extends Controller
         return response()->json($record);
     }
 
+    public function approveNg($recordListId)
+    {
+        $recordList = Record_List::findOrFail($recordListId);
+        $recordList->update([
+            'Status_Ng' => 'ng_ok',
+        ]);
+
+        return response()->json(['success' => true, 'status' => 'ng_ok']);
+    }
+
     public function export(Request $request)
     {
         $start_date = $request->start_date;

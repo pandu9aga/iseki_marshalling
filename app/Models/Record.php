@@ -16,6 +16,7 @@ class Record extends Model
         'Production_Date_Record',
         'Type',
         'Area',
+        'Time_Record',
     ];
 
     public function recordLists()

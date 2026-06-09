@@ -34,7 +34,7 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'required|unique:users,name',
-            'password' => 'required|min:4',
+            'password' => 'required|min:3',
         ]);
 
         User::create([
@@ -57,7 +57,7 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $request->validate([
             'name' => 'required|unique:users,name,' . $id,
-            'password' => 'nullable|min:4',
+            'password' => 'nullable|min:3',
         ]);
 
         $data = ['name' => $request->name];

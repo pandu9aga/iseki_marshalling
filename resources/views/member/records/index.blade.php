@@ -1,5 +1,13 @@
 @extends('layouts.main')
 
+@section('style')
+<style>
+    #recordsTable { font-size: 11px !important; }
+    #recordsTable th, #recordsTable td { padding: 15px 5px !important; font-size: 11px !important; }
+    #recordsTable .badge { font-size: 11px !important; padding: 1px 3px !important; }
+</style>
+@endsection
+
 @section('content')
 <div class="container">
     <div class="page-inner">
@@ -13,16 +21,16 @@
         <div class="card">
             <div class="card-body">
                 <div class="table-responsive">
-                    <table id="recordsTable" class="table table-bordered table-striped">
+                    <table id="recordsTable" class="table table-bordered table-striped table-sm" style="font-size: 12px; width: 100%;">
                         <thead>
                             <tr>
                                 <th>No</th>
+                                <th>Type</th>
                                 <th>Sequence No</th>
                                 <th>Production Date</th>
-                                <th>Type</th>
                                 <th>Area</th>
+                                <th>Time Record</th>
                                 <th>Status</th>
-                                <th>Action</th>
                             </tr>
                         </thead>
                     </table>
@@ -37,18 +45,28 @@
 <script>
     $(document).ready(function() {
         $('#recordsTable').DataTable({
+            pageLength: 50,
+            lengthMenu: [10, 25, 50, 100],
             processing: true,
             serverSide: true,
             ajax: "{{ url('member/records') }}",
+            autoWidth: false,
             columns: [
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+                { data: 'Type', name: 'Type' },
                 { data: 'Sequence_No_Record', name: 'Sequence_No_Record' },
                 { data: 'Production_Date_Record', name: 'Production_Date_Record' },
-                { data: 'Type', name: 'Type' },
                 { data: 'Area', name: 'Area' },
-                { data: 'status', name: 'status' },
-                { data: 'action', name: 'action', orderable: false, searchable: false }
-            ]
+                { data: 'Time_Record', name: 'Time_Record' },
+                { data: 'status', name: 'status' }
+            ],
+            createdRow: function(row, data, dataIndex) {
+                $(row).css('cursor', 'pointer');
+                $(row).attr('title', 'Click to view');
+                $(row).on('click', function() {
+                    window.location = "{{ url('member/record') }}/" + data.DT_RowId + "/record-part";
+                });
+            }
         });
     });
 </script>

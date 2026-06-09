@@ -51,11 +51,8 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Area</label>
-                                <select name="area" id="area" class="form-control" required>
-                                    <option value="">Select Area</option>
-                                    @foreach($areas as $area)
-                                    <option value="{{ $area }}">{{ ucwords(str_replace('_', ' ', $area)) }}</option>
-                                    @endforeach
+                                <select name="area" id="area" class="form-control" required disabled>
+                                    <option value="">Select Area (scan QR first)</option>
                                 </select>
                             </div>
                             <button type="submit" class="btn btn-primary w-100" id="submitBtn" disabled>
@@ -79,12 +76,24 @@
         var parts = decodedText.split(';');
         if (parts.length >= 4) {
             $('#sequence_no').val(parts[0]);
-            $('#production_date').val(parts[3]);
+            $('#production_date').val(parts[1]);
             $('#type').val(parts[2]);
+
+            $.getJSON('{{ route("member.record.areas-by-type") }}', { type: parts[2] }, function(areas) {
+                var $area = $('#area');
+                $area.empty().append('<option value="">Select Area</option>');
+                $.each(areas, function(i, area) {
+                    $area.append('<option value="' + area + '">' +
+                        area.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); }) +
+                        '</option>');
+                });
+                $area.prop('disabled', false);
+            });
+
             $('#submitBtn').prop('disabled', false);
             stopCamera();
         } else {
-            alert('Invalid QR format. Expected: Sequence;Type;Prod_Date');
+            alert('Invalid QR format. Expected: Sequence_No;Production_Date;...;Type');
         }
     }
 
