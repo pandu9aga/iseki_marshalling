@@ -1,0 +1,40 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\TypeController;
+use App\Http\Controllers\Admin\MarshallingController;
+use App\Http\Controllers\Admin\RecordController as AdminRecordController;
+use App\Http\Controllers\Member\RecordController;
+
+Route::get('/', function () {
+    return redirect()->route('login');
+});
+
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login/admin', [AuthController::class, 'loginAdmin'])->name('login.admin');
+Route::post('/login/member', [AuthController::class, 'loginMember'])->name('login.member');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', function () {
+        return view('admin.dashboard');
+    })->name('dashboard');
+
+    Route::resource('users', UserController::class);
+    Route::resource('types', TypeController::class);
+    Route::resource('marshallings', MarshallingController::class);
+    Route::get('records', [AdminRecordController::class, 'index'])->name('records.index');
+    Route::get('records/export', [AdminRecordController::class, 'export'])->name('records.export');
+    Route::get('records/{record}', [AdminRecordController::class, 'show'])->name('records.show');
+});
+
+Route::middleware('auth:member')->prefix('member')->name('member.')->group(function () {
+    Route::get('records', [RecordController::class, 'index'])->name('records.index');
+    Route::get('record/create', [RecordController::class, 'create'])->name('record.create');
+    Route::post('record/store', [RecordController::class, 'store'])->name('record.store');
+    Route::get('record/{record}/record-part', [RecordController::class, 'recordPart'])->name('record.record-part');
+    Route::post('record/{recordList}/update-part', [RecordController::class, 'updatePart'])->name('record.update-part');
+    Route::get('records/export', [RecordController::class, 'export'])->name('records.export');
+});
