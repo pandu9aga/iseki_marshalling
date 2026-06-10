@@ -3,7 +3,7 @@
 @section('style')
 <style>
     #recordsTable { font-size: 11px !important; }
-    #recordsTable th, #recordsTable td { padding: 15px 5px !important; font-size: 11px !important; }
+    #recordsTable th, #recordsTable td { padding: 5px 5px !important; font-size: 11px !important; }
     #recordsTable .badge { font-size: 11px !important; padding: 1px 3px !important; }
 </style>
 @endsection

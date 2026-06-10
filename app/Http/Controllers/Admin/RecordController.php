@@ -25,6 +25,9 @@ class RecordController extends Controller
                     $completed = $row->recordLists->whereNotNull('Time_Record')->count();
                     return "$completed / $total";
                 })
+                ->editColumn('Area', function($record) {
+                    return $record->Area ? ucwords(str_replace('_', ' ', $record->Area)) : '-';
+                })
                 ->addColumn('action', function ($row) {
                     return '<button type="button" class="btn btn-info btn-sm view-btn" data-id="' . $row->Id_Record . '"><i class="fas fa-eye"></i></button>';
                 })

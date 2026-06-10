@@ -15,23 +15,26 @@
 
     <style>
         :root {
-            --primary: #e91e63;
-            --primary-color: #e91e63;
+            --primary: #F36494;
+            --primary-color: #F36494;
             --primary-light: #f8bbd0;
         }
-        [data-background-color="purple"] {
-            background: #c2185b !important;
-        }
-        .sidebar[data-background-color="dark"] .sidebar-wrapper .nav .nav-item.active a {
-            color: #e91e63 !important;
+        .sidebar .sidebar-wrapper .nav .nav-item.active a {
+            color: #F36494 !important;
         }
         .sidebar .sidebar-wrapper .nav .nav-item.active a .fas,
         .sidebar .sidebar-wrapper .nav .nav-item.active a .far {
-            color: #e91e63 !important;
+            color: #F36494 !important;
+        }
+        .sidebar .nav > .nav-item a {
+            color: #333 !important;
+        }
+        .sidebar .nav > .nav-item a i {
+            color: #555 !important;
         }
         .btn-primary {
-            background-color: #e91e63 !important;
-            border-color: #e91e63 !important;
+            background-color: #F36494 !important;
+            border-color: #F36494 !important;
         }
         .main-panel {
             overflow-y: auto;
@@ -39,6 +42,13 @@
         .main-panel > .container,
         .main-panel > .container-fluid {
             overflow: visible;
+        }
+        .main-panel > .container {
+            margin-top: 60px !important;
+            padding-top: 0.5rem !important;
+        }
+        .main-panel .page-header {
+            margin-bottom: 0.5rem !important;
         }
         .btn-primary:hover {
             background-color: #c2185b !important;
@@ -53,18 +63,18 @@
             border-color: #1865c2ff !important;
         }
         .text-primary {
-            color: #e91e63 !important;
+            color: #F36494 !important;
         }
         .page-item.active .page-link {
-            background-color: #e91e63 !important;
-            border-color: #e91e63 !important;
+            background-color: #F36494 !important;
+            border-color: #F36494 !important;
         }
         a {
-            color: #e91e63;
+            color: #F36494;
         }
         .form-check-input:checked {
-            background-color: #e91e63;
-            border-color: #e91e63;
+            background-color: #F36494;
+            border-color: #F36494;
         }
         table.dataTable tbody tr {
             cursor: pointer;
@@ -76,25 +86,40 @@
         .nav-pills .nav-link.active {
             background-color: #e91e63;
         }
+        .logo-header[data-background-color="purple"],
+        .navbar-header[data-background-color="purple"] {
+            background: #F36494 !important;
+        }
+        @media screen and (max-width: 991.5px) {
+            .sidebar .logo-header span.fw-bold {
+                color: #FFFFFF !important;
+            }
+        }
+        /* Style default (untuk ukuran layar normal/besar) */
+        .marshalling-text {
+            font-size: 16px;
+            color: #F36494;
+        }
+
+        /* Style saat ukuran layar kecil (contoh: lebar layar di bawah 768px / mode mobile) */
+        @media (max-width: 767px) {
+            .marshalling-text {
+                color: #FFFFFF;
+            }
+        }
     </style>
     @yield('style')
 </head>
 <body>
     @if(!request()->routeIs('login'))
     <div class="wrapper">
-        <div class="sidebar" data-background-color="dark">
+        <div class="sidebar" data-background-color="white">
             <div class="sidebar-logo">
-                <div class="logo-header" data-background-color="purple">
-                    <a href="{{ route('login') }}" class="logo d-flex align-items-center">
-                        <img src="{{ asset('assets/img/kaiadmin/logo_light.png') }}" alt="navbar brand" class="navbar-brand" height="30" />
-                        <span class="text-white fw-bold ms-2 d-lg-none" style="font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">
-                            @if(Auth::guard('admin')->check())
-                                {{ Auth::guard('admin')->user()->name }}
-                            @elseif(Auth::guard('member')->check())
-                                {{ Auth::guard('member')->user()->nama }}
-                            @endif
-                        </span>
+                <div class="logo-header" data-background-color="white">
+                    <a href="{{ route('login') }}" class="logo d-flex align-items-center text-decoration-none ps-3">
+                        <span class="marshalling-text fw-bold">Marshalling</span>
                     </a>
+
                     <div class="nav-toggle">
                         <button class="btn btn-toggle toggle-sidebar"><i class="gg-menu-right"></i></button>
                         <button class="btn btn-toggle sidenav-toggler"><i class="gg-menu-left"></i></button>
@@ -155,15 +180,8 @@
             <div class="main-header">
                 <div class="main-header-logo">
                     <div class="logo-header" data-background-color="purple">
-                        <a href="{{ route('login') }}" class="logo d-flex align-items-center">
-                            <img src="{{ asset('assets/img/kaiadmin/logo_light.png') }}" alt="navbar brand" class="navbar-brand" height="30" />
-                            <span class="text-white fw-bold ms-2 d-lg-none" style="font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">
-                                @if(Auth::guard('admin')->check())
-                                    {{ Auth::guard('admin')->user()->name }}
-                                @elseif(Auth::guard('member')->check())
-                                    {{ Auth::guard('member')->user()->nama }}
-                                @endif
-                            </span>
+                        <a href="{{ route('login') }}" class="logo d-flex align-items-center text-decoration-none ps-3">
+                            <span class="fw-bold text-white" style="font-size: 14px;">Marshalling</span>
                         </a>
                         <div class="nav-toggle">
                             <button class="btn btn-toggle toggle-sidebar"><i class="gg-menu-right"></i></button>
@@ -216,7 +234,8 @@
                 </nav>
             </div>
 
-            <div class="container-fluid py-3">
+            @if(session('success') || session('error') || $errors->any())
+            <div class="container-fluid pt-2">
                 @if(session('success'))
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
                     {{ session('success') }}
@@ -240,6 +259,7 @@
                 </div>
                 @endif
             </div>
+            @endif
 
             @yield('content')
 

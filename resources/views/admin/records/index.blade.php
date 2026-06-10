@@ -96,9 +96,12 @@
             var id = $(this).data('id');
             $.get("{{ url('admin/records') }}/" + id, function(data) {
                 var html = '<div class="mb-3"><strong>Sequence:</strong> ' + data.Sequence_No_Record + '<br>';
+                var formattedArea = data.Area ? data.Area.replace(/_/g, ' ').replace(/\b\w/g, function(char) {
+                    return char.toUpperCase();
+                }) : '-';
                 html += '<strong>Production Date:</strong> ' + data.Production_Date_Record + '<br>';
                 html += '<strong>Type:</strong> ' + data.Type + '<br>';
-                html += '<strong>Area:</strong> ' + data.Area + '<br>';
+                html += '<strong>Area:</strong> ' + formattedArea + '<br>';
                 html += '<strong>Member:</strong> ' + (data.member ? data.member.nama : '-') + '</div>';
                 html += '<div class="table-responsive"><table class="table table-bordered table-sm" style="font-size:0.75rem;"><thead><tr><th style="white-space:nowrap;">Sequence</th><th style="white-space:nowrap;">Code Part</th><th style="white-space:nowrap;">Name Part</th><th style="white-space:nowrap;">Code Rack</th><th style="white-space:nowrap;">Qty</th><th style="white-space:nowrap;">Qty Record</th><th style="white-space:nowrap;">Time Record</th><th style="white-space:nowrap;">Status</th></tr></thead><tbody>';
                 data.record_lists.forEach(function(rl) {
