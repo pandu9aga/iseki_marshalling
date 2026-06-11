@@ -12,12 +12,12 @@
 @section('content')
 <div class="container">
     <div class="page-inner">
-        <div class="page-header d-flex justify-content-between align-items-center">
-            <div>
+        <div class="page-header d-flex justify-content-between align-items-center flex-nowrap gap-2">
+            <div class="text-truncate">
                 <h4 class="page-title text-primary mb-0">Record Part</h4>
-                <small>Record: {{ $record->Sequence_No_Record }} | Area: {{ ucwords(str_replace('_', ' ', $record->Area)) }}</small>
+                <small class="text-truncate d-block">Record: {{ $record->Sequence_No_Record }} | Area: {{ ucwords(str_replace('_', ' ', $record->Area)) }}</small>
             </div>
-            <a href="{{ route('member.records.index') }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+            <a href="{{ route('member.records.index') }}" class="btn btn-secondary btn-sm flex-shrink-0"><i class="fas fa-arrow-left"></i> Back</a>
         </div>
         <div class="card">
             <div class="card-body p-2">
@@ -113,5 +113,102 @@
         $('#memberNgContent').html(html);
         $('#memberNgModal').modal('show');
     }
+
+    var skipChars = { '-': true, '.': true, '_': true, '/': true, ',': true, ' ': true };
+    var audioCache = {};
+    var currentTimeout = null; // Menyimpan ID timeout agar bisa dibatalkan
+    var currentAudio = null;   // Melacak audio yang sedang diputar
+
+    function getFastAudio(ch) {
+        if (!audioCache[ch]) {
+            var audio = new Audio('{{ asset("assets/sounds") }}/' + ch + '.mp3');
+            audio.playbackRate = 1.3; //Speed audio
+            audio.preload = 'auto'; 
+            audioCache[ch] = audio;
+        }
+        return audioCache[ch];
+    }
+
+    function playCharSounds(chars, index) {
+        // 1. Cegah tumpang tindih (overlap) jika fungsi dipanggil ulang secara cepat
+        if (currentTimeout) {
+            clearTimeout(currentTimeout);
+            currentTimeout = null;
+        }
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.currentTime = 0;
+        }
+
+        if (index >= chars.length) return;
+        
+        var ch = chars[index];
+        if (skipChars[ch]) { 
+            playCharSounds(chars, index + 1); 
+            return; 
+        }
+        
+        var audio = getFastAudio(ch);
+        audio.currentTime = 0; 
+        currentAudio = audio; // Set audio ini sebagai yang sedang aktif
+
+        function handleNext() {
+            playCharSounds(chars, index + 1);
+        }
+
+        function startPlayback() {
+            var duration = audio.duration;
+            
+            // Fallback: Jika browser gagal membaca durasi MP3 (Infinity/NaN), pakai onended
+            if (!duration || duration === Infinity || isNaN(duration)) {
+                audio.onended = handleNext;
+            } else {
+                audio.onended = null;
+                
+                // 2. KUNCI UTAMA: Hitung waktu real (wall-clock) untuk berhenti di 70% durasi
+                // Rumus: (Durasi Asli * 0.7) / playbackRate * 1000 (konversi ke milidetik)
+                var stopTimeMs = ((duration * 0.7) / audio.playbackRate) * 1000;
+                
+                // Paksa audio pause dan lanjut ke huruf berikutnya setelah 70% durasi terlewati
+                currentTimeout = setTimeout(function() {
+                    audio.pause();
+                    currentTimeout = null;
+                    handleNext();
+                }, stopTimeMs);
+            }
+            
+            var playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(function(error) {
+                    console.log("Playback dicegah:", error);
+                    handleNext();
+                });
+            }
+        }
+
+        // Pastikan metadata (durasi) sudah siap sebelum menghitung waktu potong
+        if (audio.duration && audio.duration !== Infinity) {
+            startPlayback();
+        } else {
+            audio.onloadedmetadata = startPlayback;
+            audio.onerror = handleNext;
+        }
+    }
+
+    function speakCurrent() {
+        var currentRow = document.querySelector('tr.table-primary');
+        if (!currentRow) return;
+        
+        var cells = currentRow.querySelectorAll('td');
+        if (cells.length < 2) return;
+        
+        var codeRack = cells[1].textContent.trim().toLowerCase();
+        var chars = codeRack.split('');
+        
+        playCharSounds(chars, 0);
+    }
+
+    // Jalankan
+    speakCurrent();
 </script>
 @endsection
