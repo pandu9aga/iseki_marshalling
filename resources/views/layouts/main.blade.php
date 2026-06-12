@@ -134,25 +134,31 @@
                         <li class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                             <a href="{{ route('admin.dashboard') }}">
                                 <i class="fas fa-tachometer-alt"></i>
-                                <p>Dashboard</p>
+                                <p class="{{ request()->routeIs('admin.dashboard') ? 'text-primary' : '' }}">Dashboard</p>
                             </a>
                         </li>
                         <li class="nav-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
                             <a href="{{ route('admin.users.index') }}">
                                 <i class="fas fa-users-cog"></i>
-                                <p>User Admin</p>
+                                <p class="{{ request()->routeIs('admin.users.*') ? 'text-primary' : '' }}">User Admin</p>
                             </a>
                         </li>
                         <li class="nav-item {{ request()->routeIs('admin.types.*') ? 'active' : '' }}">
                             <a href="{{ route('admin.types.index') }}">
                                 <i class="fas fa-car"></i>
-                                <p>Type Traktor</p>
+                                <p class="{{ request()->routeIs('admin.types.*') ? 'text-primary' : '' }}">Type Traktor</p>
                             </a>
                         </li>
-                        <li class="nav-item {{ request()->routeIs('admin.records.*') ? 'active' : '' }}">
+                        <li class="nav-item {{ request()->routeIs('admin.records.*') && !request()->routeIs('admin.ng.*') ? 'active' : '' }}">
                             <a href="{{ route('admin.records.index') }}">
                                 <i class="fas fa-file-alt"></i>
                                 <p>Record List</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('admin.ng.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.ng.index') }}">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p class="{{ request()->routeIs('admin.ng.*') ? 'text-primary' : '' }}">NG</p>
                             </a>
                         </li>
                         @endif
@@ -161,13 +167,13 @@
                         <li class="nav-item {{ request()->routeIs('member.records.index') ? 'active' : '' }}">
                             <a href="{{ route('member.records.index') }}">
                                 <i class="fas fa-list"></i>
-                                <p>Record List</p>
+                                <p class="{{ request()->routeIs('member.records.index') ? 'text-primary' : '' }}">Record List</p>
                             </a>
                         </li>
                         <li class="nav-item {{ request()->routeIs('member.record.create') ? 'active' : '' }}">
                             <a href="{{ route('member.record.create') }}">
                                 <i class="fas fa-qrcode"></i>
-                                <p>Scan Record</p>
+                                <p class="{{ request()->routeIs('member.record.create') ? 'text-primary' : '' }}">Scan Record</p>
                             </a>
                         </li>
                         @endif
