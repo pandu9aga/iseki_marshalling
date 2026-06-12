@@ -10,8 +10,6 @@ use App\Models\Type;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class RecordController extends Controller
 {
@@ -20,7 +18,8 @@ class RecordController extends Controller
         $member = Auth::guard('member')->user();
         if ($request->ajax()) {
             $data = Record::with('recordLists')
-                ->where('Id_User', $member->id);
+                ->where('Id_User', $member->id)
+                ->orderBy('Time_Record', 'desc');
             return datatables($data)
                 ->addIndexColumn()
                 ->addColumn('status', function ($row) {
@@ -282,69 +281,5 @@ class RecordController extends Controller
 
         return redirect()->route('member.record.record-part', $record->Id_Record)
             ->with('success', 'All parts recorded successfully!');
-    }
-
-    public function export(Request $request)
-    {
-        $member = Auth::guard('member')->user();
-        $records = Record::with('recordLists')->where('Id_User', $member->id)->get();
-
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('My Records');
-
-        $sheet->setCellValue('A1', 'No');
-        $sheet->setCellValue('B1', 'Sequence No');
-        $sheet->setCellValue('C1', 'Production Date');
-        $sheet->setCellValue('D1', 'Type');
-        $sheet->setCellValue('E1', 'Area');
-        $sheet->setCellValue('F1', 'Code Part');
-        $sheet->setCellValue('G1', 'Name Part');
-        $sheet->setCellValue('H1', 'Code Rack');
-        $sheet->setCellValue('I1', 'Qty');
-        $sheet->setCellValue('J1', 'Qty Record');
-        $sheet->setCellValue('K1', 'Time Record');
-        $sheet->setCellValue('L1', 'Status');
-
-        $row = 2;
-        $i = 1;
-        foreach ($records as $record) {
-            foreach ($record->recordLists as $rl) {
-                $sheet->setCellValue('A' . $row, $i);
-                $sheet->setCellValue('B' . $row, $record->Sequence_No_Record);
-                $sheet->setCellValue('C' . $row, $record->Production_Date_Record);
-                $sheet->setCellValue('D' . $row, $record->Type);
-                $sheet->setCellValue('E' . $row, $record->Area);
-                $sheet->setCellValue('F' . $row, $rl->Code_Part);
-                $sheet->setCellValue('G' . $row, $rl->Name_Part);
-                $sheet->setCellValue('H' . $row, $rl->Code_Rack);
-                $sheet->setCellValue('I' . $row, $rl->Qty);
-                $sheet->setCellValue('J' . $row, $rl->Qty_Record ?? '-');
-                $sheet->setCellValue('K' . $row, $rl->Time_Record ?? '-');
-                $sheet->setCellValue('L' . $row, $rl->Time_Record ? 'Done' : 'Pending');
-                $row++;
-                $i++;
-            }
-        }
-
-        $lastRow = $row - 1;
-        $lastCol = $sheet->getHighestColumn();
-        $styleArray = [
-            'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]],
-        ];
-        $sheet->getStyle("A1:{$lastCol}{$lastRow}")->applyFromArray($styleArray);
-        $sheet->getStyle("A1:{$lastCol}1")->getFont()->setBold(true);
-        $sheet->getStyle("A1:{$lastCol}1")->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('FFF4CCCC');
-        $sheet->setAutoFilter("A1:{$lastCol}{$lastRow}");
-        foreach (range('A', $lastCol) as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
-        }
-
-        $writer = new Xlsx($spreadsheet);
-        $fileName = 'my_records_' . now()->format('YmdHis') . '.xlsx';
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="' . $fileName . '"');
-        $writer->save('php://output');
-        exit;
     }
 }

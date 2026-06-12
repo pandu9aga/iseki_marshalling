@@ -12,13 +12,13 @@
                     </a>
                     @foreach($areas as $a)
                     <a href="{{ route('admin.marshallings.index', ['area' => $a->Area, 'type_id' => $selectedTypeId]) }}" class="badge {{ $selectedArea === $a->Area ? 'badge-primary' : 'badge-secondary' }}" style="font-size:13px; padding:5px 10px;">
-                        {{ $a->Area }} ({{ $a->total }})
+                        {{ ucwords(str_replace('_', ' ', $a->Area)) }} ({{ $a->total }})
                     </a>
                     @endforeach
                 </div>
             </div>
             <div class="my-2">
-                <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#importModal"><i class="fas fa-file-import"></i> Import</button>
+                <button type="button" class="btn btn-warning text-white" data-bs-toggle="modal" data-bs-target="#importModal"><i class="fas fa-file-import"></i> Import</button>
                 <a href="{{ route('admin.marshallings.export') }}" class="btn btn-success" onclick="event.preventDefault(); window.open(this.href); setTimeout(function(){ window.location.href='{{ route('admin.types.index') }}'; }, 2000);"><i class="fas fa-file-excel"></i> Export</a>
                 <a href="{{ route('admin.marshallings.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Marshalling</a>
             </div>

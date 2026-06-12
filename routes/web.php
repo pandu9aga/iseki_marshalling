@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\TypeController;
 use App\Http\Controllers\Admin\MarshallingController;
 use App\Http\Controllers\Admin\RecordController as AdminRecordController;
 use App\Http\Controllers\Member\RecordController;
+use App\Http\Controllers\Admin\DashboardController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -18,9 +19,8 @@ Route::post('/login/member', [AuthController::class, 'loginMember'])->name('logi
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/export', [DashboardController::class, 'export'])->name('dashboard.export');
 
     Route::resource('users', UserController::class);
     Route::get('types/export', [TypeController::class, 'export'])->name('types.export');
@@ -30,8 +30,9 @@ Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function
     Route::post('marshallings/import', [MarshallingController::class, 'import'])->name('marshallings.import');
     Route::resource('marshallings', MarshallingController::class);
     Route::get('records', [AdminRecordController::class, 'index'])->name('records.index');
-    Route::get('records/export', [AdminRecordController::class, 'export'])->name('records.export');
     Route::get('records/{record}', [AdminRecordController::class, 'show'])->name('records.show');
+    Route::get('ng', [AdminRecordController::class, 'ngList'])->name('ng.index');
+    Route::get('ng-detail/{recordList}', [AdminRecordController::class, 'ngDetail'])->name('ng.detail');
     Route::post('record-lists/{recordList}/approve', [AdminRecordController::class, 'approveNg'])->name('record-lists.approve');
 });
 
@@ -43,5 +44,4 @@ Route::middleware('auth:member')->prefix('member')->name('member.')->group(funct
     Route::get('record/{record}/record-part', [RecordController::class, 'recordPart'])->name('record.record-part');
     Route::get('record/{record}/scan-part/{recordList}', [RecordController::class, 'scanPart'])->name('record.scan-part');
     Route::post('record/{recordList}/update-part', [RecordController::class, 'updatePart'])->name('record.update-part');
-    Route::get('records/export', [RecordController::class, 'export'])->name('records.export');
 });
