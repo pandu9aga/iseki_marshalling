@@ -6,7 +6,7 @@
         <div class="page-header d-flex justify-content-between align-items-center">
             <h4 class="page-title text-primary mb-0">Type Traktor</h4>
             <div>
-                <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#importModal"><i class="fas fa-file-import"></i> Import</button>
+                <button type="button" class="btn btn-warning text-white" data-bs-toggle="modal" data-bs-target="#importModal"><i class="fas fa-file-import"></i> Import</button>
                 <a href="{{ route('admin.types.export') }}" class="btn btn-success"><i class="fas fa-file-excel"></i> Export</a>
                 <a href="{{ route('admin.types.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Type</a>
             </div>

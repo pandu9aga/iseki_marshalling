@@ -22,7 +22,7 @@ class TypeController extends Controller
                 ->addColumn('action', function ($row) {
                     $btn = '<a href="' . route('admin.marshallings.index', ['type_id' => $row->Id_Type]) . '" class="btn btn-primary btn-sm" title="List Marshalling"><i class="fas fa-list"></i></a> ';
                     $btn .= '<a href="' . route('admin.marshallings.create', ['type_id' => $row->Id_Type]) . '" class="btn btn-info btn-sm" title="Add Marshalling"><i class="fas fa-plus"></i></a> ';
-                    $btn .= '<a href="' . route('admin.types.edit', $row->Id_Type) . '" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i></a> ';
+                    $btn .= '<a href="' . route('admin.types.edit', $row->Id_Type) . '" class="btn btn-warning btn-sm text-white"><i class="fas fa-edit"></i></a> ';
                     $btn .= '<button type="button" class="btn btn-danger btn-sm delete-btn" data-id="' . $row->Id_Type . '"><i class="fas fa-trash"></i></button>';
                     return $btn;
                 })
