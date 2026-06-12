@@ -15,7 +15,6 @@
             <h4 class="page-title text-primary mb-0">My Record List</h4>
             <div>
                 <a href="{{ route('member.record.create') }}" class="btn btn-primary btn-sm"><i class="fas fa-qrcode"></i> New Record</a>
-                <a href="{{ url('member/records/export') }}" class="btn btn-success btn-sm"><i class="fas fa-file-excel"></i> Export</a>
             </div>
         </div>
         <div class="card">

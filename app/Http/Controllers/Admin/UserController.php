@@ -15,7 +15,7 @@ class UserController extends Controller
             return datatables($data)
                 ->addIndexColumn()
                 ->addColumn('action', function ($row) {
-                    $btn = '<a href="' . route('admin.users.edit', $row->id) . '" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i></a> ';
+                    $btn = '<a href="' . route('admin.users.edit', $row->id) . '" class="btn btn-warning btn-sm text-white"><i class="fas fa-edit"></i></a> ';
                     $btn .= '<button type="button" class="btn btn-danger btn-sm delete-btn" data-id="' . $row->id . '"><i class="fas fa-trash"></i></button>';
                     return $btn;
                 })
