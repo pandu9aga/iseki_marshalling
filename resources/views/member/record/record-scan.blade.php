@@ -76,7 +76,7 @@
                     <h6 class="mb-0">Step 2: AI Object Counting</h6>
                 </div>
                 <div class="card-body text-center">
-                    <p class="text-muted">Take a photo and tap on an item to count. Expected count: <strong>{{ $recordList->Qty }}</strong></p>
+                    <p class="text-muted">Take a photo and block on an item to count. Expected count: <strong>{{ $recordList->Qty }}</strong></p>
 
                     <div id="countCapturePrompt">
                         <button type="button" id="startCountCamera" class="btn btn-primary"><i class="fas fa-camera"></i> Open Camera</button>
@@ -101,10 +101,10 @@
                                 <p class="mt-2 mb-0" id="countProcessingText">Analyzing...</p>
                             </div>
                         </div>
-                        <p class="text-muted mt-1" id="countInstruction"><i class="fas fa-hand-pointer"></i> Tap on one item to count it.</p>
+                        <p class="text-muted mt-1" id="countInstruction"><i class="fas fa-hand-pointer"></i> Block on one item to count it.</p>
                         <div class="count-sensitivity mt-2" id="countSensitivityArea" style="display:none;">
-                            <input type="range" id="countThreshold" min="40" max="99" value="75" step="1">
-                            <span id="countThresholdLabel">75%</span>
+                            <input type="range" id="countThreshold" min="40" max="99" value="75" step="1" style="display:none;">
+                            <span id="countThresholdLabel" style="display:none;">75%</span>
                         </div>
                         <div class="mt-2">
                             <button type="button" class="btn btn-outline-danger btn-sm" id="retakePhoto"><i class="fas fa-redo"></i> Retake</button>
