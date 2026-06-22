@@ -6,6 +6,7 @@
     .table-xs td, .table-xs th { padding: 2px 4px !important; font-size: 11px !important; white-space: nowrap; }
     .table-xs .badge { font-size: 11px !important; padding: 1px 3px !important; }
     .table-xs td { max-width: 80px; overflow: hidden; text-overflow: ellipsis; }
+    .table-xs td.wrap-cell { white-space: normal !important; word-break: break-word; overflow: visible; text-overflow: clip; max-width: 120px; }
 </style>
 @endsection
 
@@ -28,6 +29,7 @@
                                 <th style="width: 5%;">Seq</th>
                                 <th style="width: 12%;">Code Rack</th>
                                 <th style="width: 10%;">Location</th>
+                                <th style="width: 10%;">Diff</th>
                                 <th style="width: 8%;">Box</th>
                                 <th style="width: 15%;">Code Part</th>
                                 <th>Name Part</th>
@@ -60,13 +62,14 @@
                                 <td>{{ $rl->Sequence_No }}</td>
                                 <td>{{ $rl->Code_Rack }}</td>
                                 <td>{{ $rl->Location_Rack }}</td>
+                                <td class="wrap-cell">{{ $rl->Difference }}</td>
                                 <td>{{ $rl->Box }}</td>
-                                <td>{{ $rl->Code_Part }}</td>
-                                <td>{{ $rl->Name_Part }}</td>
+                                <td class="wrap-cell">{{ $rl->Code_Part }}</td>
+                                <td class="wrap-cell">{{ $rl->Name_Part }}</td>
                                 <td>{{ $rl->Qty }}</td>
                                 <td>{{ ucfirst($rl->Mode) }}</td>
                                 <td>{{ $rl->Qty_Record ?? '-' }}</td>
-                                <td>{{ $rl->Time_Record ?? '-' }}</td>
+                                <td class="wrap-cell">{{ $rl->Time_Record ?? '-' }}</td>
                                 <td>
                                     @if($isDone)
                                         @if($isOk)

@@ -26,6 +26,8 @@
                                 <th>Qty Record</th>
                                 <th>Code Part</th>
                                 <th>Name Part</th>
+                                <th>Difference</th>
+                                <th>Box</th>
                                 <th>Area</th>
                                 <th>Production Date</th>
                             </tr>
@@ -68,6 +70,8 @@
                 { data: 'Qty_Record', name: 'Qty_Record' },
                 { data: 'Code_Part', name: 'Code_Part' },
                 { data: 'Name_Part', name: 'Name_Part' },
+                { data: 'Difference', name: 'Difference' },
+                { data: 'Box', name: 'Box' },
                 { data: 'area_record', name: 'area_record' },
                 { data: 'production_date', name: 'production_date' }
             ],
@@ -88,6 +92,8 @@
             html += '<strong>Expected Qty:</strong> ' + resp.Qty + '<br>';
             html += '<strong>Recorded Qty:</strong> ' + (resp.Qty_Record || '-') + '<br>';
             html += '<strong>Code Rack:</strong> ' + resp.Code_Rack + '<br>';
+            html += '<strong>Difference:</strong> ' + (resp.Difference || '-') + '<br>';
+            html += '<strong>Box:</strong> ' + (resp.Box || '-') + '<br>';
             html += '<strong>Mode:</strong> ' + (resp.Mode === 'ai' ? 'AI' : 'Manual');
             if (resp.Image_Ng) {
                 html += '</div>';

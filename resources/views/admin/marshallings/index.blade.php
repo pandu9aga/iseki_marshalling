@@ -19,7 +19,7 @@
             </div>
             <div class="my-2">
                 <button type="button" class="btn btn-warning text-white" data-bs-toggle="modal" data-bs-target="#importModal"><i class="fas fa-file-import"></i> Import</button>
-                <a href="{{ route('admin.marshallings.export') }}" class="btn btn-success" onclick="event.preventDefault(); window.open(this.href); setTimeout(function(){ window.location.href='{{ route('admin.types.index') }}'; }, 2000);"><i class="fas fa-file-excel"></i> Export</a>
+                <a href="{{ route('admin.marshallings.export', request()->only(['type_id', 'area'])) }}" class="btn btn-success" onclick="event.preventDefault(); var url=this.href; window.open(url);"><i class="fas fa-file-excel"></i> Export</a>
                 <a href="{{ route('admin.marshallings.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Marshalling</a>
             </div>
         </div>
@@ -36,6 +36,8 @@
                             <th>Code Part</th>
                             <th>Name Part</th>
                             <th>Code Rack</th>
+                            <th>Difference</th>
+                            <th>Box</th>
                             <th>Qty</th>
                             <th>Mode</th>
                             <th>Area</th>
@@ -99,6 +101,8 @@
                 { data: 'Code_Part', name: 'Code_Part' },
                 { data: 'Name_Part', name: 'Name_Part' },
                 { data: 'Code_Rack', name: 'Code_Rack' },
+                { data: 'Difference', name: 'Difference' },
+                { data: 'Box', name: 'Box' },
                 { data: 'Qty', name: 'Qty' },
                 { data: 'Mode', name: 'Mode' },
                 { data: 'Area', name: 'Area' },

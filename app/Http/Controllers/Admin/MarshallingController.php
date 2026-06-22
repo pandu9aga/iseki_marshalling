@@ -129,9 +129,16 @@ class MarshallingController extends Controller
         return redirect()->route('admin.marshallings.index')->with('success', 'Marshalling updated successfully.');
     }
 
-    public function export()
+    public function export(Request $request)
     {
-        $marshallings = Marshalling::with('type')->orderBy('Area')->orderBy('Sequence_No')->get();
+        $query = Marshalling::with('type');
+        if ($request->filled('type_id')) {
+            $query->where('Id_Type', $request->type_id);
+        }
+        if ($request->filled('area')) {
+            $query->where('Area', $request->area);
+        }
+        $marshallings = $query->orderBy('Area')->orderBy('Sequence_No')->get();
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();

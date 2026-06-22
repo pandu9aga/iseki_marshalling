@@ -195,7 +195,7 @@
                 html += '<strong>Type:</strong> ' + data.Type + '<br>';
                 html += '<strong>Area:</strong> ' + formattedArea + '<br>';
                 html += '<strong>Member:</strong> ' + (data.member ? data.member.nama : '-') + '</div>';
-                html += '<div class="table-responsive"><table class="table table-bordered table-sm" style="font-size:0.75rem;"><thead><tr><th style="white-space:nowrap;">Seq</th><th style="white-space:nowrap;">Code Part</th><th style="white-space:nowrap;">Name Part</th><th style="white-space:nowrap;">Mode</th><th style="white-space:nowrap;">Code<br>Rack</th><th style="white-space:nowrap;">Box</th><th style="white-space:nowrap;">Qty</th><th style="white-space:nowrap;">Qty<br>Rec</th><th style="white-space:nowrap;">Time<br>Rec</th><th style="white-space:nowrap;">Stat</th></tr></thead><tbody>';
+                html += '<div class="table-responsive"><table class="table table-bordered table-sm" style="font-size:0.75rem;"><thead><tr><th style="white-space:nowrap;">Seq</th><th style="white-space:nowrap;">Code Part</th><th style="white-space:nowrap;">Name Part</th><th style="white-space:nowrap;">Mode</th><th style="white-space:nowrap;">Code<br>Rack</th><th style="white-space:nowrap;">Diff</th><th style="white-space:nowrap;">Box</th><th style="white-space:nowrap;">Qty</th><th style="white-space:nowrap;">Qty<br>Rec</th><th style="white-space:nowrap;">Time<br>Rec</th><th style="white-space:nowrap;">Stat</th></tr></thead><tbody>';
                 data.record_lists.forEach(function(rl) {
                     var statusHtml = '';
                     if (!rl.Time_Record) {
@@ -212,7 +212,7 @@
                     var modeBadge = rl.Mode === 'ai' ? '<span class="badge bg-info">AI</span>' : '<span class="badge bg-secondary">Manual</span>';
                     var enterTime = rl.Time_Record ? rl.Time_Record.substring(0, 10) + '<br>' + rl.Time_Record.substring(11, 19) : '-';
                     var namePart = rl.Name_Part ? (rl.Name_Part.length > 15 ? rl.Name_Part.substring(0, 15) + '...' : rl.Name_Part) : '-';
-                    html += '<tr><td>' + rl.Sequence_No + '</td><td>' + rl.Code_Part + '</td><td style="font-size:0.7rem;">' + namePart + '</td><td>' + modeBadge + '</td><td>' + rl.Code_Rack + '</td><td>' + (rl.Box || '-') + '</td><td>' + rl.Qty + '</td><td>' + (rl.Qty_Record || '-') + '</td><td>' + enterTime + '</td><td>' + statusHtml + '</td></tr>';
+                    html += '<tr><td>' + rl.Sequence_No + '</td><td>' + rl.Code_Part + '</td><td style="font-size:0.7rem;">' + namePart + '</td><td>' + modeBadge + '</td><td>' + rl.Code_Rack + '</td><td>' + (rl.Difference || '-') + '</td><td>' + (rl.Box || '-') + '</td><td>' + rl.Qty + '</td><td>' + (rl.Qty_Record || '-') + '</td><td>' + enterTime + '</td><td>' + statusHtml + '</td></tr>';
                 });
                 html += '</tbody></table></div>';
                 $('#recordDetailContent').html(html);
