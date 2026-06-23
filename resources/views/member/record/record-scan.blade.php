@@ -146,6 +146,7 @@
     var audioCache = {};
     var currentTimeout = null;
     var currentAudio = null;
+    var loopTimeout = null;
 
     function getFastAudio(ch) {
         if (!audioCache[ch]) {
@@ -157,16 +158,19 @@
         return audioCache[ch];
     }
 
-    function playCharSounds(chars, index) {
+    function playCharSounds(chars, index, onComplete) {
         if (currentTimeout) { clearTimeout(currentTimeout); currentTimeout = null; }
         if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
-        if (index >= chars.length) return;
+        if (index >= chars.length) {
+            if (onComplete) onComplete();
+            return;
+        }
         var ch = chars[index];
-        if (skipChars[ch]) { playCharSounds(chars, index + 1); return; }
+        if (skipChars[ch]) { playCharSounds(chars, index + 1, onComplete); return; }
         var audio = getFastAudio(ch);
         audio.currentTime = 0;
         currentAudio = audio;
-        function handleNext() { playCharSounds(chars, index + 1); }
+        function handleNext() { playCharSounds(chars, index + 1, onComplete); }
         function startPlayback() {
             var duration = audio.duration;
             if (!duration || duration === Infinity || isNaN(duration)) {
@@ -189,14 +193,66 @@
         else { audio.onloadedmetadata = startPlayback; audio.onerror = handleNext; }
     }
 
-    function speakCodeRack() {
+    function stopAllSounds() {
+        if (loopTimeout) { clearTimeout(loopTimeout); loopTimeout = null; }
+        if (currentTimeout) { clearTimeout(currentTimeout); currentTimeout = null; }
+        if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
+    }
+
+    var boksAudio = new Audio('{{ asset("assets/sounds") }}/boks.mp3');
+    boksAudio.playbackRate = 2;
+    boksAudio.preload = 'auto';
+
+    var boxValue = '{{ $recordList->Box }}';
+    var qtyValue = '{{ $recordList->Qty }}';
+
+    function playSequence() {
         var codeRack = '{{ $recordList->Code_Rack }}'.toLowerCase();
-        var chars = codeRack.split('');
-        playCharSounds(chars, 0);
+        playCharSounds(codeRack.split(''), 0, function() {
+            currentTimeout = setTimeout(function() {
+                currentTimeout = null;
+                if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
+                currentAudio = boksAudio;
+                boksAudio.currentTime = 0;
+                function afterBoks() {
+                    playCharSounds(boxValue.split(''), 0, function() {
+                        currentTimeout = setTimeout(function() {
+                            currentTimeout = null;
+                            playCharSounds(qtyValue.toString().split(''), 0, function() {
+                                loopTimeout = setTimeout(function() {
+                                    loopTimeout = null;
+                                    playSequence();
+                                }, 500);
+                            });
+                        }, 500);
+                    });
+                }
+                var playPromise = boksAudio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(function() {
+                        var duration = boksAudio.duration;
+                        if (!duration || duration === Infinity || isNaN(duration)) {
+                            boksAudio.onended = afterBoks;
+                        } else {
+                            boksAudio.onended = null;
+                            currentTimeout = setTimeout(function() {
+                                boksAudio.pause();
+                                currentTimeout = null;
+                                afterBoks();
+                            }, ((duration * 0.7) / boksAudio.playbackRate) * 1000);
+                        }
+                    }).catch(function(error) { console.log("Playback dicegah:", error); afterBoks(); });
+                } else {
+                    afterBoks();
+                }
+            }, 500);
+        });
     }
 
     $(document).ready(function() {
-        speakCodeRack();
+        setTimeout(function() {
+            playSequence();
+        }, 3000);
 
         var seconds = 7;
         var timer = setInterval(function() {

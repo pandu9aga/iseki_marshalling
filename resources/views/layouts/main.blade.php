@@ -13,6 +13,15 @@
     <link rel="stylesheet" href="{{ asset('assets/css/kaiadmin.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/css/all.min.css') }}" />
 
+    <!-- Dynamic Favicon -->
+    <script src="/iseki_pro_app/js/dynamic-favicon.js"></script>
+    <script>document.addEventListener("DOMContentLoaded", function() { setDynamicFavicon("trolley", "Marshalling"); });</script>
+
+    <!-- Dynamic Favicon Assets -->
+    <link rel="stylesheet" href="/iseki_pro_app/css/icon.css">
+    <script src="/iseki_pro_app/js/dynamic-favicon.js"></script>
+    <script>document.addEventListener("DOMContentLoaded", function() { setDynamicFavicon("trolley", "Marshalling"); });</script>
+
     <style>
         :root {
             --primary: #F36494;
