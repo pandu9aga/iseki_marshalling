@@ -2,11 +2,7 @@
 
 @section('style')
 <style>
-    #reader {
-        width: 100%;
-        max-width: 400px;
-        margin: 0 auto;
-    }
+    #reader { width: 100%; max-width: 400px; margin: 0 auto; }
 </style>
 @endsection
 
@@ -16,7 +12,7 @@
         <div class="page-header">
             <h4 class="page-title text-primary">Scan Record</h4>
         </div>
-        <div class="row">
+        <div class="row justify-content-center">
             <div class="col-lg-6">
                 <div class="card">
                     <div class="card-header">
@@ -28,9 +24,8 @@
                         <button type="button" id="stopScan" class="btn btn-secondary mt-3" style="display:none;"><i class="fas fa-stop"></i> Stop</button>
                     </div>
                 </div>
-            </div>
-            <div class="col-lg-6">
-                <div class="card">
+
+                <div class="card mt-3">
                     <div class="card-header">
                         <h5 class="card-title">Record Info</h5>
                     </div>
@@ -49,18 +44,29 @@
                                 <label class="form-label">Type</label>
                                 <input type="text" name="type" id="type" class="form-control" readonly>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label">Area</label>
-                                <select name="area" id="area" class="form-control" required disabled>
-                                    <option value="">Select Area (scan QR first)</option>
-                                </select>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100" id="submitBtn" disabled>
-                                <i class="fas fa-save"></i> Create Record
-                            </button>
+                            <input type="hidden" name="area" id="area" value="">
                         </form>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="areaModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Pilih Area</h5>
+            </div>
+            <div class="modal-body">
+                <p>Silakan pilih area untuk record ini:</p>
+                <select id="modalArea" class="form-control">
+                    <option value="">Memuat area...</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="confirmArea" disabled><i class="fas fa-check"></i> Konfirmasi & Submit</button>
             </div>
         </div>
     </div>
@@ -71,31 +77,52 @@
 <script src="{{ asset('assets/js/plugin/html5-qrcode.min.js') }}"></script>
 <script>
     let html5QrcodeScanner = null;
+    let scannedData = {};
 
     function onScanSuccess(decodedText, decodedResult) {
         var parts = decodedText.split(';');
         if (parts.length >= 4) {
+            scannedData = {
+                sequence_no: parts[0],
+                production_date: parts[1],
+                type: parts[2]
+            };
             $('#sequence_no').val(parts[0]);
             $('#production_date').val(parts[1]);
             $('#type').val(parts[2]);
 
+            stopCamera();
+
             $.getJSON('{{ route("member.record.areas-by-type") }}', { type: parts[2] }, function(areas) {
-                var $area = $('#area');
-                $area.empty().append('<option value="">Select Area</option>');
+                var $area = $('#modalArea');
+                $area.empty().append('<option value="">Pilih Area</option>');
                 $.each(areas, function(i, area) {
                     $area.append('<option value="' + area + '">' +
                         area.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); }) +
                         '</option>');
                 });
-                $area.prop('disabled', false);
+                if (areas.length === 1) {
+                    $('#modalArea').val(areas[0]);
+                    $('#confirmArea').prop('disabled', false);
+                }
+                $('#areaModal').modal('show');
             });
-
-            $('#submitBtn').prop('disabled', false);
-            stopCamera();
         } else {
             alert('Invalid QR format. Expected: Sequence_No;Production_Date;...;Type');
         }
     }
+
+    $('#modalArea').on('change', function() {
+        $('#confirmArea').prop('disabled', !$(this).val());
+    });
+
+    $('#confirmArea').on('click', function() {
+        var area = $('#modalArea').val();
+        if (!area) return;
+        $('#area').val(area);
+        $('#areaModal').modal('hide');
+        $('#recordForm').submit();
+    });
 
     $('#startScan').on('click', function() {
         $(this).hide();

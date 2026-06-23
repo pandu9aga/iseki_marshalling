@@ -8,7 +8,8 @@ class Marshalling extends Model
 {
     protected $table = 'marshallings';
     protected $primaryKey = 'Id_Marshalling';
-    public $timestamps = false;
+    const CREATED_AT = null;
+    const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
         'Id_Type',

@@ -35,11 +35,34 @@ class RecordController extends Controller
                 })
                 ->make(true);
         }
-        return view('member.records.index');
+        return redirect()->route('member.record.create');
     }
 
     public function create()
     {
+        $member = Auth::guard('member')->user();
+
+        $incompleteRecord = Record::where('Id_User', $member->id)
+            ->whereHas('recordLists', function ($q) {
+                $q->whereNull('Time_Record');
+            })
+            ->orderBy('Time_Record', 'desc')
+            ->first();
+
+        if ($incompleteRecord) {
+            $nextList = Record_List::where('Id_Record', $incompleteRecord->Id_Record)
+                ->whereNull('Time_Record')
+                ->orderBy('Sequence_No')
+                ->first();
+
+            if ($nextList) {
+                return redirect()->route('member.record.scan-part', [
+                    $incompleteRecord->Id_Record,
+                    $nextList->Id_Record_List
+                ]);
+            }
+        }
+
         return view('member.record.create');
     }
 
@@ -117,34 +140,17 @@ class RecordController extends Controller
             ]);
         }
 
-        return redirect()->route('member.record.record-part', $record->Id_Record)
+        $firstRecordList = Record_List::where('Id_Record', $record->Id_Record)
+            ->orderBy('Sequence_No')
+            ->first();
+
+        return redirect()->route('member.record.scan-part', [$record->Id_Record, $firstRecordList->Id_Record_List])
             ->with('success', 'Record created. Start recording parts.');
     }
 
     public function recordPart($id)
     {
-        $record = Record::with(['recordLists' => function ($q) {
-            $q->orderBy('Sequence_No');
-        }])->findOrFail($id);
-
-        $member = Auth::guard('member')->user();
-        if ($record->Id_User != $member->id) {
-            abort(403);
-        }
-
-        $currentIndex = null;
-        foreach ($record->recordLists as $i => $rl) {
-            if ($rl->Time_Record === null) {
-                $currentIndex = $i;
-                break;
-            }
-        }
-
-        if ($currentIndex === null) {
-            return redirect()->route('member.records.index')->with('success', 'All parts recorded!');
-        }
-
-        return view('member.record.record-part', compact('record', 'currentIndex'));
+        return redirect()->route('member.record.create');
     }
 
     public function scanPart($recordId, $recordListId)
@@ -164,17 +170,11 @@ class RecordController extends Controller
         }
 
         if ($recordList->Time_Record !== null) {
-            return redirect()->route('member.record.record-part', $record->Id_Record)
+            return redirect()->route('member.record.create')
                 ->with('error', 'This part has already been recorded.');
         }
 
-        $prevCompleted = true;
-        $prev = $record->recordLists->firstWhere('Sequence_No', $recordList->Sequence_No - 1);
-        if ($prev) {
-            $prevCompleted = $prev->Time_Record !== null;
-        }
-
-        return view('member.record.record-scan', compact('record', 'recordList', 'prevCompleted'));
+        return view('member.record.record-scan', compact('record', 'recordList'));
     }
 
     public function updatePart(Request $request, $recordListId)
@@ -275,11 +275,11 @@ class RecordController extends Controller
             ->first();
 
         if ($next) {
-            return redirect()->route('member.record.record-part', $record->Id_Record)
+            return redirect()->route('member.record.scan-part', [$record->Id_Record, $next->Id_Record_List])
                 ->with('success', 'Part recorded! Proceed to next part.');
         }
 
-        return redirect()->route('member.record.record-part', $record->Id_Record)
+        return redirect()->route('member.record.create')
             ->with('success', 'All parts recorded successfully!');
     }
 }

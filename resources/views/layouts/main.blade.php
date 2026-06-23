@@ -164,12 +164,6 @@
                         @endif
 
                         @if(Auth::guard('member')->check())
-                        <li class="nav-item {{ request()->routeIs('member.records.index') ? 'active' : '' }}">
-                            <a href="{{ route('member.records.index') }}">
-                                <i class="fas fa-list"></i>
-                                <p class="{{ request()->routeIs('member.records.index') ? 'text-primary' : '' }}">Record List</p>
-                            </a>
-                        </li>
                         <li class="nav-item {{ request()->routeIs('member.record.create') ? 'active' : '' }}">
                             <a href="{{ route('member.record.create') }}">
                                 <i class="fas fa-qrcode"></i>
