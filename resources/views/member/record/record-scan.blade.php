@@ -61,6 +61,15 @@
                     </div>
                 </div>
                 <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="form-check mb-3">
+                                <input type="checkbox" class="form-check-input" id="is_empty" name="Is_Empty" value="1">
+                                <label class="form-check-label fw-bold" for="is_empty">Part Kosong</label>
+                            </div>
+                        </div>
+                    </div>
+
                     @if($recordList->Mode == 'manual')
                     <div class="card mb-3">
                         <div class="card-header">
@@ -69,7 +78,7 @@
                         <div class="card-body">
                             <div class="mb-3">
                                 <label class="form-label">Qty Record</label>
-                                <input type="number" name="Qty_Record" id="Qty_Record" class="form-control" required min="0">
+                                <input type="number" name="Qty_Record" id="Qty_Record" class="form-control" min="0">
                             </div>
                         </div>
                     </div>
@@ -119,8 +128,6 @@
                         </div>
                     </div>
                     @endif
-                </div>
-            </div>
 
             <button type="submit" class="btn btn-primary w-100" id="submitPartBtn" disabled>
                 <i class="fas fa-check"></i> Submit Record
@@ -297,14 +304,29 @@
         }
     }
 
+    $('#is_empty').on('change', function() {
+        if ($(this).is(':checked')) {
+            if (window.currentMode === 'manual') {
+                $('#Qty_Record').val(0);
+            }
+            $('#Qty_Record').prop('required', false);
+            checkFormReady();
+        } else {
+            $('#Qty_Record').val('').prop('required', true);
+            checkFormReady();
+        }
+    });
+
     window.checkFormReady = function() {
-        if ($('#Code_Rack').val() && $('#Qty_Record').val()) {
-            $('#submitPartBtn').prop('disabled', false);
+        if ($('#is_empty').is(':checked')) {
+            $('#submitPartBtn').prop('disabled', $('#Code_Rack').val() ? false : true);
+        } else {
+            $('#submitPartBtn').prop('disabled', !($('#Code_Rack').val() && $('#Qty_Record').val()));
         }
     };
 
     $('#Qty_Record').on('input', function() {
-        if ($(this).val()) window.checkFormReady();
+        checkFormReady();
     });
 
     $('#partForm').on('keypress', function(e) {

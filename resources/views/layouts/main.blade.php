@@ -170,6 +170,12 @@
                                 <p class="{{ request()->routeIs('admin.ng.*') ? 'text-primary' : '' }}">NG</p>
                             </a>
                         </li>
+                        <li class="nav-item {{ request()->routeIs('admin.empty-part.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.empty-part.index') }}">
+                                <i class="fas fa-box-open"></i>
+                                <p class="{{ request()->routeIs('admin.empty-part.*') ? 'text-primary' : '' }}">Empty Part</p>
+                            </a>
+                        </li>
                         @endif
 
                         @if(Auth::guard('member')->check())

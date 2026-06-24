@@ -27,6 +27,7 @@ class Record_List extends Model
         'Time_Record',
         'Image_Ng',
         'Status_Ng',
+        'Is_Empty',
     ];
 
     public function record()

@@ -189,9 +189,11 @@ class RecordController extends Controller
             abort(403);
         }
 
+        $isEmpty = $request->boolean('Is_Empty');
+
         $request->validate([
             'Code_Rack' => 'required',
-            'Qty_Record' => 'required|integer|min:0',
+            'Qty_Record' => $isEmpty ? 'nullable|integer|min:0' : 'required|integer|min:0',
         ]);
 
         if ($request->Code_Rack !== $recordList->Code_Rack) {
@@ -199,9 +201,32 @@ class RecordController extends Controller
         }
 
         $updateData = [
-            'Qty_Record' => $request->Qty_Record,
             'Time_Record' => now(),
+            'Is_Empty' => $isEmpty ? 1 : null,
         ];
+
+        if ($isEmpty) {
+            $updateData['Qty_Record'] = 0;
+        } else {
+            $updateData['Qty_Record'] = $request->Qty_Record;
+        }
+
+        if ($isEmpty) {
+            $recordList->update($updateData);
+
+            $next = Record_List::where('Id_Record', $record->Id_Record)
+                ->whereNull('Time_Record')
+                ->orderBy('Sequence_No')
+                ->first();
+
+            if ($next) {
+                return redirect()->route('member.record.scan-part', [$record->Id_Record, $next->Id_Record_List])
+                    ->with('success', 'Part recorded! Proceed to next part.');
+            }
+
+            return redirect()->route('member.record.create')
+                ->with('success', 'All parts recorded successfully!');
+        }
 
         if ($recordList->Mode === 'ai' && $request->filled('image_data')) {
             $qtyMatch = (int)$request->Qty_Record === (int)$recordList->Qty;

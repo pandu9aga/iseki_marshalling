@@ -72,6 +72,27 @@ class RecordController extends Controller
                 })
                 ->orderBy('Time_Record', 'desc');
 
+            if ($request->filled('filter_date')) {
+                $data->whereHas('record', function ($q) use ($request) {
+                    $q->whereDate('Time_Record', $request->filter_date);
+                });
+            }
+            if ($request->filled('filter_member')) {
+                $data->whereHas('record', function ($q) use ($request) {
+                    $q->where('Id_User', $request->filter_member);
+                });
+            }
+            if ($request->filled('filter_area')) {
+                $data->whereHas('record', function ($q) use ($request) {
+                    $q->where('Area', $request->filter_area);
+                });
+            }
+            if ($request->filled('filter_type')) {
+                $data->whereHas('record', function ($q) use ($request) {
+                    $q->where('Type', $request->filter_type);
+                });
+            }
+
             return datatables($data)
                 ->addIndexColumn()
                 ->addColumn('member_name', function ($row) {
@@ -89,10 +110,17 @@ class RecordController extends Controller
                 ->addColumn('area_record', function ($row) {
                     return $row->record ? ucwords(str_replace('_', ' ', $row->record->Area)) : '-';
                 })
+                ->addColumn('time_record', function ($row) {
+                    return $row->Time_Record ?? '-';
+                })
                 ->make(true);
         }
 
-        return view('admin.records.ng');
+        $members = Member::orderBy('nama')->get();
+        $types = Type::orderBy('Type')->get();
+        $areas = Record::select('Area')->distinct()->whereNotNull('Area')->orderBy('Area')->pluck('Area');
+
+        return view('admin.records.ng', compact('members', 'types', 'areas'));
     }
 
     public function ngDetail($recordListId)
@@ -109,5 +137,65 @@ class RecordController extends Controller
         ]);
 
         return response()->json(['success' => true, 'status' => 'ng_ok']);
+    }
+
+    public function emptyPart(Request $request)
+    {
+        if ($request->ajax()) {
+            $data = Record_List::with(['record.member'])
+                ->where('Is_Empty', 1)
+                ->orderBy('Time_Record', 'desc');
+
+            if ($request->filled('filter_date')) {
+                $data->whereHas('record', function ($q) use ($request) {
+                    $q->whereDate('Time_Record', $request->filter_date);
+                });
+            }
+            if ($request->filled('filter_member')) {
+                $data->whereHas('record', function ($q) use ($request) {
+                    $q->where('Id_User', $request->filter_member);
+                });
+            }
+            if ($request->filled('filter_area')) {
+                $data->whereHas('record', function ($q) use ($request) {
+                    $q->where('Area', $request->filter_area);
+                });
+            }
+            if ($request->filled('filter_type')) {
+                $data->whereHas('record', function ($q) use ($request) {
+                    $q->where('Type', $request->filter_type);
+                });
+            }
+
+            $data->where('Is_Empty', 1);
+
+            return datatables($data)
+                ->addIndexColumn()
+                ->addColumn('member_name', function ($row) {
+                    return $row->record && $row->record->member ? $row->record->member->nama : '-';
+                })
+                ->addColumn('sequence_record', function ($row) {
+                    return $row->record ? $row->record->Sequence_No_Record : '-';
+                })
+                ->addColumn('production_date', function ($row) {
+                    return $row->record ? $row->record->Production_Date_Record : '-';
+                })
+                ->addColumn('type_record', function ($row) {
+                    return $row->record ? $row->record->Type : '-';
+                })
+                ->addColumn('area_record', function ($row) {
+                    return $row->record ? ucwords(str_replace('_', ' ', $row->record->Area)) : '-';
+                })
+                ->addColumn('time_record', function ($row) {
+                    return $row->Time_Record ?? '-';
+                })
+                ->make(true);
+        }
+
+        $members = Member::orderBy('nama')->get();
+        $types = Type::orderBy('Type')->get();
+        $areas = Record::select('Area')->distinct()->whereNotNull('Area')->orderBy('Area')->pluck('Area');
+
+        return view('admin.records.empty-part', compact('members', 'types', 'areas'));
     }
 }

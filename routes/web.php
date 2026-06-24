@@ -34,6 +34,7 @@ Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function
     Route::get('ng', [AdminRecordController::class, 'ngList'])->name('ng.index');
     Route::get('ng-detail/{recordList}', [AdminRecordController::class, 'ngDetail'])->name('ng.detail');
     Route::post('record-lists/{recordList}/approve', [AdminRecordController::class, 'approveNg'])->name('record-lists.approve');
+    Route::get('empty-part', [AdminRecordController::class, 'emptyPart'])->name('empty-part.index');
 });
 
 Route::middleware('auth:member')->prefix('member')->name('member.')->group(function () {
