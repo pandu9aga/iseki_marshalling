@@ -36,7 +36,8 @@
             <div class="card-body">
                 <h1 class="text-center text-primary mb-0" style="font-size: 170px;"><strong>{{ $recordList->Code_Rack }}</strong></h1>
                 <h5>{{ $recordList->Code_Part }} - {{ $recordList->Name_Part }}</h5>
-                <p class="text-muted mb-0">Location: <strong class="text-primary">{{ $recordList->Location_Rack }}</strong> | Qty: <strong class="text-primary">{{ $recordList->Qty }}</strong> | Box: <strong class="text-primary">{{ $recordList->Box }}</strong> | Mode: <strong class="text-primary">{{ ucfirst($recordList->Mode) }}</strong></p>
+                <p class="text-muted mb-0">Location: <strong class="text-primary">{{ $recordList->Location_Rack }}</strong> | Mode: <strong class="text-primary">{{ ucfirst($recordList->Mode) }}</strong> | Pembeda: <strong class="text-primary">{{ $recordList->Difference }}</strong></p>
+                <p class="text-muted mb-0">Box: <strong class="text-primary">{{ $recordList->Box }}</strong> | Qty: <strong class="text-primary">{{ $recordList->Qty }}</strong></p>
             </div>
         </div>
 
