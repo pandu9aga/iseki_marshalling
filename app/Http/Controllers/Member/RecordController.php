@@ -10,6 +10,7 @@ use App\Models\Type;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class RecordController extends Controller
 {
@@ -213,6 +214,14 @@ class RecordController extends Controller
 
         if ($isEmpty) {
             $recordList->update($updateData);
+
+            try {
+                Http::timeout(10)->post('http://192.168.173.201/iseki_scan/api/marshalling-empty', [
+                    'code_rack' => $recordList->Code_Rack,
+                ]);
+            } catch (\Exception $e) {
+                // fire-and-forget, ignore errors
+            }
 
             $next = Record_List::where('Id_Record', $record->Id_Record)
                 ->whereNull('Time_Record')

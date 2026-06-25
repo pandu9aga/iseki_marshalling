@@ -59,17 +59,16 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-6">
                     <div class="card mb-3">
                         <div class="card-body">
-                            <div class="form-check mb-3">
+                            <div class="form-check mb-0">
                                 <input type="checkbox" class="form-check-input" id="is_empty" name="Is_Empty" value="1">
                                 <label class="form-check-label fw-bold" for="is_empty">Part Kosong</label>
                             </div>
                         </div>
                     </div>
-
+                </div>
+                <div class="col-md-6">
                     @if($recordList->Mode == 'manual')
                     <div class="card mb-3">
                         <div class="card-header">
@@ -128,7 +127,8 @@
                         </div>
                     </div>
                     @endif
-
+                </div>
+            </div>
             <button type="submit" class="btn btn-primary w-100" id="submitPartBtn" disabled>
                 <i class="fas fa-check"></i> Submit Record
             </button>
