@@ -53,6 +53,31 @@
     </div>
 </div>
 
+@if($remarkRecord)
+<form id="remarkForm" action="{{ route('member.record.save-remark', $remarkRecord->Id_Record) }}" method="POST">
+    @csrf
+    <div class="modal fade" id="remarkModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Record Completed</h5>
+                </div>
+                <div class="modal-body">
+                    <p>All parts recorded successfully!</p>
+                    <div class="mb-3">
+                        <label for="Remark" class="form-label">Remark <small class="text-muted">(optional)</small></label>
+                        <textarea name="Remark" id="Remark" class="form-control" rows="4" placeholder="Add any notes or comments..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Save & Finish</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+@endif
+
 <div class="modal fade" id="areaModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -146,5 +171,11 @@
             });
         }
     }
+
+    @if($remarkRecord)
+    $(function() {
+        $('#remarkModal').modal('show');
+    });
+    @endif
 </script>
 @endsection

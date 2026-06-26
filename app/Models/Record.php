@@ -17,6 +17,7 @@ class Record extends Model
         'Type',
         'Area',
         'Time_Record',
+        'Remark',
     ];
 
     public function recordLists()

@@ -43,28 +43,37 @@ class RecordController extends Controller
     {
         $member = Auth::guard('member')->user();
 
-        $incompleteRecord = Record::where('Id_User', $member->id)
-            ->whereHas('recordLists', function ($q) {
-                $q->whereNull('Time_Record');
-            })
-            ->orderBy('Time_Record', 'desc')
-            ->first();
+        $remarkRecord = null;
+        $remarkId = session('remark_record_id');
+        if ($remarkId) {
+            $remarkRecord = Record::find($remarkId);
+            session()->forget('remark_record_id');
+        }
 
-        if ($incompleteRecord) {
-            $nextList = Record_List::where('Id_Record', $incompleteRecord->Id_Record)
-                ->whereNull('Time_Record')
-                ->orderBy('Sequence_No')
+        if (!$remarkRecord) {
+            $incompleteRecord = Record::where('Id_User', $member->id)
+                ->whereHas('recordLists', function ($q) {
+                    $q->whereNull('Time_Record');
+                })
+                ->orderBy('Time_Record', 'desc')
                 ->first();
 
-            if ($nextList) {
-                return redirect()->route('member.record.scan-part', [
-                    $incompleteRecord->Id_Record,
-                    $nextList->Id_Record_List
-                ]);
+            if ($incompleteRecord) {
+                $nextList = Record_List::where('Id_Record', $incompleteRecord->Id_Record)
+                    ->whereNull('Time_Record')
+                    ->orderBy('Sequence_No')
+                    ->first();
+
+                if ($nextList) {
+                    return redirect()->route('member.record.scan-part', [
+                        $incompleteRecord->Id_Record,
+                        $nextList->Id_Record_List
+                    ]);
+                }
             }
         }
 
-        return view('member.record.create');
+        return view('member.record.create', compact('remarkRecord'));
     }
 
     public function getAreasByType(Request $request)
@@ -218,6 +227,8 @@ class RecordController extends Controller
             try {
                 Http::timeout(10)->post('http://192.168.173.201/iseki_scan/api/marshalling-empty', [
                     'code_rack' => $recordList->Code_Rack,
+                    'id_member' => $member->id,
+                    'sequence_no_record' => $record->Sequence_No_Record,
                 ]);
             } catch (\Exception $e) {
                 // fire-and-forget, ignore errors
@@ -234,7 +245,7 @@ class RecordController extends Controller
             }
 
             return redirect()->route('member.record.create')
-                ->with('success', 'All parts recorded successfully!');
+                ->with(['success' => 'All parts recorded successfully!', 'remark_record_id' => $record->Id_Record]);
         }
 
         if ($recordList->Mode === 'ai' && $request->filled('image_data')) {
@@ -314,6 +325,24 @@ class RecordController extends Controller
         }
 
         return redirect()->route('member.record.create')
-            ->with('success', 'All parts recorded successfully!');
+            ->with(['success' => 'All parts recorded successfully!', 'remark_record_id' => $record->Id_Record]);
+    }
+
+    public function saveRemark(Request $request, $recordId)
+    {
+        $record = Record::findOrFail($recordId);
+        $member = Auth::guard('member')->user();
+        if ($record->Id_User != $member->id) {
+            abort(403);
+        }
+
+        $request->validate([
+            'Remark' => 'nullable|string|max:5000',
+        ]);
+
+        $record->update(['Remark' => $request->Remark]);
+
+        return redirect()->route('member.record.create')
+            ->with('success', 'Record completed successfully!');
     }
 }

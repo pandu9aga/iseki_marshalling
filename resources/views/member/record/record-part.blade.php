@@ -17,6 +17,9 @@
             <div class="text-truncate">
                 <h4 class="page-title text-primary mb-0">Record Part</h4>
                 <small class="text-truncate d-block">Record: {{ $record->Sequence_No_Record }} | Area: {{ ucwords(str_replace('_', ' ', $record->Area)) }}</small>
+                @if($record->Remark)
+                <small class="text-truncate d-block text-muted mt-1"><strong>Remark:</strong> {{ $record->Remark }}</small>
+                @endif
             </div>
             <a href="{{ route('member.records.index') }}" class="btn btn-secondary btn-sm flex-shrink-0"><i class="fas fa-arrow-left"></i> Back</a>
         </div>

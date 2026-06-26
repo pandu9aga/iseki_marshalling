@@ -30,6 +30,7 @@
                                 <th>Area</th>
                                 <th>Time Record</th>
                                 <th>Status</th>
+                                <th>Remark</th>
                             </tr>
                         </thead>
                     </table>
@@ -57,6 +58,7 @@
                 { data: 'Production_Date_Record', name: 'Production_Date_Record' },
                 { data: 'Area', name: 'Area' },
                 { data: 'Time_Record', name: 'Time_Record' },
+                { data: 'Remark', name: 'Remark' },
                 { data: 'status', name: 'status' }
             ],
             createdRow: function(row, data, dataIndex) {

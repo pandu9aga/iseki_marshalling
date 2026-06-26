@@ -43,6 +43,10 @@ class RecordController extends Controller
                 ->editColumn('Area', function($record) {
                     return $record->Area ? ucwords(str_replace('_', ' ', $record->Area)) : '-';
                 })
+                ->addColumn('remark', function ($row) {
+                    return $row->Remark ? '<span title="'.e($row->Remark).'">'.e(\Illuminate\Support\Str::limit($row->Remark, 40)).'</span>' : '-';
+                })
+                ->rawColumns(['remark'])
                 ->make(true);
         }
 

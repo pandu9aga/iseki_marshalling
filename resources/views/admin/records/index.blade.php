@@ -74,6 +74,7 @@
                                 <th>Member</th>
                                 <th>Time Record</th>
                                 <th>Status</th>
+                                <th>Remark</th>
                             </tr>
                         </thead>
                     </table>
@@ -133,7 +134,8 @@
                 { data: 'Area', name: 'Area' },
                 { data: 'member_name', name: 'member_name' },
                 { data: 'Time_Record', name: 'Time_Record' },
-                { data: 'status', name: 'status' }
+                { data: 'status', name: 'status' },
+                { data: 'remark', name: 'remark' }
             ],
             createdRow: function(row, data, dataIndex) {
                 $(row).css('cursor', 'pointer');
@@ -163,7 +165,8 @@
             html += '<strong>Production Date:</strong> ' + data.Production_Date_Record + '<br>';
             html += '<strong>Type:</strong> ' + data.Type + '<br>';
             html += '<strong>Area:</strong> ' + formattedArea + '<br>';
-            html += '<strong>Member:</strong> ' + (data.member ? data.member.nama : '-') + '</div>';
+            html += '<strong>Member:</strong> ' + (data.member ? data.member.nama : '-') + '<br>';
+            html += '<strong>Remark:</strong> ' + (data.Remark ? data.Remark : '-') + '</div>';
             html += '<div class="table-responsive"><table class="table table-bordered table-sm" style="font-size:0.75rem;"><thead><tr><th style="white-space:nowrap;">Seq</th><th style="white-space:nowrap;">Code Part</th><th style="white-space:nowrap;">Name Part</th><th style="white-space:nowrap;">Mode</th><th style="white-space:nowrap;">Code<br>Rack</th><th style="white-space:nowrap;">Diff</th><th style="white-space:nowrap;">Box</th><th style="white-space:nowrap;">Qty</th><th style="white-space:nowrap;">Qty<br>Rec</th><th style="white-space:nowrap;">Time<br>Rec</th><th style="white-space:nowrap;">Stat</th></tr></thead><tbody>';
             data.record_lists.forEach(function(rl) {
                 var statusHtml = '';
