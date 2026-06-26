@@ -60,17 +60,17 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Record Completed</h5>
+                    <h5 class="modal-title">Record Selesai</h5>
                 </div>
                 <div class="modal-body">
-                    <p>All parts recorded successfully!</p>
+                    <p>Semua part berhasil dicatat!</p>
                     <div class="mb-3">
-                        <label for="Remark" class="form-label">Remark <small class="text-muted">(optional)</small></label>
-                        <textarea name="Remark" id="Remark" class="form-control" rows="4" placeholder="Add any notes or comments..."></textarea>
+                        <label for="Remark" class="form-label">Catatan <small class="text-muted">(opsional)</small></label>
+                        <textarea name="Remark" id="Remark" class="form-control" rows="4" placeholder="Masukkan catatan..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Save & Finish</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Simpan & Selesai</button>
                 </div>
             </div>
         </div>
