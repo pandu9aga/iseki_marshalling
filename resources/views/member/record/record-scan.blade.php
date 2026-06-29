@@ -2,7 +2,7 @@
 
 @section('style')
 <style>
-    #reader_rack { width: 100%; max-width: 400px; margin: 0 auto; }
+    .scan-locked { opacity: 0.5; pointer-events: none; }
     .count-canvas-wrapper { position: relative; display: inline-block; max-width: 100%; }
     .count-canvas-wrapper canvas { max-width: 100%; border: 1px solid #ddd; border-radius: 8px; cursor: crosshair; }
     .count-badge {
@@ -49,20 +49,21 @@
                         <div class="card-header">
                             <h6 class="mb-0">Step 1: Scan Rack QR Code</h6>
                         </div>
-                        <div class="card-body text-center">
-                            <div id="reader_rack"></div>
-                            <button type="button" id="scanRack" class="btn btn-primary mt-2" disabled><i class="fas fa-camera"></i> Scan Rack <span id="scanRackTimer" class="badge bg-light text-dark ms-1">7</span></button>
-                            <button type="button" id="stopRackScan" class="btn btn-secondary mt-2" style="display:none;"><i class="fas fa-stop"></i> Stop</button>
-                            <div class="mt-2">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Scan Code Rack <span id="scanTimer" class="badge bg-light text-dark ms-1">7</span></label>
+                                <input type="text" id="scannerRackInput" class="form-control" placeholder="Scan Code Rack dengan USB scanner..." disabled>
+                            </div>
+                            <div class="mb-0">
                                 <label class="form-label">Scanned Code Rack</label>
                                 <input type="text" name="Code_Rack" id="Code_Rack" class="form-control" readonly required>
                             </div>
                         </div>
                     </div>
-                    <div class="card mb-3">
+                    <div class="card mb-3" id="partKosongCard">
                         <div class="card-body">
                             <div class="form-check mb-0">
-                                <input type="checkbox" class="form-check-input" id="is_empty" name="Is_Empty" value="1">
+                                <input type="checkbox" class="form-check-input" id="is_empty" name="Is_Empty" value="1" disabled>
                                 <label class="form-check-label fw-bold" for="is_empty">Part Kosong</label>
                             </div>
                         </div>
@@ -70,19 +71,19 @@
                 </div>
                 <div class="col-md-6">
                     @if($recordList->Mode == 'manual')
-                    <div class="card mb-3">
+                    <div class="card mb-3 scan-locked" id="step2Card">
                         <div class="card-header">
                             <h6 class="mb-0">Step 2: Input Qty (Manual)</h6>
                         </div>
                         <div class="card-body">
                             <div class="mb-3">
                                 <label class="form-label">Qty Record</label>
-                                <input type="number" name="Qty_Record" id="Qty_Record" class="form-control" min="0">
+                                <input type="number" name="Qty_Record" id="Qty_Record" class="form-control" min="0" disabled>
                             </div>
                         </div>
                     </div>
                     @else
-                    <div class="card mb-3">
+                    <div class="card mb-3 scan-locked" id="step2CardAI">
                         <div class="card-header">
                             <h6 class="mb-0">Step 2: AI Object Counting</h6>
                         </div>
@@ -90,9 +91,9 @@
                             <p class="text-muted">Take a photo and block on an item to count. Expected count: <strong>{{ $recordList->Qty }}</strong></p>
 
                             <div id="countCapturePrompt">
-                                <button type="button" id="startCountCamera" class="btn btn-primary"><i class="fas fa-camera"></i> Open Camera</button>
+                                <button type="button" id="startCountCamera" class="btn btn-primary" disabled><i class="fas fa-camera"></i> Open Camera</button>
                                 <br><small>or</small><br>
-                                <button type="button" id="countFileUpload" class="btn btn-outline-primary"><i class="fas fa-upload"></i> Upload Photo</button>
+                                <button type="button" id="countFileUpload" class="btn btn-outline-primary" disabled><i class="fas fa-upload"></i> Upload Photo</button>
                                 <input type="file" id="countPhotoInput" accept="image/*" style="display:none">
                             </div>
 
@@ -138,7 +139,6 @@
 @endsection
 
 @section('script')
-<script src="{{ asset('assets/js/plugin/html5-qrcode.min.js') }}"></script>
 @if($recordList->Mode == 'ai')
 <script src="{{ asset('assets/js/plugin/opencv.js') }}" async onload="window.onOpenCvReady();"></script>
 <script src="{{ asset('assets/js/plugin/record-scan-ai.js') }}"></script>
@@ -262,47 +262,39 @@
             playSequence();
         }, 3000);
 
-        var seconds = 7;
-        var timer = setInterval(function() {
-            seconds--;
-            if (seconds <= 0) {
-                clearInterval(timer);
-                $('#scanRack').prop('disabled', false);
-                $('#scanRackTimer').text('');
-            } else {
-                $('#scanRackTimer').text(seconds);
+        var scanDelay = 7;
+        var timerEl = $('#scanTimer');
+        var interval = setInterval(function() {
+            scanDelay--;
+            timerEl.text(scanDelay);
+            if (scanDelay <= 0) {
+                clearInterval(interval);
+                timerEl.text('Ready').removeClass('bg-light text-dark').addClass('bg-success text-white');
+                $('#scannerRackInput').prop('disabled', false).focus();
             }
         }, 1000);
     });
 
-    let rackScanner = null;
-
-    function onRackScanSuccess(decodedText) {
-        $('#Code_Rack').val(decodedText);
-        stopRackScanner();
-        checkFormReady();
-    }
-
-    $('#scanRack').on('click', function() {
-        $(this).hide();
-        $('#stopRackScan').show();
-        if (!rackScanner) {
-            rackScanner = new Html5QrcodeScanner('reader_rack', { fps: 10, qrbox: 200 });
+    $('#scannerRackInput').on('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            var text = $(this).val();
+            if (text) {
+                $('#Code_Rack').val(text);
+                $(this).val('');
+                $('#is_empty').prop('disabled', false);
+                if (window.currentMode === 'manual') {
+                    $('#Qty_Record').prop('disabled', false);
+                    $('#step2Card').removeClass('scan-locked');
+                } else {
+                    $('#startCountCamera').prop('disabled', false);
+                    $('#countFileUpload').prop('disabled', false);
+                    $('#step2CardAI').removeClass('scan-locked');
+                }
+                checkFormReady();
+            }
         }
-        rackScanner.render(onRackScanSuccess);
     });
-
-    $('#stopRackScan').on('click', function() { stopRackScanner(); });
-
-    function stopRackScanner() {
-        if (rackScanner) {
-            rackScanner.clear().then(function() {
-                $('#reader_rack').html('');
-                $('#scanRack').show();
-                $('#stopRackScan').hide();
-            });
-        }
-    }
 
     $('#is_empty').on('change', function() {
         if ($(this).is(':checked')) {
@@ -318,10 +310,14 @@
     });
 
     window.checkFormReady = function() {
+        if (!$('#Code_Rack').val()) {
+            $('#submitPartBtn').prop('disabled', true);
+            return;
+        }
         if ($('#is_empty').is(':checked')) {
-            $('#submitPartBtn').prop('disabled', $('#Code_Rack').val() ? false : true);
+            $('#submitPartBtn').prop('disabled', false);
         } else {
-            $('#submitPartBtn').prop('disabled', !($('#Code_Rack').val() && $('#Qty_Record').val()));
+            $('#submitPartBtn').prop('disabled', !$('#Qty_Record').val());
         }
     };
 

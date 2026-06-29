@@ -1,9 +1,6 @@
 @extends('layouts.main')
 
 @section('style')
-<style>
-    #reader { width: 100%; max-width: 400px; margin: 0 auto; }
-</style>
 @endsection
 
 @section('content')
@@ -18,20 +15,13 @@
                     <div class="card-header">
                         <h5 class="card-title">Scan QR Code</h5>
                     </div>
-                    <div class="card-body text-center">
-                        <div id="reader"></div>
-                        <button type="button" id="startScan" class="btn btn-primary mt-3"><i class="fas fa-camera"></i> Start Scan</button>
-                        <button type="button" id="stopScan" class="btn btn-secondary mt-3" style="display:none;"><i class="fas fa-stop"></i> Stop</button>
-                    </div>
-                </div>
-
-                <div class="card mt-3">
-                    <div class="card-header">
-                        <h5 class="card-title">Record Info</h5>
-                    </div>
                     <div class="card-body">
                         <form action="{{ route('member.record.store') }}" method="POST" id="recordForm">
                             @csrf
+                            <div class="mb-3">
+                                <label class="form-label">Scan QR dari label produksi</label>
+                                <input type="text" id="scannerInput" class="form-control" placeholder="Scan QR Code dengan USB scanner..." autofocus>
+                            </div>
                             <div class="mb-3">
                                 <label class="form-label">Sequence No</label>
                                 <input type="text" name="sequence_no" id="sequence_no" class="form-control" readonly required>
@@ -99,24 +89,26 @@
 @endsection
 
 @section('script')
-<script src="{{ asset('assets/js/plugin/html5-qrcode.min.js') }}"></script>
 <script>
-    let html5QrcodeScanner = null;
-    let scannedData = {};
+    var scanBuffer = '';
+    var scanTimer = null;
 
-    function onScanSuccess(decodedText, decodedResult) {
-        var parts = decodedText.split(';');
+    $('#scannerInput').on('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            processScan($(this).val());
+            return;
+        }
+    });
+
+    function processScan(text) {
+        if (!text) return;
+        var parts = text.split(';');
         if (parts.length >= 4) {
-            scannedData = {
-                sequence_no: parts[0],
-                production_date: parts[1],
-                type: parts[2]
-            };
             $('#sequence_no').val(parts[0]);
             $('#production_date').val(parts[1]);
             $('#type').val(parts[2]);
-
-            stopCamera();
+            $('#scannerInput').val('');
 
             $.getJSON('{{ route("member.record.areas-by-type") }}', { type: parts[2] }, function(areas) {
                 var $area = $('#modalArea');
@@ -133,7 +125,8 @@
                 $('#areaModal').modal('show');
             });
         } else {
-            alert('Invalid QR format. Expected: Sequence_No;Production_Date;...;Type');
+            alert('Format QR tidak valid. Format: Sequence_No;Production_Date;...;Type');
+            $('#scannerInput').val('');
         }
     }
 
@@ -148,29 +141,6 @@
         $('#areaModal').modal('hide');
         $('#recordForm').submit();
     });
-
-    $('#startScan').on('click', function() {
-        $(this).hide();
-        $('#stopScan').show();
-        if (!html5QrcodeScanner) {
-            html5QrcodeScanner = new Html5QrcodeScanner('reader', { fps: 10, qrbox: 250 });
-        }
-        html5QrcodeScanner.render(onScanSuccess);
-    });
-
-    $('#stopScan').on('click', function() {
-        stopCamera();
-    });
-
-    function stopCamera() {
-        if (html5QrcodeScanner) {
-            html5QrcodeScanner.clear().then(function() {
-                $('#reader').html('');
-                $('#startScan').show();
-                $('#stopScan').hide();
-            });
-        }
-    }
 
     @if($remarkRecord)
     $(function() {
