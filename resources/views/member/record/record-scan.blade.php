@@ -3,6 +3,8 @@
 @section('style')
 <style>
     .scan-locked { opacity: 0.5; pointer-events: none; }
+    .form-control[readonly].is-valid { border-color: #28a745; box-shadow: 0 0 0 0.2rem rgba(40,167,69,.25); }
+    .form-control[readonly].is-invalid { border-color: #dc3545; box-shadow: 0 0 0 0.2rem rgba(220,53,69,.25); }
     .count-canvas-wrapper { position: relative; display: inline-block; max-width: 100%; }
     .count-canvas-wrapper canvas { max-width: 100%; border: 1px solid #ddd; border-radius: 8px; cursor: crosshair; }
     .count-badge {
@@ -147,6 +149,7 @@
     window.cvReady = false;
     window.expectedQty = {{ $recordList->Qty ?? 0 }};
     window.currentMode = @json($recordList->Mode ?? 'manual');
+    var expectedCodeRack = '{{ $recordList->Code_Rack }}';
 
     window.onOpenCvReady = function() { window.cvReady = true; };
 
@@ -280,16 +283,23 @@
             e.preventDefault();
             var text = $(this).val();
             if (text) {
-                $('#Code_Rack').val(text);
+                $('#Code_Rack').val(text).removeClass('is-valid is-invalid');
                 $(this).val('');
-                $('#is_empty').prop('disabled', false);
-                if (window.currentMode === 'manual') {
-                    $('#Qty_Record').prop('disabled', false);
-                    $('#step2Card').removeClass('scan-locked');
+                if (text === expectedCodeRack) {
+                    $('#Code_Rack').addClass('is-valid');
+                    $('#is_empty').prop('disabled', false);
+                    if (window.currentMode === 'manual') {
+                        $('#Qty_Record').prop('disabled', false);
+                        $('#step2Card').removeClass('scan-locked');
+                        $('#Qty_Record').focus();
+                    } else {
+                        $('#startCountCamera').prop('disabled', false);
+                        $('#countFileUpload').prop('disabled', false);
+                        $('#step2CardAI').removeClass('scan-locked');
+                        $('#startCountCamera').focus();
+                    }
                 } else {
-                    $('#startCountCamera').prop('disabled', false);
-                    $('#countFileUpload').prop('disabled', false);
-                    $('#step2CardAI').removeClass('scan-locked');
+                    $('#Code_Rack').addClass('is-invalid');
                 }
                 checkFormReady();
             }
