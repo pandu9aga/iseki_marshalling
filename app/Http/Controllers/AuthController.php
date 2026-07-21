@@ -15,6 +15,9 @@ class AuthController extends Controller
         if (Auth::guard('member')->check()) {
             return redirect()->route('member.records.index');
         }
+        if (Auth::guard('perakitan')->check()) {
+            return redirect()->route('perakitan.dashboard');
+        }
         return view('auth.login');
     }
 
@@ -58,10 +61,31 @@ class AuthController extends Controller
         ])->onlyInput('nik');
     }
 
+    public function loginPerakitan(Request $request)
+    {
+        $request->validate([
+            'nik' => 'required',
+            'password' => 'required',
+        ]);
+
+        $perakitan = \App\Models\Perakitan::where('nik', $request->nik)->first();
+
+        if ($perakitan && $perakitan->password === $request->password) {
+            Auth::guard('perakitan')->login($perakitan);
+            $request->session()->regenerate();
+            return redirect()->intended(route('perakitan.dashboard'));
+        }
+
+        return back()->withErrors([
+            'nik' => 'Invalid credentials.',
+        ])->onlyInput('nik');
+    }
+
     public function logout(Request $request)
     {
         Auth::guard('admin')->logout();
         Auth::guard('member')->logout();
+        Auth::guard('perakitan')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect('/');

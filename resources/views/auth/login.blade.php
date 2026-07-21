@@ -64,7 +64,10 @@
         <div class="card-body">
             <ul class="nav nav-pills nav-justified mb-4" id="loginTabs" role="tablist">
                 <li class="nav-item">
-                    <a class="nav-link active" id="member-tab" data-bs-toggle="pill" href="#member" role="tab">Member</a>
+                    <a class="nav-link active" id="member-tab" data-bs-toggle="pill" href="#member" role="tab">Marshalling</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="perakitan-tab" data-bs-toggle="pill" href="#perakitan" role="tab">Perakitan</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" id="admin-tab" data-bs-toggle="pill" href="#admin" role="tab">Admin</a>
@@ -83,7 +86,22 @@
                             <label class="form-label text-primary">Password</label>
                             <input type="password" name="password" class="form-control" placeholder="Input Password" required>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">Login Member</button>
+                        <button type="submit" class="btn btn-primary w-100">Login Marshalling</button>
+                    </form>
+                </div>
+
+                <div class="tab-pane fade" id="perakitan" role="tabpanel">
+                    <form action="{{ route('login.perakitan') }}" method="POST">
+                        @csrf
+                        <div class="mb-3">
+                            <label class="form-label text-primary">NIK</label>
+                            <input type="text" name="nik" class="form-control" placeholder="Input NIK" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-primary">Password</label>
+                            <input type="password" name="password" class="form-control" placeholder="Input Password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Login Perakitan</button>
                     </form>
                 </div>
 

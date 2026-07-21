@@ -186,6 +186,15 @@
                             </a>
                         </li>
                         @endif
+
+                        @if(Auth::guard('perakitan')->check())
+                        <li class="nav-item {{ request()->routeIs('perakitan.dashboard') ? 'active' : '' }}">
+                            <a href="{{ route('perakitan.dashboard') }}">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <p class="{{ request()->routeIs('perakitan.dashboard') ? 'text-primary' : '' }}">Dashboard</p>
+                            </a>
+                        </li>
+                        @endif
                     </ul>
                 </div>
             </div>
@@ -216,6 +225,8 @@
                                                 {{ Auth::guard('admin')->user()->name }}
                                             @elseif(Auth::guard('member')->check())
                                                 {{ Auth::guard('member')->user()->nama }}
+                                            @elseif(Auth::guard('perakitan')->check())
+                                                {{ Auth::guard('perakitan')->user()->nama }}
                                             @endif
                                         </span>
                                     </span>
@@ -236,6 +247,7 @@
                                     <i class="fas fa-user"></i>
                                     @if(Auth::guard('admin')->check()) {{ Auth::guard('admin')->user()->name }}
                                     @elseif(Auth::guard('member')->check()) {{ Auth::guard('member')->user()->nama }}
+                                    @elseif(Auth::guard('perakitan')->check()) {{ Auth::guard('perakitan')->user()->nama }}
                                     @endif
                                 </div>
                             </li>

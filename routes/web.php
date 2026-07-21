@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\MarshallingController;
 use App\Http\Controllers\Admin\RecordController as AdminRecordController;
 use App\Http\Controllers\Member\RecordController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Perakitan\DashboardController as PerakitanDashboardController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -16,6 +17,7 @@ Route::get('/', function () {
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login/admin', [AuthController::class, 'loginAdmin'])->name('login.admin');
 Route::post('/login/member', [AuthController::class, 'loginMember'])->name('login.member');
+Route::post('/login/perakitan', [AuthController::class, 'loginPerakitan'])->name('login.perakitan');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function () {
@@ -46,4 +48,8 @@ Route::middleware('auth:member')->prefix('member')->name('member.')->group(funct
     Route::get('record/{record}/scan-part/{recordList}', [RecordController::class, 'scanPart'])->name('record.scan-part');
     Route::post('record/{recordList}/update-part', [RecordController::class, 'updatePart'])->name('record.update-part');
     Route::post('record/{record}/save-remark', [RecordController::class, 'saveRemark'])->name('record.save-remark');
+});
+
+Route::middleware('auth:perakitan')->prefix('perakitan')->name('perakitan.')->group(function () {
+    Route::get('/dashboard', [PerakitanDashboardController::class, 'index'])->name('dashboard');
 });
