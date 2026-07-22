@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\RecordController as AdminRecordController;
 use App\Http\Controllers\Member\RecordController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Perakitan\DashboardController as PerakitanDashboardController;
+use App\Http\Controllers\Perakitan\KanbanController as PerakitanKanbanController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -52,4 +53,7 @@ Route::middleware('auth:member')->prefix('member')->name('member.')->group(funct
 
 Route::middleware('auth:perakitan')->prefix('perakitan')->name('perakitan.')->group(function () {
     Route::get('/dashboard', [PerakitanDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/kanban', [PerakitanKanbanController::class, 'index'])->name('kanban.index');
+    Route::get('/kanban/search', [PerakitanKanbanController::class, 'search'])->name('kanban.search');
+    Route::get('/kanban/{id}/detail', [PerakitanKanbanController::class, 'detail'])->name('kanban.detail');
 });

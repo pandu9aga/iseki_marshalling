@@ -194,6 +194,12 @@
                                 <p class="{{ request()->routeIs('perakitan.dashboard') ? 'text-primary' : '' }}">Dashboard</p>
                             </a>
                         </li>
+                        <li class="nav-item {{ request()->routeIs('perakitan.kanban.*') ? 'active' : '' }}">
+                            <a href="{{ route('perakitan.kanban.index') }}">
+                                <i class="fas fa-qrcode"></i>
+                                <p class="{{ request()->routeIs('perakitan.kanban.*') ? 'text-primary' : '' }}">Scan Kanban</p>
+                            </a>
+                        </li>
                         @endif
                     </ul>
                 </div>
