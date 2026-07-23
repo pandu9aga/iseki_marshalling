@@ -56,4 +56,5 @@ Route::middleware('auth:perakitan')->prefix('perakitan')->name('perakitan.')->gr
     Route::get('/kanban', [PerakitanKanbanController::class, 'index'])->name('kanban.index');
     Route::get('/kanban/search', [PerakitanKanbanController::class, 'search'])->name('kanban.search');
     Route::get('/kanban/{id}/detail', [PerakitanKanbanController::class, 'detail'])->name('kanban.detail');
+    Route::post('/kanban/{id}/report-empty', [PerakitanKanbanController::class, 'reportEmpty'])->name('kanban.report-empty');
 });

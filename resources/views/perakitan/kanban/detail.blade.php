@@ -1,5 +1,12 @@
 @extends('layouts.main')
 
+@section('style')
+<style>
+    .report-btn { transition: all 0.2s; }
+    .report-btn:hover { transform: scale(1.05); }
+</style>
+@endsection
+
 @section('content')
 <div class="container">
     <div class="page-inner">
@@ -34,12 +41,13 @@
                                 <th style="white-space:nowrap;">Qty</th>
                                 <th style="white-space:nowrap;">Qty Rec</th>
                                 <th style="white-space:nowrap;">Time Rec</th>
-                                <th style="white-space:nowrap;">Stat</th>
+                                <th style="white-space:nowrap;">Stat Part</th>
+                                <th style="white-space:nowrap;">Report Empty</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($record->recordLists as $rl)
-                            <tr>
+                            <tr id="rl-row-{{ $rl->Id_Record_List }}">
                                 <td>{{ $rl->Sequence_No }}</td>
                                 <td>{{ $rl->Code_Part }}</td>
                                 <td style="font-size:0.8rem;">{{ $rl->Name_Part ? (strlen($rl->Name_Part) > 20 ? substr($rl->Name_Part, 0, 20) . '...' : $rl->Name_Part) : '-' }}</td>
@@ -67,10 +75,25 @@
                                         <span class="badge bg-danger">NG</span>
                                     @endif
                                 </td>
+                                <td id="report-cell-{{ $rl->Id_Record_List }}">
+                                    @if($rl->Report_Empty)
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-box-open"></i> Dilaporkan Kosong
+                                        </span><br>
+                                        <small class="text-muted" style="font-size:0.7rem;">
+                                            {{ \Carbon\Carbon::parse($rl->Report_Empty)->format('d/m/Y H:i') }}<br>
+                                            NIK: {{ $rl->Reporter_Nik }}
+                                        </small>
+                                    @else
+                                        <button type="button" class="btn btn-outline-warning btn-sm report-btn" onclick="reportEmpty({{ $rl->Id_Record_List }})">
+                                            <i class="fas fa-box-open"></i> Laporkan Kosong
+                                        </button>
+                                    @endif
+                                </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="11" class="text-center text-muted py-4">Tidak ada data part.</td>
+                                <td colspan="12" class="text-center text-muted py-4">Tidak ada data part.</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -80,4 +103,28 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('script')
+<script>
+    function reportEmpty(id) {
+        if (!confirm('Laporkan part ini sebagai kosong?')) return;
+        $.post('{{ url("perakitan/kanban") }}/' + id + '/report-empty', {
+            _token: '{{ csrf_token() }}'
+        }, function(res) {
+            if (res.success) {
+                var cell = $('#report-cell-' + id);
+                cell.html(
+                    '<span class="badge bg-secondary"><i class="fas fa-box-open"></i> Dilaporkan Kosong</span><br>' +
+                    '<small class="text-muted" style="font-size:0.7rem;">' +
+                    '{{ now()->format('d/m/Y H:i') }}<br>' +
+                    'NIK: {{ Auth::guard('perakitan')->user()->nik }}' +
+                    '</small>'
+                );
+            }
+        }).fail(function() {
+            alert('Gagal melaporkan part kosong.');
+        });
+    }
+</script>
 @endsection

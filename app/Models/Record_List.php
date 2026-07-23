@@ -28,6 +28,8 @@ class Record_List extends Model
         'Image_Ng',
         'Status_Ng',
         'Is_Empty',
+        'Report_Empty',
+        'Reporter_Nik',
     ];
 
     public function record()
