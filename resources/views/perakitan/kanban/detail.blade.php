@@ -4,6 +4,7 @@
 <style>
     .report-btn { transition: all 0.2s; }
     .report-btn:hover { transform: scale(1.05); }
+    .pdf-page-section { transition: opacity 0.2s; }
 </style>
 @endsection
 
@@ -100,32 +101,35 @@
                     </table>
                 </div>
             </div>
+        </div>
+
+        @php
+            $pdfCount = $pdfs->count();
+            $pdfChunks = $pdfs->chunk(4);
+            $pdfTotalPages = $pdfChunks->count();
+        @endphp
+
         <div class="card border-0 shadow-sm mt-4">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-2">
                 <h5 class="card-title mb-0 text-white" style="font-size: 1rem;">
                     <i class="fas fa-file-pdf me-2"></i>PDF Procedure Training (Bulan Ini)
                 </h5>
-                @if($pdfProcedures->isNotEmpty())
-                    <span class="badge bg-light text-primary">Total: {{ $pdfProcedures->count() }} Procedure</span>
+                @if($pdfCount > 0)
+                    <span class="badge bg-light text-primary">Total: {{ $pdfCount }} Procedure</span>
                 @endif
             </div>
             <div class="card-body p-3">
-                @if($pdfProcedures->isEmpty())
+                @if($pdfCount === 0)
                     <div class="text-center text-muted py-4">
                         <i class="fas fa-folder-open fa-2x mb-2 d-block text-secondary"></i>
                         Tidak ada PDF procedure training untuk NIK {{ Auth::guard('perakitan')->user()->nik ?? '-' }} pada bulan ini.
                     </div>
                 @else
-                    @php
-                        $chunks = $pdfProcedures->chunk(4);
-                        $totalPages = $chunks->count();
-                    @endphp
-
-                    @foreach($chunks as $pageIndex => $chunk)
+                    @foreach($pdfChunks as $pageIndex => $chunk)
                         <div class="pdf-page-section {{ $pageIndex > 0 ? 'd-none' : '' }}" id="pdf-page-{{ $pageIndex + 1 }}">
                             <div class="row g-3">
                                 @foreach($chunk as $pdf)
-                                    <div class="col-md-6 col-lg-6 mb-3">
+                                    <div class="col-md-6 mb-3">
                                         <div class="card h-100 border shadow-sm">
                                             <div class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center">
                                                 <strong class="text-truncate text-dark" style="max-width: 75%; font-size: 0.85rem;" title="{{ $pdf->name }}">
@@ -134,15 +138,7 @@
                                                 <small class="badge bg-info text-white" style="font-size:0.7rem;">{{ $pdf->tractor }} - {{ $pdf->area }}</small>
                                             </div>
                                             <div class="card-body p-1" style="height: 380px;">
-                                                @if($pdf->exists)
-                                                    <iframe src="{{ $pdf->url }}" width="100%" height="100%" style="border: none; border-radius: 4px;"></iframe>
-                                                @else
-                                                    <div class="d-flex flex-column align-items-center justify-content-center h-100 bg-light text-muted">
-                                                        <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
-                                                        <small>File PDF tidak ditemukan di server</small>
-                                                        <small class="text-secondary" style="font-size: 0.75rem;">({{ $pdf->name }}.pdf)</small>
-                                                    </div>
-                                                @endif
+                                                <iframe src="{{ $pdf->url }}" width="100%" height="100%" style="border: none; border-radius: 4px;"></iframe>
                                             </div>
                                             <div class="card-footer py-1 px-3 bg-white text-end">
                                                 <a href="{{ $pdf->url }}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.75rem;">
@@ -156,13 +152,13 @@
                         </div>
                     @endforeach
 
-                    @if($totalPages > 1)
+                    @if($pdfTotalPages > 1)
                         <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
                             <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-prev-pdf" onclick="changePdfPage(-1)" disabled>
                                 <i class="fas fa-chevron-left me-1"></i> Sebelumnya
                             </button>
                             <span class="text-muted fw-bold" style="font-size: 0.85rem;">
-                                Halaman <span id="pdf-current-page">1</span> dari {{ $totalPages }}
+                                Halaman <span id="pdf-current-page">1</span> dari {{ $pdfTotalPages }}
                             </span>
                             <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-next-pdf" onclick="changePdfPage(1)">
                                 Selanjutnya <i class="fas fa-chevron-right ms-1"></i>
@@ -178,6 +174,23 @@
 
 @section('script')
 <script>
+    var currentPdfPage = 1;
+    var totalPdfPages = {{ $pdfTotalPages }};
+
+    function changePdfPage(direction) {
+        var newPage = currentPdfPage + direction;
+        if (newPage < 1 || newPage > totalPdfPages) return;
+
+        $('#pdf-page-' + currentPdfPage).addClass('d-none');
+        $('#pdf-page-' + newPage).removeClass('d-none');
+
+        currentPdfPage = newPage;
+        $('#pdf-current-page').text(currentPdfPage);
+
+        $('#btn-prev-pdf').prop('disabled', currentPdfPage === 1);
+        $('#btn-next-pdf').prop('disabled', currentPdfPage === totalPdfPages);
+    }
+
     function reportEmpty(id) {
         if (!confirm('Laporkan part ini sebagai kosong?')) return;
         $.post('{{ url("perakitan/kanban") }}/' + id + '/report-empty', {
@@ -196,23 +209,6 @@
         }).fail(function() {
             alert('Gagal melaporkan part kosong.');
         });
-    }
-
-    var currentPdfPage = 1;
-    var totalPdfPages = {{ isset($totalPages) ? $totalPages : 1 }};
-
-    function changePdfPage(direction) {
-        var newPage = currentPdfPage + direction;
-        if (newPage < 1 || newPage > totalPdfPages) return;
-
-        $('#pdf-page-' + currentPdfPage).addClass('d-none');
-        $('#pdf-page-' + newPage).removeClass('d-none');
-
-        currentPdfPage = newPage;
-        $('#pdf-current-page').text(currentPdfPage);
-
-        $('#btn-prev-pdf').prop('disabled', currentPdfPage === 1);
-        $('#btn-next-pdf').prop('disabled', currentPdfPage === totalPdfPages);
     }
 </script>
 @endsection

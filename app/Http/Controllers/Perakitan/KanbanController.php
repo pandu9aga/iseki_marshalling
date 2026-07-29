@@ -56,50 +56,57 @@ class KanbanController extends Controller
     public function detail($id)
     {
         $record = Record::with(['recordLists', 'member'])->findOrFail($id);
-        
         $user = Auth::guard('perakitan')->user();
         $nik = $user ? $user->nik : null;
 
-        $pdfProcedures = collect();
+        $pdfs = collect();
+        $asproStorageUrl = '/iseki_aspro/public/storage';
 
         if ($nik) {
             $now = \Carbon\Carbon::now();
-            $procedures = \Illuminate\Support\Facades\DB::table('iseki_aspro.reports as r')
-                ->join('iseki_rifa.employees as e', 'r.Id_Member', '=', 'e.id')
-                ->join('iseki_aspro.list_reports as lr', 'r.Id_Report', '=', 'lr.Id_Report')
-                ->where('e.nik', $nik)
-                ->whereYear('r.Start_Report', $now->year)
-                ->whereMonth('r.Start_Report', $now->month)
-                ->select(
-                    'lr.Name_Procedure',
-                    'lr.Name_Area',
-                    'lr.Name_Tractor'
-                )
-                ->distinct()
-                ->get();
+            $cutoff = \Carbon\Carbon::parse('2026-08-01');
+            $memberId = null;
 
-            $baseUrl = url('/');
-            // aspro storage URL base
-            $asproStorageUrl = preg_replace('/\/iseki_marshalling.*/', '/iseki_aspro/public/storage', $baseUrl);
-            if ($asproStorageUrl === $baseUrl) {
-                $asproStorageUrl = '/iseki_aspro/public/storage';
+            if ($now->lt($cutoff)) {
+                $member = \Illuminate\Support\Facades\DB::connection('aspro')
+                    ->table('members')
+                    ->where('NIK_Member', $nik)
+                    ->first();
+                if ($member) {
+                    $memberId = $member->Id_Member;
+                }
+            } else {
+                $memberId = $user->id;
             }
 
-            $pdfProcedures = $procedures->map(function ($p) use ($asproStorageUrl) {
-                $fileRelPath = "procedures/{$p->Name_Tractor}/{$p->Name_Area}/{$p->Name_Procedure}.pdf";
-                $fullPhysicalPath = "C:/xampp/htdocs/iseki_aspro/public/storage/" . $fileRelPath;
+            if ($memberId) {
+                $listReports = \Illuminate\Support\Facades\DB::connection('aspro')
+                    ->table('reports as r')
+                    ->join('list_reports as lr', 'r.Id_Report', '=', 'lr.Id_Report')
+                    ->where('r.Id_Member', $memberId)
+                    ->whereYear('r.Start_Report', $now->year)
+                    ->whereMonth('r.Start_Report', $now->month)
+                    ->select('lr.Name_Procedure', 'lr.Name_Area', 'lr.Name_Tractor')
+                    ->distinct()
+                    ->get();
 
-                return (object) [
-                    'name' => $p->Name_Procedure,
-                    'area' => $p->Name_Area,
-                    'tractor' => $p->Name_Tractor,
-                    'url' => $asproStorageUrl . '/' . $fileRelPath,
-                    'exists' => file_exists($fullPhysicalPath),
-                ];
-            });
+                $pdfs = $listReports->map(function ($p) use ($asproStorageUrl) {
+                    $relPath = "procedures/{$p->Name_Tractor}/{$p->Name_Area}/{$p->Name_Procedure}.pdf";
+                    $physPath = "C:/xampp/htdocs/iseki_aspro/public/storage/{$relPath}";
+                    return (object) [
+                        'name' => $p->Name_Procedure,
+                        'area' => $p->Name_Area,
+                        'tractor' => $p->Name_Tractor,
+                        'url' => $asproStorageUrl . '/' . $relPath,
+                        'exists' => file_exists($physPath),
+                    ];
+                })->filter(function ($p) {
+                    return $p->exists;
+                })->values();
+            }
         }
 
-        return view('perakitan.kanban.detail', compact('record', 'pdfProcedures'));
+        return view('perakitan.kanban.detail', compact('record', 'pdfs'));
     }
 
     public function reportEmpty(Request $request, $id)

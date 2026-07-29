@@ -144,6 +144,21 @@ return [
             'engine' => null,
         ],
 
+        'aspro' => [
+            'driver' => 'mysql',
+            'host' => env('DB_ASPRO_HOST', '127.0.0.1'),
+            'port' => env('DB_ASPRO_PORT', '3306'),
+            'database' => env('DB_ASPRO_DATABASE', 'iseki_aspro'),
+            'username' => env('DB_ASPRO_USERNAME', 'root'),
+            'password' => env('DB_ASPRO_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+        ],
+
     ],
 
     /*
