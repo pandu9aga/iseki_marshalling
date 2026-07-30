@@ -38,6 +38,8 @@ Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function
     Route::get('ng-detail/{recordList}', [AdminRecordController::class, 'ngDetail'])->name('ng.detail');
     Route::post('record-lists/{recordList}/approve', [AdminRecordController::class, 'approveNg'])->name('record-lists.approve');
     Route::get('empty-part', [AdminRecordController::class, 'emptyPart'])->name('empty-part.index');
+    Route::get('report-empty', [AdminRecordController::class, 'reportEmptyList'])->name('report-empty.list');
+    Route::get('report-empty/carousel', [AdminRecordController::class, 'carouselData'])->name('report-empty.carousel');
 });
 
 Route::middleware('auth:member')->prefix('member')->name('member.')->group(function () {

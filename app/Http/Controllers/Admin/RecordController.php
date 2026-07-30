@@ -8,6 +8,7 @@ use App\Models\Record;
 use App\Models\Record_List;
 use App\Models\Type;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class RecordController extends Controller
 {
@@ -141,6 +142,79 @@ class RecordController extends Controller
         ]);
 
         return response()->json(['success' => true, 'status' => 'ng_ok']);
+    }
+
+    public function reportEmptyList(Request $request)
+    {
+        if ($request->ajax()) {
+            $data = Record_List::with(['record.member'])
+                ->whereNotNull('Report_Empty')
+                ->orderBy('Report_Empty', 'desc');
+
+            if ($request->filled('filter_date')) {
+                $data->whereDate('Report_Empty', $request->filter_date);
+            }
+
+            return datatables($data)
+                ->addIndexColumn()
+                ->addColumn('member_name', function ($row) {
+                    return $row->record && $row->record->member ? $row->record->member->nama : '-';
+                })
+                ->addColumn('sequence_record', function ($row) {
+                    return $row->record ? $row->record->Sequence_No_Record : '-';
+                })
+                ->addColumn('production_date', function ($row) {
+                    return $row->record ? $row->record->Production_Date_Record : '-';
+                })
+                ->addColumn('type_record', function ($row) {
+                    return $row->record ? $row->record->Type : '-';
+                })
+                ->addColumn('area_record', function ($row) {
+                    return $row->record ? ucwords(str_replace('_', ' ', $row->record->Area)) : '-';
+                })
+                ->addColumn('report_empty_time', function ($row) {
+                    return $row->Report_Empty ? \Carbon\Carbon::parse($row->Report_Empty)->format('d/m/Y H:i') : '-';
+                })
+                ->addColumn('reporter_nik', function ($row) {
+                    return $row->Reporter_Nik ?? '-';
+                })
+                ->make(true);
+        }
+
+        $today = now()->format('Y-m-d');
+        return view('admin.records.report-empty', compact('today'));
+    }
+
+    public function carouselData(Request $request)
+    {
+        $date = $request->date ?: now()->format('Y-m-d');
+
+        $items = Record_List::with(['record.member'])
+            ->whereNotNull('Report_Empty')
+            ->whereDate('Report_Empty', $date)
+            ->orderBy('Report_Empty', 'desc')
+            ->get()
+            ->map(function ($rl) {
+                return [
+                    'Id_Record_List' => $rl->Id_Record_List,
+                    'Code_Part'      => $rl->Code_Part,
+                    'Name_Part'      => $rl->Name_Part,
+                    'Code_Rack'      => $rl->Code_Rack,
+                    'Box'            => $rl->Box,
+                    'Qty'            => $rl->Qty,
+                    'Difference'     => $rl->Difference,
+                    'sequence'       => $rl->record ? $rl->record->Sequence_No_Record : '-',
+                    'production_date' => $rl->record ? $rl->record->Production_Date_Record : '-',
+                    'type'           => $rl->record ? $rl->record->Type : '-',
+                    'area'           => $rl->record ? ucwords(str_replace('_', ' ', $rl->record->Area)) : '-',
+                    'member'         => $rl->record && $rl->record->member ? $rl->record->member->nama : '-',
+                    'reporter_nik'   => $rl->Reporter_Nik ?? '-',
+                    'reporter_name'  => $rl->Reporter_Nik ? (DB::connection('rifa')->table('employees')->where('nik', $rl->Reporter_Nik)->value('nama') ?? $rl->Reporter_Nik) : '-',
+                    'report_empty'   => $rl->Report_Empty ? \Carbon\Carbon::parse($rl->Report_Empty)->format('d/m/Y H:i') : '-',
+                ];
+            });
+
+        return response()->json($items);
     }
 
     public function emptyPart(Request $request)

@@ -176,6 +176,12 @@
                                 <p class="{{ request()->routeIs('admin.empty-part.*') ? 'text-primary' : '' }}">Empty Part</p>
                             </a>
                         </li>
+                        <li class="nav-item {{ request()->routeIs('admin.report-empty.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.report-empty.list') }}">
+                                <i class="fas fa-flag"></i>
+                                <p class="{{ request()->routeIs('admin.report-empty.*') ? 'text-primary' : '' }}">Report Empty</p>
+                            </a>
+                        </li>
                         @endif
 
                         @if(Auth::guard('member')->check())
