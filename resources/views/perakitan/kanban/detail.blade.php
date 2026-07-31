@@ -5,6 +5,8 @@
     .report-btn { transition: all 0.2s; }
     .report-btn:hover { transform: scale(1.05); }
     .pdf-page-section { transition: opacity 0.2s; }
+    .filter-input { font-size: 0.8rem; padding: 4px 6px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 3px; }
+    .filter-input:focus { outline: none; border-color: #F36494; }
 </style>
 @endsection
 
@@ -29,7 +31,7 @@
         <div class="card border-0 shadow-sm">
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-bordered table-sm mb-0">
+                    <table id="recordPartsTable" class="table table-bordered table-sm mb-0">
                         <thead class="table-light">
                             <tr>
                                 <th style="white-space:nowrap;">Seq</th>
@@ -44,6 +46,20 @@
                                 <th style="white-space:nowrap;">Time Rec</th>
                                 <th style="white-space:nowrap;">Stat Part</th>
                                 <th style="white-space:nowrap;">Report Empty</th>
+                            </tr>
+                            <tr class="filter-row">
+                                <th><input type="text" class="filter-input" placeholder="Filter" data-col="0"></th>
+                                <th><input type="text" class="filter-input" placeholder="Filter" data-col="1"></th>
+                                <th><input type="text" class="filter-input" placeholder="Filter" data-col="2"></th>
+                                <th><input type="text" class="filter-input" placeholder="Filter" data-col="3"></th>
+                                <th><input type="text" class="filter-input" placeholder="Filter" data-col="4"></th>
+                                <th><input type="text" class="filter-input" placeholder="Filter" data-col="5"></th>
+                                <th><input type="text" class="filter-input" placeholder="Filter" data-col="6"></th>
+                                <th><input type="text" class="filter-input" placeholder="Filter" data-col="7"></th>
+                                <th><input type="text" class="filter-input" placeholder="Filter" data-col="8"></th>
+                                <th><input type="text" class="filter-input" placeholder="Filter" data-col="9"></th>
+                                <th><input type="text" class="filter-input" placeholder="Filter" data-col="10"></th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -190,6 +206,21 @@
         $('#btn-prev-pdf').prop('disabled', currentPdfPage === 1);
         $('#btn-next-pdf').prop('disabled', currentPdfPage === totalPdfPages);
     }
+
+    $(document).ready(function() {
+        $('.filter-input').on('keyup change', function() {
+            var col = $(this).data('col');
+            var val = $(this).val().toLowerCase();
+            var $rows = $('#recordPartsTable tbody tr');
+            if ($rows.length === 1 && $rows.find('td[colspan]').length) return;
+
+            $rows.each(function() {
+                var $td = $(this).children('td').eq(col);
+                var text = $td.text().toLowerCase();
+                $(this).toggle(text.indexOf(val) > -1);
+            });
+        });
+    });
 
     function reportEmpty(id) {
         if (!confirm('Laporkan part ini sebagai kosong?')) return;

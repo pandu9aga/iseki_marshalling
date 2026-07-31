@@ -188,13 +188,23 @@ class RecordController extends Controller
     public function carouselData(Request $request)
     {
         $date = $request->date ?: now()->format('Y-m-d');
+        $photoBase = '/iseki_rifa/public/photo_employee';
 
         $items = Record_List::with(['record.member'])
             ->whereNotNull('Report_Empty')
             ->whereDate('Report_Empty', $date)
             ->orderBy('Report_Empty', 'desc')
             ->get()
-            ->map(function ($rl) {
+            ->map(function ($rl) use ($photoBase) {
+                $memberPhoto = null;
+                $reporterPhoto = null;
+                if ($rl->record && $rl->record->member) {
+                    $memberPhoto = $rl->record->member->photo_employee ? $photoBase . '/' . $rl->record->member->photo_employee : null;
+                }
+                if ($rl->Reporter_Nik) {
+                    $reporter = DB::connection('rifa')->table('employees')->where('nik', $rl->Reporter_Nik)->first(['nama', 'photo_employee']);
+                    $reporterPhoto = $reporter && $reporter->photo_employee ? $photoBase . '/' . $reporter->photo_employee : null;
+                }
                 return [
                     'Id_Record_List' => $rl->Id_Record_List,
                     'Code_Part'      => $rl->Code_Part,
@@ -208,8 +218,10 @@ class RecordController extends Controller
                     'type'           => $rl->record ? $rl->record->Type : '-',
                     'area'           => $rl->record ? ucwords(str_replace('_', ' ', $rl->record->Area)) : '-',
                     'member'         => $rl->record && $rl->record->member ? $rl->record->member->nama : '-',
+                    'member_photo'   => $memberPhoto,
                     'reporter_nik'   => $rl->Reporter_Nik ?? '-',
                     'reporter_name'  => $rl->Reporter_Nik ? (DB::connection('rifa')->table('employees')->where('nik', $rl->Reporter_Nik)->value('nama') ?? $rl->Reporter_Nik) : '-',
+                    'reporter_photo' => $reporterPhoto,
                     'report_empty'   => $rl->Report_Empty ? \Carbon\Carbon::parse($rl->Report_Empty)->format('d/m/Y H:i') : '-',
                 ];
             });
