@@ -166,6 +166,25 @@
             var active = i === 0 ? ' active' : '';
             var html = '<div class="carousel-item' + active + '">';
             html += '<div class="text-start">';
+            html += '<div class="row mb-2">';
+            html += '<div class="col-6 text-center">';
+            if (item.member_photo) {
+                html += '<img src="' + item.member_photo + '" class="border" style="width:360px;height:360px;object-fit:cover;" onerror="this.style.display=\'none\'">';
+            } else {
+                html += '<div class="bg-light d-inline-flex align-items-center justify-content-center border" style="width:360px;height:360px;"><i class="fas fa-user fa-3x text-secondary"></i></div>';
+            }
+            html += '<div class="small text-muted mt-1">Member<br><strong>' + escHtml(item.member) + '</strong></div>';
+            html += '</div>';
+            html += '<div class="col-6 text-center">';
+            if (item.reporter_photo) {
+                html += '<img src="' + item.reporter_photo + '" class="border" style="width:360px;height:360px;object-fit:cover;" onerror="this.style.display=\'none\'">';
+            } else {
+                html += '<div class="bg-light d-inline-flex align-items-center justify-content-center border" style="width:360px;height:360px;"><i class="fas fa-user fa-3x text-secondary"></i></div>';
+            }
+            html += '<div class="small text-muted mt-1">Reporter<br><strong>' + escHtml(item.reporter_name) + '</strong></div>';
+            html += '</div>';
+            html += '</div>';
+            html += '<hr>';
             html += '<div class="row mb-2"><div class="col-5 slide-label">Code Part</div><div class="col-7 slide-value fw-bold">' + escHtml(item.Code_Part) + '</div></div>';
             html += '<div class="row mb-2"><div class="col-5 slide-label">Name Part</div><div class="col-7 slide-value">' + escHtml(item.Name_Part || '-') + '</div></div>';
             html += '<div class="row mb-2"><div class="col-5 slide-label">Code Rack</div><div class="col-7 slide-value">' + escHtml(item.Code_Rack) + '</div></div>';
@@ -177,9 +196,7 @@
             html += '<div class="row mb-2"><div class="col-5 slide-label">Production Date</div><div class="col-7 slide-value">' + escHtml(item.production_date) + '</div></div>';
             html += '<div class="row mb-2"><div class="col-5 slide-label">Type</div><div class="col-7 slide-value">' + escHtml(item.type) + '</div></div>';
             html += '<div class="row mb-2"><div class="col-5 slide-label">Area</div><div class="col-7 slide-value">' + escHtml(item.area) + '</div></div>';
-            html += '<div class="row mb-2"><div class="col-5 slide-label">Member</div><div class="col-7 slide-value">' + escHtml(item.member) + '</div></div>';
             html += '<hr>';
-            html += '<div class="row mb-2"><div class="col-5 slide-label">Reporter</div><div class="col-7 slide-value">' + escHtml(item.reporter_name) + '</div></div>';
             html += '<div class="row mb-0"><div class="col-5 slide-label">Report Time</div><div class="col-7 slide-value">' + item.report_empty + '</div></div>';
             html += '</div></div>';
             inner.append(html);
