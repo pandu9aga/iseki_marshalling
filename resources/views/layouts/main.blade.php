@@ -206,6 +206,12 @@
                                 <p class="{{ request()->routeIs('perakitan.kanban.*') ? 'text-primary' : '' }}">Scan Kanban</p>
                             </a>
                         </li>
+                        <li class="nav-item {{ request()->routeIs('perakitan.prosedur.*') ? 'active' : '' }}">
+                            <a href="{{ route('perakitan.prosedur.index') }}">
+                                <i class="fas fa-file-pdf"></i>
+                                <p class="{{ request()->routeIs('perakitan.prosedur.*') ? 'text-primary' : '' }}">Prosedur</p>
+                            </a>
+                        </li>
                         @endif
                     </ul>
                 </div>

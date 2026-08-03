@@ -10,6 +10,7 @@ use App\Http\Controllers\Member\RecordController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Perakitan\DashboardController as PerakitanDashboardController;
 use App\Http\Controllers\Perakitan\KanbanController as PerakitanKanbanController;
+use App\Http\Controllers\Perakitan\ProsedurController as PerakitanProsedurController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -59,4 +60,7 @@ Route::middleware('auth:perakitan')->prefix('perakitan')->name('perakitan.')->gr
     Route::get('/kanban/search', [PerakitanKanbanController::class, 'search'])->name('kanban.search');
     Route::get('/kanban/{id}/detail', [PerakitanKanbanController::class, 'detail'])->name('kanban.detail');
     Route::post('/kanban/{id}/report-empty', [PerakitanKanbanController::class, 'reportEmpty'])->name('kanban.report-empty');
+
+    Route::get('/prosedur', [PerakitanProsedurController::class, 'index'])->name('prosedur.index');
+    Route::get('/prosedur/{tractor}', [PerakitanProsedurController::class, 'show'])->name('prosedur.show');
 });
