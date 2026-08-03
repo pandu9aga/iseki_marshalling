@@ -3,21 +3,38 @@
 @section('style')
 <style>
     #reportEmptyTable .badge { font-size: 11px; padding: 3px 6px; }
+    #carouselModal .modal-body {
+        display: flex;
+        flex-direction: column;
+        padding: 10px 20px;
+    }
     .carousel-box {
         border: 1px solid #dee2e6;
         border-radius: 8px;
-        padding: 20px;
+        padding: 10px;
         background: #fff;
-        min-height: 250px;
+        flex-grow: 1;
+        min-height: 65vh;
     }
-    .carousel-box .carousel-item { padding: 10px; }
+    #carouselInner, #carouselInner .carousel-inner, #carouselInner .carousel-item {
+        height: 100%;
+    }
+    .carousel-box .carousel-item { padding: 5px; }
     .slide-label {
-        font-size: 0.8rem;
+        font-size: 1rem;
         color: #6c757d;
         font-weight: 600;
-        min-width: 110px;
     }
-    .slide-value { font-size: 0.95rem; }
+    .slide-value { font-size: 1.05rem; }
+    .member-photo {
+        width: 100%;
+        height: 55vh;
+        object-fit: cover;
+    }
+    .member-photo-placeholder {
+        width: 100%;
+        height: 55vh;
+    }
     #carouselCounter {
         position: absolute;
         top: 10px;
@@ -165,40 +182,47 @@
         $.each(carouselData, function(i, item) {
             var active = i === 0 ? ' active' : '';
             var html = '<div class="carousel-item' + active + '">';
-            html += '<div class="text-start">';
-            html += '<div class="row mb-2">';
-            html += '<div class="col-6 text-center">';
+            html += '<div class="row h-100">';
+
+            // Left: Member photo + name
+            html += '<div class="col-md-4 d-flex flex-column align-items-center justify-content-center text-center border-end">';
             if (item.member_photo) {
-                html += '<img src="' + item.member_photo + '" class="border" style="width:360px;height:360px;object-fit:cover;" onerror="this.style.display=\'none\'">';
+                html += '<img src="' + item.member_photo + '" class="member-photo border" onerror="this.style.display=\'none\'">';
             } else {
-                html += '<div class="bg-light d-inline-flex align-items-center justify-content-center border" style="width:360px;height:360px;"><i class="fas fa-user fa-3x text-secondary"></i></div>';
+                html += '<div class="member-photo member-photo-placeholder bg-light d-flex align-items-center justify-content-center border"><i class="fas fa-user fa-8x text-secondary"></i></div>';
             }
-            html += '<div class="small text-muted mt-1">Member<br><strong>' + escHtml(item.member) + '</strong></div>';
+            html += '<div class="mt-3"><small class="text-muted d-block fw-bold">Member</small><strong class="d-block" style="font-size:1.3rem;">' + escHtml(item.member) + '</strong></div>';
             html += '</div>';
-            html += '<div class="col-6 text-center">';
-            if (item.reporter_photo) {
-                html += '<img src="' + item.reporter_photo + '" class="border" style="width:360px;height:360px;object-fit:cover;" onerror="this.style.display=\'none\'">';
-            } else {
-                html += '<div class="bg-light d-inline-flex align-items-center justify-content-center border" style="width:360px;height:360px;"><i class="fas fa-user fa-3x text-secondary"></i></div>';
-            }
-            html += '<div class="small text-muted mt-1">Reporter<br><strong>' + escHtml(item.reporter_name) + '</strong></div>';
-            html += '</div>';
-            html += '</div>';
+
+            // Middle: part details
+            html += '<div class="col-md-4 border-start border-end d-flex align-items-center justify-content-center">';
+            html += '<div class="text-start w-100 px-2">';
+            html += '<div class="row mb-3"><div class="col-5 slide-label">Code Part</div><div class="col-7 slide-value fw-bold">' + escHtml(item.Code_Part) + '</div></div>';
+            html += '<div class="row mb-3"><div class="col-5 slide-label">Name Part</div><div class="col-7 slide-value">' + escHtml(item.Name_Part || '-') + '</div></div>';
+            html += '<div class="row mb-3"><div class="col-5 slide-label">Code Rack</div><div class="col-7 slide-value">' + escHtml(item.Code_Rack) + '</div></div>';
+            html += '<div class="row mb-3"><div class="col-5 slide-label">Box</div><div class="col-7 slide-value">' + escHtml(item.Box || '-') + '</div></div>';
+            html += '<div class="row mb-3"><div class="col-5 slide-label">Qty</div><div class="col-7 slide-value">' + item.Qty + '</div></div>';
+            html += '<div class="row mb-3"><div class="col-5 slide-label">Difference</div><div class="col-7 slide-value">' + escHtml(item.Difference || '-') + '</div></div>';
             html += '<hr>';
-            html += '<div class="row mb-2"><div class="col-5 slide-label">Code Part</div><div class="col-7 slide-value fw-bold">' + escHtml(item.Code_Part) + '</div></div>';
-            html += '<div class="row mb-2"><div class="col-5 slide-label">Name Part</div><div class="col-7 slide-value">' + escHtml(item.Name_Part || '-') + '</div></div>';
-            html += '<div class="row mb-2"><div class="col-5 slide-label">Code Rack</div><div class="col-7 slide-value">' + escHtml(item.Code_Rack) + '</div></div>';
-            html += '<div class="row mb-2"><div class="col-5 slide-label">Box</div><div class="col-7 slide-value">' + escHtml(item.Box || '-') + '</div></div>';
-            html += '<div class="row mb-2"><div class="col-5 slide-label">Qty</div><div class="col-7 slide-value">' + item.Qty + '</div></div>';
-            html += '<div class="row mb-2"><div class="col-5 slide-label">Difference</div><div class="col-7 slide-value">' + escHtml(item.Difference || '-') + '</div></div>';
-            html += '<hr>';
-            html += '<div class="row mb-2"><div class="col-5 slide-label">Sequence Record</div><div class="col-7 slide-value">' + escHtml(item.sequence) + '</div></div>';
-            html += '<div class="row mb-2"><div class="col-5 slide-label">Production Date</div><div class="col-7 slide-value">' + escHtml(item.production_date) + '</div></div>';
-            html += '<div class="row mb-2"><div class="col-5 slide-label">Type</div><div class="col-7 slide-value">' + escHtml(item.type) + '</div></div>';
-            html += '<div class="row mb-2"><div class="col-5 slide-label">Area</div><div class="col-7 slide-value">' + escHtml(item.area) + '</div></div>';
-            html += '<hr>';
+            html += '<div class="row mb-3"><div class="col-5 slide-label">Seq Record</div><div class="col-7 slide-value">' + escHtml(item.sequence) + '</div></div>';
+            html += '<div class="row mb-3"><div class="col-5 slide-label">Prod Date</div><div class="col-7 slide-value">' + escHtml(item.production_date) + '</div></div>';
+            html += '<div class="row mb-3"><div class="col-5 slide-label">Type</div><div class="col-7 slide-value">' + escHtml(item.type) + '</div></div>';
+            html += '<div class="row mb-3"><div class="col-5 slide-label">Area</div><div class="col-7 slide-value">' + escHtml(item.area) + '</div></div>';
             html += '<div class="row mb-0"><div class="col-5 slide-label">Report Time</div><div class="col-7 slide-value">' + item.report_empty + '</div></div>';
-            html += '</div></div>';
+            html += '</div>';
+            html += '</div>';
+
+            // Right: reporter photo + name
+            html += '<div class="col-md-4 text-center d-flex flex-column align-items-center justify-content-center py-3">';
+            if (item.reporter_photo) {
+                html += '<img src="' + item.reporter_photo + '" class="member-photo border" onerror="this.style.display=\'none\'">';
+            } else {
+                html += '<div class="member-photo member-photo-placeholder bg-light d-flex align-items-center justify-content-center border"><i class="fas fa-user fa-8x text-secondary"></i></div>';
+            }
+            html += '<div class="mt-3"><small class="text-muted d-block fw-bold">Reporter</small><strong class="d-block" style="font-size:1.3rem;">' + escHtml(item.reporter_name) + '</strong></div>';
+            html += '</div>';
+
+            html += '</div>';
             inner.append(html);
         });
         updateCounter();
