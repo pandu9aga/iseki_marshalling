@@ -184,7 +184,8 @@ class RecordController extends Controller
                 ->with('error', 'This part has already been recorded.');
         }
 
-        return view('member.record.record-scan', compact('record', 'recordList'));
+        return view('member.record.record-scan', compact('record', 'recordList'))
+            ->with('isPunished', $member->isPunished());
     }
 
     public function updatePart(Request $request, $recordListId)
@@ -200,13 +201,18 @@ class RecordController extends Controller
         }
 
         $isEmpty = $request->boolean('Is_Empty');
+        $isPunished = $member->isPunished();
 
-        $request->validate([
-            'Code_Rack' => 'required',
-            'Qty_Record' => $isEmpty ? 'nullable|integer|min:0' : 'required|integer|min:0',
-        ]);
+        $rules = ['Qty_Record' => 'nullable|integer|min:0'];
+        if (!$isEmpty) {
+            $rules['Code_Rack'] = 'required';
+            if ($isPunished) {
+                $rules['Qty_Record'] = 'required|integer|min:0';
+            }
+        }
+        $request->validate($rules);
 
-        if ($request->Code_Rack !== $recordList->Code_Rack) {
+        if (!$isEmpty && $request->Code_Rack !== $recordList->Code_Rack) {
             return redirect()->back()->with('error', 'Code Rack does not match! Expected: ' . $recordList->Code_Rack);
         }
 
@@ -218,7 +224,7 @@ class RecordController extends Controller
         if ($isEmpty) {
             $updateData['Qty_Record'] = 0;
         } else {
-            $updateData['Qty_Record'] = $request->Qty_Record;
+            $updateData['Qty_Record'] = $isPunished ? $request->Qty_Record : $recordList->Qty;
         }
 
         if ($isEmpty) {

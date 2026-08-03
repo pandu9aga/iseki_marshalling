@@ -182,6 +182,12 @@
                                 <p class="{{ request()->routeIs('admin.report-empty.*') ? 'text-primary' : '' }}">Report Empty</p>
                             </a>
                         </li>
+                        <li class="nav-item {{ request()->routeIs('admin.punishments.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.punishments.index') }}">
+                                <i class="fas fa-gavel"></i>
+                                <p class="{{ request()->routeIs('admin.punishments.*') ? 'text-primary' : '' }}">Punishment</p>
+                            </a>
+                        </li>
                         @endif
 
                         @if(Auth::guard('member')->check())

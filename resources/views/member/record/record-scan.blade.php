@@ -45,6 +45,7 @@
 
         <form action="{{ route('member.record.update-part', $recordList->Id_Record_List) }}" method="POST" id="partForm">
             @csrf
+            <input type="hidden" name="Is_Empty" id="is_empty_flag" value="0">
             <div class="row">
                 <div class="col-md-6">
                     <div class="card mb-3">
@@ -62,86 +63,102 @@
                             </div>
                         </div>
                     </div>
-                    <div class="card mb-3" id="partKosongCard">
+                    <div class="card mb-3">
                         <div class="card-body">
-                            <div class="form-check mb-0">
-                                <input type="checkbox" class="form-check-input" id="is_empty" name="Is_Empty" value="1" disabled>
-                                <label class="form-check-label fw-bold" for="is_empty">Part Kosong</label>
-                            </div>
+                            <button type="button" id="btnPartKosong" class="btn btn-outline-danger w-100">
+                                <i class="fas fa-box-open"></i> Part Kosong
+                            </button>
+                            <p class="text-muted mb-0 mt-2 small">Klik jika part ini kosong. Part akan langsung dilaporkan dan dilanjutkan ke part berikutnya.</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-6">
-                    @if($recordList->Mode == 'manual')
-                    <div class="card mb-3 scan-locked" id="step2Card">
+                    @if($isPunished)
+                        @if($recordList->Mode == 'manual')
+                        <div class="card mb-3 scan-locked" id="step2Card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Step 2: Input Qty (Manual)</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Qty Record</label>
+                                    <input type="number" name="Qty_Record" id="Qty_Record" class="form-control" min="0" disabled>
+                                </div>
+                            </div>
+                        </div>
+                        @else
+                        <div class="card mb-3 scan-locked" id="step2CardAI">
+                            <div class="card-header">
+                                <h6 class="mb-0">Step 2: AI Object Counting</h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <p class="text-muted">Take a photo and block on an item to count. Expected count: <strong>{{ $recordList->Qty }}</strong></p>
+
+                                <div id="countCapturePrompt">
+                                    <button type="button" id="startCountCamera" class="btn btn-primary" disabled><i class="fas fa-camera"></i> Open Camera</button>
+                                    <br><small>or</small><br>
+                                    <button type="button" id="countFileUpload" class="btn btn-outline-primary" disabled><i class="fas fa-upload"></i> Upload Photo</button>
+                                    <input type="file" id="countPhotoInput" accept="image/*" style="display:none">
+                                </div>
+
+                                <div id="countCameraContainer" style="display:none;">
+                                    <video id="countVideo" width="100%" style="max-width:500px;" autoplay playsinline></video>
+                                    <br>
+                                    <button type="button" id="captureCountPhoto" class="btn btn-primary mt-2"><i class="fas fa-camera"></i> Capture</button>
+                                    <button type="button" id="closeCountCamera" class="btn btn-secondary mt-2"><i class="fas fa-times"></i> Close</button>
+                                </div>
+
+                                <div id="countCanvasArea" style="display:none;">
+                                    <div class="count-canvas-wrapper">
+                                        <canvas id="countCanvas"></canvas>
+                                        <div class="count-badge" id="countBadge" style="display:none;">0</div>
+                                        <div class="count-processing-overlay" id="countProcessing" style="display:none;">
+                                            <div class="spinner-border text-light" role="status"></div>
+                                            <p class="mt-2 mb-0" id="countProcessingText">Analyzing...</p>
+                                        </div>
+                                    </div>
+                                    <p class="text-muted mt-1" id="countInstruction"><i class="fas fa-hand-pointer"></i> Block on one item to count it.</p>
+                                    <div class="count-sensitivity mt-2" id="countSensitivityArea" style="display:none;">
+                                        <input type="range" id="countThreshold" min="40" max="99" value="75" step="1" style="display:none;">
+                                        <span id="countThresholdLabel" style="display:none;">75%</span>
+                                    </div>
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-outline-danger btn-sm" id="retakePhoto"><i class="fas fa-redo"></i> Retake</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="clearCount"><i class="fas fa-eraser"></i> Clear</button>
+                                    </div>
+                                    <input type="hidden" name="Qty_Record" id="Qty_Record" value="">
+                                    <input type="hidden" name="image_data" id="image_data" value="">
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+                    @else
+                    <div class="card mb-3">
                         <div class="card-header">
-                            <h6 class="mb-0">Step 2: Input Qty (Manual)</h6>
+                            <h6 class="mb-0">Step 2: Qty Otomatis</h6>
                         </div>
                         <div class="card-body">
-                            <div class="mb-3">
-                                <label class="form-label">Qty Record</label>
-                                <input type="number" name="Qty_Record" id="Qty_Record" class="form-control" min="0" disabled>
-                            </div>
+                            <p class="text-muted mb-2">Qty part ini akan diisi otomatis dari list saat scan rack selesai.</p>
+                            <h3 class="text-primary mb-0"><strong>{{ $recordList->Qty }}</strong></h3>
+                            <p class="text-muted mb-0 mt-2 small">Setelah scan rack yang sesuai, part otomatis dilanjutkan ke berikutnya.</p>
                         </div>
-                    </div>
-                    @else
-                    <div class="card mb-3 scan-locked" id="step2CardAI">
-                        <div class="card-header">
-                            <h6 class="mb-0">Step 2: AI Object Counting</h6>
-                        </div>
-                        <div class="card-body text-center">
-                            <p class="text-muted">Take a photo and block on an item to count. Expected count: <strong>{{ $recordList->Qty }}</strong></p>
-
-                            <div id="countCapturePrompt">
-                                <button type="button" id="startCountCamera" class="btn btn-primary" disabled><i class="fas fa-camera"></i> Open Camera</button>
-                                <br><small>or</small><br>
-                                <button type="button" id="countFileUpload" class="btn btn-outline-primary" disabled><i class="fas fa-upload"></i> Upload Photo</button>
-                                <input type="file" id="countPhotoInput" accept="image/*" style="display:none">
-                            </div>
-
-                            <div id="countCameraContainer" style="display:none;">
-                                <video id="countVideo" width="100%" style="max-width:500px;" autoplay playsinline></video>
-                                <br>
-                                <button type="button" id="captureCountPhoto" class="btn btn-primary mt-2"><i class="fas fa-camera"></i> Capture</button>
-                                <button type="button" id="closeCountCamera" class="btn btn-secondary mt-2"><i class="fas fa-times"></i> Close</button>
-                            </div>
-
-                            <div id="countCanvasArea" style="display:none;">
-                                <div class="count-canvas-wrapper">
-                                    <canvas id="countCanvas"></canvas>
-                                    <div class="count-badge" id="countBadge" style="display:none;">0</div>
-                                    <div class="count-processing-overlay" id="countProcessing" style="display:none;">
-                                        <div class="spinner-border text-light" role="status"></div>
-                                        <p class="mt-2 mb-0" id="countProcessingText">Analyzing...</p>
-                                    </div>
-                                </div>
-                                <p class="text-muted mt-1" id="countInstruction"><i class="fas fa-hand-pointer"></i> Block on one item to count it.</p>
-                                <div class="count-sensitivity mt-2" id="countSensitivityArea" style="display:none;">
-                                    <input type="range" id="countThreshold" min="40" max="99" value="75" step="1" style="display:none;">
-                                    <span id="countThresholdLabel" style="display:none;">75%</span>
-                                </div>
-                                <div class="mt-2">
-                                    <button type="button" class="btn btn-outline-danger btn-sm" id="retakePhoto"><i class="fas fa-redo"></i> Retake</button>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="clearCount"><i class="fas fa-eraser"></i> Clear</button>
-                                </div>
-                                <input type="hidden" name="Qty_Record" id="Qty_Record" value="">
-                                <input type="hidden" name="image_data" id="image_data" value="">
-                            </div>
-                        </div>
+                        <input type="hidden" name="Qty_Record" id="Qty_Record" value="{{ $recordList->Qty }}">
                     </div>
                     @endif
                 </div>
             </div>
+            @if($isPunished)
             <button type="submit" class="btn btn-primary w-100" id="submitPartBtn" disabled>
                 <i class="fas fa-check"></i> Submit Record
             </button>
+            @endif
         </form>
     </div>
 </div>
 @endsection
 
 @section('script')
-@if($recordList->Mode == 'ai')
+@if($recordList->Mode == 'ai' && $isPunished)
 <script src="{{ asset('assets/js/plugin/opencv.js') }}" async onload="window.onOpenCvReady();"></script>
 <script src="{{ asset('assets/js/plugin/record-scan-ai.js') }}"></script>
 @endif
@@ -149,6 +166,7 @@
     window.cvReady = false;
     window.expectedQty = {{ $recordList->Qty ?? 0 }};
     window.currentMode = @json($recordList->Mode ?? 'manual');
+    window.isPunished = @json($isPunished ?? false);
     var expectedCodeRack = '{{ $recordList->Code_Rack }}';
 
     window.onOpenCvReady = function() { window.cvReady = true; };
@@ -287,36 +305,31 @@
                 $(this).val('');
                 if (text === expectedCodeRack) {
                     $('#Code_Rack').addClass('is-valid');
-                    $('#is_empty').prop('disabled', false);
-                    if (window.currentMode === 'manual') {
+                    if (window.isPunished) {
                         $('#Qty_Record').prop('disabled', false);
-                        $('#step2Card').removeClass('scan-locked');
+                        $('#step2Card, #step2CardAI').removeClass('scan-locked');
+                        $('#startCountCamera, #countFileUpload').prop('disabled', false);
                         $('#Qty_Record').focus();
                     } else {
-                        $('#startCountCamera').prop('disabled', false);
-                        $('#countFileUpload').prop('disabled', false);
-                        $('#step2CardAI').removeClass('scan-locked');
-                        $('#startCountCamera').focus();
+                        $('#Qty_Record').val(window.expectedQty);
+                        setTimeout(function() {
+                            $('#partForm').submit();
+                        }, 300);
                     }
                 } else {
                     $('#Code_Rack').addClass('is-invalid');
                 }
-                checkFormReady();
+                if (window.isPunished) {
+                    checkFormReady();
+                }
             }
         }
     });
 
-    $('#is_empty').on('change', function() {
-        if ($(this).is(':checked')) {
-            if (window.currentMode === 'manual') {
-                $('#Qty_Record').val(0);
-            }
-            $('#Qty_Record').prop('required', false);
-            checkFormReady();
-        } else {
-            $('#Qty_Record').val('').prop('required', true);
-            checkFormReady();
-        }
+    $('#btnPartKosong').on('click', function() {
+        $('#is_empty_flag').val('1');
+        $('#Qty_Record').val(0);
+        $('#partForm').submit();
     });
 
     window.checkFormReady = function() {
@@ -324,15 +337,13 @@
             $('#submitPartBtn').prop('disabled', true);
             return;
         }
-        if ($('#is_empty').is(':checked')) {
-            $('#submitPartBtn').prop('disabled', false);
-        } else {
-            $('#submitPartBtn').prop('disabled', !$('#Qty_Record').val());
-        }
+        $('#submitPartBtn').prop('disabled', !$('#Qty_Record').val());
     };
 
     $('#Qty_Record').on('input', function() {
-        checkFormReady();
+        if (window.isPunished) {
+            checkFormReady();
+        }
     });
 
     $('#partForm').on('keypress', function(e) {

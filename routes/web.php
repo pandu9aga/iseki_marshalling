@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\TypeController;
 use App\Http\Controllers\Admin\MarshallingController;
 use App\Http\Controllers\Admin\RecordController as AdminRecordController;
+use App\Http\Controllers\Admin\PunishmentController;
 use App\Http\Controllers\Member\RecordController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Perakitan\DashboardController as PerakitanDashboardController;
@@ -41,6 +42,10 @@ Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function
     Route::get('empty-part', [AdminRecordController::class, 'emptyPart'])->name('empty-part.index');
     Route::get('report-empty', [AdminRecordController::class, 'reportEmptyList'])->name('report-empty.list');
     Route::get('report-empty/carousel', [AdminRecordController::class, 'carouselData'])->name('report-empty.carousel');
+    Route::get('punishments', [PunishmentController::class, 'index'])->name('punishments.index');
+    Route::get('punishments/search', [PunishmentController::class, 'search'])->name('punishments.search');
+    Route::post('punishments', [PunishmentController::class, 'store'])->name('punishments.store');
+    Route::delete('punishments/{punishment}', [PunishmentController::class, 'destroy'])->name('punishments.destroy');
 });
 
 Route::middleware('auth:member')->prefix('member')->name('member.')->group(function () {
