@@ -14,21 +14,17 @@
         <div class="row">
             @forelse($tractors as $tractor)
             <div class="col-md-4 col-sm-6 mb-4">
-                <a href="{{ route('perakitan.prosedur.show', $tractor) }}" class="text-decoration-none">
+                <a href="{{ route('perakitan.prosedur.show', $tractor->name) }}" class="text-decoration-none">
                     <div class="card card-stats card-round border-0 shadow-sm h-100 table-hover">
                         <div class="card-body">
-                            <div class="row align-items-center">
-                                <div class="col-icon">
-                                    <div class="icon-big text-center icon-primary bubble-shadow-small">
-                                        <i class="fas fa-tractor"></i>
-                                    </div>
+                            <div class="text-center">
+                                @if($tractor->photo)
+                                <div class="mb-2 d-flex align-items-center justify-content-center bg-white">
+                                    <img src="{{ $tractor->photo }}" alt="{{ $tractor->name }}" style="max-width:100%;max-height:150px;object-fit:contain;" onerror="this.style.display='none'">
                                 </div>
-                                <div class="col col-stats ms-3 ms-sm-0">
-                                    <div class="numbers">
-                                        <p class="card-category">Tipe Traktor</p>
-                                        <h4 class="card-title">{{ $tractor }}</h4>
-                                    </div>
-                                </div>
+                                @endif
+                                <p class="card-category mb-1">Tipe Traktor</p>
+                                <h4 class="card-title">{{ $tractor->name }}</h4>
                             </div>
                         </div>
                     </div>

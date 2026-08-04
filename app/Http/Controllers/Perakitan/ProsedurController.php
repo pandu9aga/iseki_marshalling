@@ -49,7 +49,20 @@ class ProsedurController extends Controller
     public function index()
     {
         $listReports = $this->getListReports();
-        $tractors = $listReports->pluck('Name_Tractor')->unique()->values();
+        $tractorNames = $listReports->pluck('Name_Tractor')->unique()->values();
+
+        $tractorPhotos = DB::connection('aspro')
+            ->table('tractors')
+            ->whereIn('Name_Tractor', $tractorNames)
+            ->pluck('Photo_Tractor', 'Name_Tractor');
+
+        $tractors = $tractorNames->map(function ($name) use ($tractorPhotos) {
+            $photo = $tractorPhotos->get($name);
+            return (object) [
+                'name'  => $name,
+                'photo' => $photo ? '/iseki_aspro/public/' . $photo : null,
+            ];
+        });
 
         return view('perakitan.prosedur.index', compact('tractors'));
     }
