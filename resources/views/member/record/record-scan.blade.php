@@ -6,6 +6,16 @@
     .form-control[readonly].is-valid { border-color: #28a745; box-shadow: 0 0 0 0.2rem rgba(40,167,69,.25); }
     .form-control[readonly].is-invalid { border-color: #dc3545; box-shadow: 0 0 0 0.2rem rgba(220,53,69,.25); }
     .count-canvas-wrapper { position: relative; display: inline-block; max-width: 100%; }
+    .rack-big-text { font-size: 170px; }
+    @media (max-width: 767px) {
+        .rack-big-text { font-size: 90px; }
+    }
+    @media (max-width: 480px) {
+        .rack-big-text { font-size: 64px; }
+    }
+    .detail-rack {
+        font-size: 24px;
+    }
     .count-canvas-wrapper canvas { max-width: 100%; border: 1px solid #ddd; border-radius: 8px; cursor: crosshair; }
     .count-badge {
         position: absolute; top: 10px; right: 10px;
@@ -36,10 +46,10 @@
 
         <div class="card mb-3">
             <div class="card-body">
-                <h1 class="text-center text-primary mb-0" style="font-size: 170px;"><strong>{{ $recordList->Code_Rack }}</strong></h1>
+                <h1 class="text-center text-primary mb-0 rack-big-text"><strong>{{ $recordList->Code_Rack }}</strong></h1>
                 <h5>{{ $recordList->Code_Part }} - {{ $recordList->Name_Part }}</h5>
-                <p class="text-muted mb-0">Location: <strong class="text-primary">{{ $recordList->Location_Rack }}</strong> | Mode: <strong class="text-primary">{{ ucfirst($recordList->Mode) }}</strong> | Pembeda: <strong class="text-primary">{{ $recordList->Difference }}</strong></p>
-                <p class="text-muted mb-0">Box: <strong class="text-primary">{{ $recordList->Box }}</strong> | Qty: <strong class="text-primary">{{ $recordList->Qty }}</strong></p>
+                <p class="text-muted mb-0">Location: <strong class="text-primary detail-rack">{{ $recordList->Location_Rack }}</strong> | Qty: <strong class="text-primary detail-rack">{{ $recordList->Qty }}</strong> | Box: <strong class="text-primary detail-rack">{{ $recordList->Box }}</strong></p>
+                <p class="text-muted mb-0">Mode: <strong class="text-primary">{{ ucfirst($recordList->Mode) }}</strong> | Pembeda: <strong class="text-primary">{{ $recordList->Difference }}</strong></p>
             </div>
         </div>
 

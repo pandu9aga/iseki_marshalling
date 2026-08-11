@@ -51,14 +51,14 @@
     function processScan(text) {
         if (!text) return;
         var parts = text.split(';');
-        if (parts.length >= 4) {
+        if (parts.length >= 3) {
             $('#sequence_no').val(parts[0]);
             $('#production_date').val(parts[1]);
             $('#type').val(parts[2]);
             $('#scannerInput').val('');
             searchRecords(parts[0], parts[1]);
         } else {
-            alert('Format QR tidak valid. Format: Sequence_No;Production_Date;...;Type');
+            alert('Format QR tidak valid. Format: Sequence_No;Production_Date;Type');
             $('#scannerInput').val('');
         }
     }

@@ -104,7 +104,7 @@
     function processScan(text) {
         if (!text) return;
         var parts = text.split(';');
-        if (parts.length >= 4) {
+        if (parts.length >= 3) {
             $('#sequence_no').val(parts[0]);
             $('#production_date').val(parts[1]);
             $('#type').val(parts[2]);
