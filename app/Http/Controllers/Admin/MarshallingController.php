@@ -197,6 +197,7 @@ class MarshallingController extends Controller
             $imported = 0;
             $skipped = 0;
             $totalRows = count($rows) - 1;
+            $importedSlots = [];
             foreach ($rows as $i => $row) {
                 if ($i === 0) {
                     continue;
@@ -226,6 +227,12 @@ class MarshallingController extends Controller
                     continue;
                 }
 
+                $slotKey = $type->Id_Type . '|' . $area;
+                if (!array_key_exists($slotKey, $importedSlots)) {
+                    $importedSlots[$slotKey] = [];
+                }
+                $importedSlots[$slotKey][] = $sequenceNo;
+
                 Marshalling::updateOrCreate(
                     [
                         'Id_Type' => $type->Id_Type,
@@ -246,7 +253,17 @@ class MarshallingController extends Controller
                 $imported++;
             }
 
+            $deleted = 0;
+            foreach ($importedSlots as $slotKey => $sequences) {
+                [$idType, $area] = explode('|', $slotKey, 2);
+                $deleted += Marshalling::where('Id_Type', $idType)
+                    ->where('Area', $area)
+                    ->whereNotIn('Sequence_No', $sequences)
+                    ->delete();
+            }
+
             $msg = "$imported of $totalRows marshallings imported.";
+            if ($deleted > 0) $msg .= " $deleted marshalling lama dihapus (tidak ada di excel).";
             if ($skipped > 0) $msg .= " $skipped rows skipped (invalid type/mode/area or empty).";
             return redirect()->route('admin.types.index')
                 ->with('success', $msg);

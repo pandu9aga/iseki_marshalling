@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\TypeController;
 use App\Http\Controllers\Admin\MarshallingController;
 use App\Http\Controllers\Admin\RecordController as AdminRecordController;
 use App\Http\Controllers\Admin\PunishmentController;
+use App\Http\Controllers\Admin\MemberAreaController;
 use App\Http\Controllers\Member\RecordController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Perakitan\DashboardController as PerakitanDashboardController;
@@ -46,6 +47,10 @@ Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function
     Route::get('punishments/search', [PunishmentController::class, 'search'])->name('punishments.search');
     Route::post('punishments', [PunishmentController::class, 'store'])->name('punishments.store');
     Route::delete('punishments/{punishment}', [PunishmentController::class, 'destroy'])->name('punishments.destroy');
+    Route::get('member-areas', [MemberAreaController::class, 'index'])->name('member-areas.index');
+    Route::get('member-areas/search', [MemberAreaController::class, 'search'])->name('member-areas.search');
+    Route::post('member-areas', [MemberAreaController::class, 'store'])->name('member-areas.store');
+    Route::delete('member-areas/{memberArea}', [MemberAreaController::class, 'destroy'])->name('member-areas.destroy');
 });
 
 Route::middleware('auth:member')->prefix('member')->name('member.')->group(function () {
@@ -53,6 +58,7 @@ Route::middleware('auth:member')->prefix('member')->name('member.')->group(funct
     Route::get('record/create', [RecordController::class, 'create'])->name('record.create');
     Route::post('record/store', [RecordController::class, 'store'])->name('record.store');
     Route::get('record/areas-by-type', [RecordController::class, 'getAreasByType'])->name('record.areas-by-type');
+    Route::get('record/my-areas', [RecordController::class, 'myAreas'])->name('record.my-areas');
     Route::get('record/{record}/record-part', [RecordController::class, 'recordPart'])->name('record.record-part');
     Route::get('record/{record}/scan-part/{recordList}', [RecordController::class, 'scanPart'])->name('record.scan-part');
     Route::post('record/{recordList}/update-part', [RecordController::class, 'updatePart'])->name('record.update-part');

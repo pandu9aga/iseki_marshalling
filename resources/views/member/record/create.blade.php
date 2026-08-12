@@ -20,7 +20,7 @@
                             @csrf
                             <div class="mb-3">
                                 <label class="form-label">Scan QR dari label produksi</label>
-                                <input type="text" id="scannerInput" class="form-control" placeholder="Scan QR Code dengan USB scanner..." autofocus>
+                                <input type="text" id="scannerInput" class="form-control" placeholder="Scan QR Code dengan USB scanner..." autofocus style="text-transform: uppercase;">
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Sequence No</label>
@@ -86,6 +86,22 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="areaAlertModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Perhatian</h5>
+            </div>
+            <div class="modal-body">
+                <p id="areaAlertMessage" class="mb-0"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('script')
@@ -103,31 +119,60 @@
 
     function processScan(text) {
         if (!text) return;
+        text = text.toUpperCase();
         var parts = text.split(';');
-        if (parts.length >= 3) {
-            $('#sequence_no').val(parts[0]);
-            $('#production_date').val(parts[1]);
-            $('#type').val(parts[2]);
+        if (parts.length < 3) {
+            alert('Format QR tidak valid. Format: Sequence_No;Production_Date;Type');
             $('#scannerInput').val('');
-
-            $.getJSON('{{ route("member.record.areas-by-type") }}', { type: parts[2] }, function(areas) {
-                var $area = $('#modalArea');
-                $area.empty().append('<option value="">Pilih Area</option>');
-                $.each(areas, function(i, area) {
-                    $area.append('<option value="' + area + '">' +
-                        area.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); }) +
-                        '</option>');
-                });
-                if (areas.length === 1) {
-                    $('#modalArea').val(areas[0]);
-                    $('#confirmArea').prop('disabled', false);
-                }
-                $('#areaModal').modal('show');
-            });
-        } else {
-            alert('Format QR tidak valid. Format: Sequence_No;Production_Date;...;Type');
-            $('#scannerInput').val('');
+            return;
         }
+        $('#sequence_no').val(parts[0]);
+        $('#production_date').val(parts[1]);
+        $('#type').val(parts[2]);
+        $('#scannerInput').val('');
+
+        $.when(
+            $.getJSON('{{ route("member.record.areas-by-type") }}', { type: parts[2] }),
+            $.getJSON('{{ route("member.record.my-areas") }}')
+        ).done(function(typeRes, myRes) {
+            var typeAreas = typeRes[0] || [];
+            var myAreas = myRes[0] || [];
+
+            if (!myAreas || myAreas.length === 0) {
+                showAreaAlert('NIK belum didaftarkan di member area. Silakan hubungi admin.');
+                return;
+            }
+
+            var matched = typeAreas.filter(function(a) { return myAreas.indexOf(a) !== -1; });
+
+            if (matched.length === 0) {
+                showAreaAlert('Area anda (' + myAreas.map(function(a) { return a.replace(/_/g, ' '); }).join(', ') + ') tidak cocok dengan tipe yang di-scan.');
+                return;
+            }
+
+            if (matched.length === 1) {
+                $('#area').val(matched[0]);
+                $('#recordForm').submit();
+                return;
+            }
+
+            var $area = $('#modalArea');
+            $area.empty().append('<option value="">Pilih Area</option>');
+            $.each(matched, function(i, area) {
+                $area.append('<option value="' + area + '">' +
+                    area.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); }) +
+                    '</option>');
+            });
+            $('#confirmArea').prop('disabled', true);
+            $('#areaModal').modal('show');
+        }).fail(function() {
+            showAreaAlert('Terjadi kesalahan saat memuat area. Silakan coba lagi.');
+        });
+    }
+
+    function showAreaAlert(msg) {
+        $('#areaAlertMessage').text(msg);
+        $('#areaAlertModal').modal('show');
     }
 
     $('#modalArea').on('change', function() {

@@ -15,7 +15,7 @@
                     <div class="card-body">
                         <div class="mb-3">
                             <label class="form-label">Scan QR dari label produksi</label>
-                            <input type="text" id="scannerInput" class="form-control" placeholder="Scan QR Code dengan USB scanner..." autofocus>
+                            <input type="text" id="scannerInput" class="form-control" placeholder="Scan QR Code dengan USB scanner..." autofocus style="text-transform: uppercase;">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Sequence No</label>
@@ -50,6 +50,7 @@
 
     function processScan(text) {
         if (!text) return;
+        text = text.toUpperCase();
         var parts = text.split(';');
         if (parts.length >= 3) {
             $('#sequence_no').val(parts[0]);

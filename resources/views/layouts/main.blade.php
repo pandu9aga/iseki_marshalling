@@ -188,6 +188,12 @@
                                 <p class="{{ request()->routeIs('admin.punishments.*') ? 'text-primary' : '' }}">Punishment</p>
                             </a>
                         </li>
+                        <li class="nav-item {{ request()->routeIs('admin.member-areas.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.member-areas.index') }}">
+                                <i class="fas fa-map-marked-alt"></i>
+                                <p class="{{ request()->routeIs('admin.member-areas.*') ? 'text-primary' : '' }}">Member Area</p>
+                            </a>
+                        </li>
                         @endif
 
                         @if(Auth::guard('member')->check())

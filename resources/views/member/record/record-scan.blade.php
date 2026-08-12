@@ -65,7 +65,7 @@
                         <div class="card-body">
                             <div class="mb-3">
                                 <label class="form-label">Scan Code Rack <span id="scanTimer" class="badge bg-light text-dark ms-1">7</span></label>
-                                <input type="text" id="scannerRackInput" class="form-control" placeholder="Scan Code Rack dengan USB scanner..." disabled>
+                                <input type="text" id="scannerRackInput" class="form-control" placeholder="Scan Code Rack dengan USB scanner..." disabled style="text-transform: uppercase;">
                             </div>
                             <div class="mb-0">
                                 <label class="form-label">Scanned Code Rack</label>
@@ -177,7 +177,7 @@
     window.expectedQty = {{ $recordList->Qty ?? 0 }};
     window.currentMode = @json($recordList->Mode ?? 'manual');
     window.isPunished = @json($isPunished ?? false);
-    var expectedCodeRack = '{{ $recordList->Code_Rack }}';
+    var expectedCodeRack = '{{ $recordList->Code_Rack }}'.toUpperCase();
 
     window.onOpenCvReady = function() { window.cvReady = true; };
 
@@ -309,7 +309,7 @@
     $('#scannerRackInput').on('keydown', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            var text = $(this).val();
+            var text = $(this).val().toUpperCase();
             if (text) {
                 $('#Code_Rack').val(text).removeClass('is-valid is-invalid');
                 $(this).val('');

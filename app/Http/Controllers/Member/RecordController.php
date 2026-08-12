@@ -75,6 +75,11 @@ class RecordController extends Controller
 
         return view('member.record.create', compact('remarkRecord'));
     }
+    public function myAreas(Request $request)
+    {
+        $member = Auth::guard('member')->user();
+        return response()->json($member->registeredAreas());
+    }
 
     public function getAreasByType(Request $request)
     {
@@ -212,7 +217,7 @@ class RecordController extends Controller
         }
         $request->validate($rules);
 
-        if (!$isEmpty && $request->Code_Rack !== $recordList->Code_Rack) {
+        if (!$isEmpty && strtoupper($request->Code_Rack) !== strtoupper($recordList->Code_Rack)) {
             return redirect()->back()->with('error', 'Code Rack does not match! Expected: ' . $recordList->Code_Rack);
         }
 
