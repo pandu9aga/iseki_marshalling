@@ -43,6 +43,12 @@ class RecordController extends Controller
     {
         $member = Auth::guard('member')->user();
 
+        $duplicateKanban = null;
+        if (session()->has('duplicate_kanban')) {
+            $duplicateKanban = session('duplicate_kanban');
+            session()->forget('duplicate_kanban');
+        }
+
         $remarkRecord = null;
         $remarkId = session('remark_record_id');
         if ($remarkId) {
@@ -50,7 +56,7 @@ class RecordController extends Controller
             session()->forget('remark_record_id');
         }
 
-        if (!$remarkRecord) {
+        if (!$duplicateKanban && !$remarkRecord) {
             $incompleteRecord = Record::where('Id_User', $member->id)
                 ->whereHas('recordLists', function ($q) {
                     $q->whereNull('Time_Record');
@@ -73,7 +79,7 @@ class RecordController extends Controller
             }
         }
 
-        return view('member.record.create', compact('remarkRecord'));
+        return view('member.record.create', compact('remarkRecord', 'duplicateKanban'));
     }
     public function myAreas(Request $request)
     {
@@ -111,6 +117,16 @@ class RecordController extends Controller
         ]);
 
         $member = Auth::guard('member')->user();
+
+        $duplicate = Record::where('Sequence_No_Record', $request->sequence_no)
+            ->where('Production_Date_Record', $request->production_date)
+            ->where('Area', $request->area)
+            ->exists();
+
+        if ($duplicate) {
+            return redirect()->route('member.record.create')
+                ->with('duplicate_kanban', $request->sequence_no);
+        }
 
         $record = Record::create([
             'Id_User' => $member->id,

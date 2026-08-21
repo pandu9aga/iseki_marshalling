@@ -102,6 +102,24 @@
         </div>
     </div>
 </div>
+
+@if($duplicateKanban)
+<div class="modal fade" id="duplicateKanbanModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Kanban Telah Di-Scan</h5>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Kanban dengan Sequence No <strong>{{ $duplicateKanban }}</strong> sudah pernah discan. Proses record dibatalkan.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 @endsection
 
 @section('script')
@@ -190,6 +208,11 @@
     @if($remarkRecord)
     $(function() {
         $('#remarkModal').modal('show');
+    });
+    @endif
+    @if($duplicateKanban)
+    $(function() {
+        $('#duplicateKanbanModal').modal('show');
     });
     @endif
 </script>
