@@ -107,14 +107,41 @@
 <div class="modal fade" id="duplicateKanbanModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Kanban Telah Di-Scan</h5>
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Kanban Telah Di-Scan</h5>
             </div>
             <div class="modal-body">
-                <p class="mb-0">Kanban dengan Sequence No <strong>{{ $duplicateKanban }}</strong> sudah pernah discan. Proses record dibatalkan.</p>
+                <p class="mb-2">Kanban dengan Sequence No <strong>{{ $duplicateKanban }}</strong> sudah pernah discan. Proses record dibatalkan.</p>
+                @if($existingRecord && $existingMember)
+                <hr>
+                <div class="row mb-2">
+                    <div class="col-4 fw-bold">Discan oleh:</div>
+                    <div class="col-8">{{ $existingMember['nama'] }} (NIK: {{ $existingMember['nik'] }})</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-4 fw-bold">Tanggal Scan:</div>
+                    <div class="col-8">{{ $existingRecord['time_record'] ? date('d/m/Y H:i:s', strtotime($existingRecord['time_record'])) : '-' }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-4 fw-bold">Type:</div>
+                    <div class="col-8">{{ $existingRecord['type'] }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-4 fw-bold">Area:</div>
+                    <div class="col-8">{{ ucwords(str_replace('_', ' ', $existingRecord['area'])) }}</div>
+                </div>
+                @if($matchedAreas && count($matchedAreas) > 0)
+                <div class="row mb-2">
+                    <div class="col-4 fw-bold">Area Cocok:</div>
+                    <div class="col-8">
+                        <span class="badge bg-success">{{ implode(', ', array_map(fn($a) => ucwords(str_replace('_', ' ', $a)), $matchedAreas)) }}</span>
+                    </div>
+                </div>
+                @endif
+                @endif
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
             </div>
         </div>
     </div>

@@ -44,9 +44,16 @@ class RecordController extends Controller
         $member = Auth::guard('member')->user();
 
         $duplicateKanban = null;
+        $existingRecord = null;
+        $existingMember = null;
+        $matchedAreas = [];
+
         if (session()->has('duplicate_kanban')) {
             $duplicateKanban = session('duplicate_kanban');
-            session()->forget('duplicate_kanban');
+            $existingRecord = session('existing_record');
+            $existingMember = session('existing_member');
+            $matchedAreas = session('matched_areas', []);
+            session()->forget(['duplicate_kanban', 'existing_record', 'existing_member', 'matched_areas']);
         }
 
         $remarkRecord = null;
@@ -79,7 +86,7 @@ class RecordController extends Controller
             }
         }
 
-        return view('member.record.create', compact('remarkRecord', 'duplicateKanban'));
+        return view('member.record.create', compact('remarkRecord', 'duplicateKanban', 'existingRecord', 'existingMember', 'matchedAreas'));
     }
     public function myAreas(Request $request)
     {
@@ -118,14 +125,31 @@ class RecordController extends Controller
 
         $member = Auth::guard('member')->user();
 
-        $duplicate = Record::where('Sequence_No_Record', $request->sequence_no)
+        $existingRecord = Record::where('Sequence_No_Record', $request->sequence_no)
             ->where('Production_Date_Record', $request->production_date)
             ->where('Area', $request->area)
-            ->exists();
+            ->first();
 
-        if ($duplicate) {
+        if ($existingRecord) {
+            $existingMember = $existingRecord->member;
+            $memberAreas = $member->registeredAreas()->toArray();
+            $existingMemberAreas = $existingMember ? $existingMember->registeredAreas()->toArray() : [];
+            $matchedAreas = array_intersect($memberAreas, $existingMemberAreas);
+
             return redirect()->route('member.record.create')
-                ->with('duplicate_kanban', $request->sequence_no);
+                ->with('duplicate_kanban', $request->sequence_no)
+                ->with('existing_record', [
+                    'sequence_no' => $existingRecord->Sequence_No_Record,
+                    'production_date' => $existingRecord->Production_Date_Record,
+                    'type' => $existingRecord->Type,
+                    'area' => $existingRecord->Area,
+                    'time_record' => $existingRecord->Time_Record,
+                ])
+                ->with('existing_member', $existingMember ? [
+                    'nama' => $existingMember->nama,
+                    'nik' => $existingMember->nik,
+                ] : null)
+                ->with('matched_areas', $matchedAreas);
         }
 
         $record = Record::create([
