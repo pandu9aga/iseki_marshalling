@@ -189,7 +189,7 @@
 
     function getFastAudio(ch) {
         if (!audioCache[ch]) {
-            var audio = new Audio('{{ asset("assets/sounds") }}/' + ch + '.mp3');
+            var audio = new Audio('{{ asset("assets/sounds/" . config("app.sound_theme", "b")) }}/' + ch + '.mp3');
             audio.playbackRate = 2;
             audio.preload = 'auto';
             audioCache[ch] = audio;
@@ -238,7 +238,7 @@
         if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
     }
 
-    var boksAudio = new Audio('{{ asset("assets/sounds") }}/boks.mp3');
+    var boksAudio = new Audio('{{ asset("assets/sounds/" . config("app.sound_theme", "b")) }}/boks.mp3');
     boksAudio.playbackRate = 2;
     boksAudio.preload = 'auto';
 
