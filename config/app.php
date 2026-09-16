@@ -123,7 +123,8 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
-    'sound_theme' => env('SOUND_THEME', 'b'),
+    'sound_theme' => env('SOUND_THEME', 'a'),
 
 ];
+
 

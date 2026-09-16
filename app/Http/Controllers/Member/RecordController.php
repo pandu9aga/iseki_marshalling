@@ -109,7 +109,16 @@ class RecordController extends Controller
         $areas = Marshalling::where('Id_Type', $type->Id_Type)
             ->distinct()
             ->orderBy('Area')
-            ->pluck('Area');
+            ->pluck('Area')
+            ->map(function ($area) {
+                // Jika sub-area transmisi (transmisi_a, transmisi_b, transmisi_c), anggap sebagai transmisi
+                if (in_array($area, ['transmisi', 'transmisi_a', 'transmisi_b', 'transmisi_c'])) {
+                    return 'transmisi';
+                }
+                return $area;
+            })
+            ->unique()
+            ->values();
 
         return response()->json($areas);
     }
@@ -134,9 +143,9 @@ class RecordController extends Controller
             $existingMember = $existingRecord->member;
             $memberAreas = $member->registeredAreas()->toArray();
             $existingMemberAreas = $existingMember ? $existingMember->registeredAreas()->toArray() : [];
-            $matchedAreas = array_intersect($memberAreas, $existingMemberAreas);
+            $matchedAreas = array_values(array_intersect($memberAreas, $existingMemberAreas));
 
-            return redirect()->route('member.record.create')
+            return redirect()->back()
                 ->with('duplicate_kanban', $request->sequence_no)
                 ->with('existing_record', [
                     'sequence_no' => $existingRecord->Sequence_No_Record,
@@ -168,21 +177,34 @@ class RecordController extends Controller
             return redirect()->back()->with('error', 'Type "' . $request->type . '" tidak ditemukan di master data.');
         }
 
-        $marshallings = Marshalling::where('Area', $request->area)
-            ->where('Id_Type', $type->Id_Type)
-            ->orderBy('Sequence_No')
-            ->get();
+        if ($request->area === 'transmisi') {
+            // Khusus area transmisi, ambil gabungan transmisi_a, transmisi_b, transmisi_c (dan transmisi reguler jika ada)
+            $subAreas = ['transmisi_a', 'transmisi_b', 'transmisi_c', 'transmisi'];
+            $allMarshallings = Marshalling::whereIn('Area', $subAreas)
+                ->where('Id_Type', $type->Id_Type)
+                ->orderByRaw("FIELD(Area, 'transmisi_a', 'transmisi_b', 'transmisi_c', 'transmisi')")
+                ->orderBy('Sequence_No')
+                ->get();
+
+            $marshallings = $allMarshallings;
+        } else {
+            $marshallings = Marshalling::where('Area', $request->area)
+                ->where('Id_Type', $type->Id_Type)
+                ->orderBy('Sequence_No')
+                ->get();
+        }
 
         if ($marshallings->isEmpty()) {
             $record->delete();
             return redirect()->back()->with('error', 'No marshalling data found for this area and type.');
         }
 
+        $seqCounter = 1;
         foreach ($marshallings as $m) {
             Record_List::create([
                 'Id_Record' => $record->Id_Record,
                 'Id_Marshalling' => $m->Id_Marshalling,
-                'Sequence_No' => $m->Sequence_No,
+                'Sequence_No' => $seqCounter++,
                 'Code_Part' => $m->Code_Part,
                 'Name_Part' => $m->Name_Part,
                 'Code_Rack' => $m->Code_Rack,
@@ -291,8 +313,16 @@ class RecordController extends Controller
                 ->first();
 
             if ($next) {
-                return redirect()->route('member.record.scan-part', [$record->Id_Record, $next->Id_Record_List])
+                $redirect = redirect()->route('member.record.scan-part', [$record->Id_Record, $next->Id_Record_List])
                     ->with('success', 'Part recorded! Proceed to next part.');
+
+                if ($recordList->Area !== $next->Area && 
+                    in_array($recordList->Area, ['transmisi_a', 'transmisi_b']) && 
+                    in_array($next->Area, ['transmisi_b', 'transmisi_c'])) {
+                    $redirect->with('box_transition', true);
+                }
+
+                return $redirect;
             }
 
             return redirect()->route('member.record.create')
@@ -371,8 +401,17 @@ class RecordController extends Controller
             ->first();
 
         if ($next) {
-            return redirect()->route('member.record.scan-part', [$record->Id_Record, $next->Id_Record_List])
+            $redirect = redirect()->route('member.record.scan-part', [$record->Id_Record, $next->Id_Record_List])
                 ->with('success', 'Part recorded! Proceed to next part.');
+
+            // Cek apakah ada pergantian sub-area transmisi (misal: transmisi_a -> transmisi_b atau transmisi_b -> transmisi_c)
+            if ($recordList->Area !== $next->Area && 
+                in_array($recordList->Area, ['transmisi_a', 'transmisi_b']) && 
+                in_array($next->Area, ['transmisi_b', 'transmisi_c'])) {
+                $redirect->with('box_transition', true);
+            }
+
+            return $redirect;
         }
 
         return redirect()->route('member.record.create')

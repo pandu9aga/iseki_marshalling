@@ -67,6 +67,9 @@
                                 <option value="sub_assy" {{ $marshalling->Area == 'sub_assy' ? 'selected' : '' }}>Sub Assy</option>
                                 <option value="sub_engine" {{ $marshalling->Area == 'sub_engine' ? 'selected' : '' }}>Sub Engine</option>
                                 <option value="transmisi" {{ $marshalling->Area == 'transmisi' ? 'selected' : '' }}>Transmisi</option>
+                                <option value="transmisi_a" {{ $marshalling->Area == 'transmisi_a' ? 'selected' : '' }}>Transmisi A</option>
+                                <option value="transmisi_b" {{ $marshalling->Area == 'transmisi_b' ? 'selected' : '' }}>Transmisi B</option>
+                                <option value="transmisi_c" {{ $marshalling->Area == 'transmisi_c' ? 'selected' : '' }}>Transmisi C</option>
                                 <option value="main_line" {{ $marshalling->Area == 'main_line' ? 'selected' : '' }}>Main Line</option>
                                 <option value="mowcol" {{ $marshalling->Area == 'mowcol' ? 'selected' : '' }}>Mowcol</option>
                                 <option value="front_axle" {{ $marshalling->Area == 'front_axle' ? 'selected' : '' }}>Front Axle</option>

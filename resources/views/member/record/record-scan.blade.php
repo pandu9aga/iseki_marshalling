@@ -165,6 +165,28 @@
         </form>
     </div>
 </div>
+
+@if(session('box_transition'))
+<div class="modal fade" id="boxTransitionModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered text-center">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-body py-5 px-4">
+                <div class="mb-3">
+                    <i class="fas fa-boxes text-warning" style="font-size: 64px;"></i>
+                </div>
+                <h2 class="fw-bold text-dark mb-2">Silahkan berganti box</h2>
+                <p class="text-muted mb-4">Mempersiapkan box part berikutnya dalam:</p>
+                <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle shadow-sm mb-3" style="width: 100px; height: 100px;">
+                    <span class="display-4 fw-bold text-primary" id="boxCountdown">30</span>
+                </div>
+                <div>
+                    <small class="text-muted">detik tersisa</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 @endsection
 
 @section('script')
@@ -178,6 +200,7 @@
     window.currentMode = @json($recordList->Mode ?? 'manual');
     window.isPunished = @json($isPunished ?? false);
     var expectedCodeRack = '{{ $recordList->Code_Rack }}'.toUpperCase();
+    var hasBoxTransition = @json(session('box_transition') ? true : false);
 
     window.onOpenCvReady = function() { window.cvReady = true; };
 
@@ -189,7 +212,7 @@
 
     function getFastAudio(ch) {
         if (!audioCache[ch]) {
-            var audio = new Audio('{{ asset("assets/sounds/" . config("app.sound_theme", "b")) }}/' + ch + '.mp3');
+            var audio = new Audio('{{ asset("assets/sounds/" . config("app.sound_theme", "a")) }}/' + ch + '.mp3');
             audio.playbackRate = 2;
             audio.preload = 'auto';
             audioCache[ch] = audio;
@@ -238,7 +261,7 @@
         if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
     }
 
-    var boksAudio = new Audio('{{ asset("assets/sounds/" . config("app.sound_theme", "b")) }}/boks.mp3');
+    var boksAudio = new Audio('{{ asset("assets/sounds/" . config("app.sound_theme", "a")) }}/boks.mp3');
     boksAudio.playbackRate = 2;
     boksAudio.preload = 'auto';
 
@@ -248,27 +271,20 @@
     function playSequence() {
         var codeRack = '{{ $recordList->Code_Rack }}'.toLowerCase();
         playCharSounds(codeRack.split(''), 0, function() {
-            currentTimeout = setTimeout(function() {
-                currentTimeout = null;
-                if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
-                currentAudio = boksAudio;
-                boksAudio.currentTime = 0;
+            loopTimeout = setTimeout(function() {
                 function afterBoks() {
-                    playCharSounds(boxValue.split(''), 0, function() {
-                        currentTimeout = setTimeout(function() {
-                            currentTimeout = null;
-                            playCharSounds(qtyValue.toString().split(''), 0, function() {
-                                loopTimeout = setTimeout(function() {
-                                    loopTimeout = null;
-                                    playSequence();
-                                }, 500);
-                            });
-                        }, 500);
-                    });
+                    loopTimeout = setTimeout(function() {
+                        playCharSounds(boxValue.toLowerCase().split(''), 0, function() {
+                            loopTimeout = setTimeout(function() {
+                                playCharSounds(qtyValue.split(''), 0);
+                            }, 500);
+                        });
+                    }, 300);
                 }
-                var playPromise = boksAudio.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(function() {
+
+                if (boksAudio) {
+                    boksAudio.currentTime = 0;
+                    boksAudio.play().then(function() {
                         var duration = boksAudio.duration;
                         if (!duration || duration === Infinity || isNaN(duration)) {
                             boksAudio.onended = afterBoks;
@@ -288,7 +304,7 @@
         });
     }
 
-    $(document).ready(function() {
+    function startScanCountdown() {
         setTimeout(function() {
             playSequence();
         }, 3000);
@@ -304,6 +320,27 @@
                 $('#scannerRackInput').prop('disabled', false).focus();
             }
         }, 1000);
+    }
+
+    $(document).ready(function() {
+        if (hasBoxTransition) {
+            var modalEl = new bootstrap.Modal(document.getElementById('boxTransitionModal'));
+            modalEl.show();
+
+            var timeLeft = 30;
+            var countdownEl = $('#boxCountdown');
+            var transitionInterval = setInterval(function() {
+                timeLeft--;
+                countdownEl.text(timeLeft);
+                if (timeLeft <= 0) {
+                    clearInterval(transitionInterval);
+                    modalEl.hide();
+                    startScanCountdown();
+                }
+            }, 1000);
+        } else {
+            startScanCountdown();
+        }
     });
 
     $('#scannerRackInput').on('keydown', function(e) {

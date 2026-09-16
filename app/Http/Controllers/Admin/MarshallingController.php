@@ -72,7 +72,7 @@ class MarshallingController extends Controller
             'Box' => 'required',
             'Qty' => 'required|integer',
             'Mode' => 'required|in:manual,ai',
-            'Area' => 'required|in:sub_assy,sub_engine,transmisi,main_line,mowcol,front_axle',
+            'Area' => 'required|in:sub_assy,sub_engine,transmisi,transmisi_a,transmisi_b,transmisi_c,main_line,mowcol,front_axle',
         ]);
 
         Marshalling::create([
@@ -110,7 +110,7 @@ class MarshallingController extends Controller
             'Box' => 'required',
             'Qty' => 'required|integer',
             'Mode' => 'required|in:manual,ai',
-            'Area' => 'required|in:sub_assy,sub_engine,transmisi,main_line,mowcol,front_axle',
+            'Area' => 'required|in:sub_assy,sub_engine,transmisi,transmisi_a,transmisi_b,transmisi_c,main_line,mowcol,front_axle',
         ]);
 
         $marshalling->Id_Type = $request->Id_Type;
@@ -143,7 +143,7 @@ class MarshallingController extends Controller
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        $headers = ['No', 'Type_Tractor', 'Code_Part', 'Name_Part', 'Rack', 'Pembeda', 'Lorong', 'Box', 'Qty', 'Mode (manual/ai)', 'Area (sub_assy/sub_engine/transmisi/main_line/mowcol/front_axle)'];
+        $headers = ['No', 'Type_Tractor', 'Code_Part', 'Name_Part', 'Rack', 'Pembeda', 'Lorong', 'Box', 'Qty', 'Mode (manual/ai)', 'Area (sub_assy/sub_engine/transmisi/transmisi_a/transmisi_b/transmisi_c/main_line/mowcol/front_axle)'];
         foreach (range('A', 'K') as $i => $col) {
             $sheet->setCellValue($col . '1', $headers[$i]);
         }
@@ -165,17 +165,17 @@ class MarshallingController extends Controller
         }
 
         $writer = new Xlsx($spreadsheet);
-        $fileName = 'marshallings_' . now()->format('YmdHis') . '.xlsx';
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="' . $fileName . '"');
-        $writer->save('php://output');
-        exit;
+        $filename = 'marshallings_' . date('YmdHis') . '.xlsx';
+        $tempPath = storage_path('app/' . $filename);
+        $writer->save($tempPath);
+
+        return response()->download($tempPath, $filename)->deleteFileAfterSend(true);
     }
 
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|file',
+            'file' => 'required|mimes:xlsx,xls',
         ]);
 
         try {
@@ -193,7 +193,7 @@ class MarshallingController extends Controller
             $rows = $sheet->toArray(null, true, true, false);
 
             $validModes = ['manual', 'ai'];
-            $validAreas = ['sub_assy', 'sub_engine', 'transmisi', 'main_line', 'mowcol', 'front_axle'];
+            $validAreas = ['sub_assy', 'sub_engine', 'transmisi', 'transmisi_a', 'transmisi_b', 'transmisi_c', 'main_line', 'mowcol', 'front_axle'];
             $imported = 0;
             $skipped = 0;
             $totalRows = count($rows) - 1;

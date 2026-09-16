@@ -66,6 +66,9 @@
                                 <option value="sub_assy">Sub Assy</option>
                                 <option value="sub_engine">Sub Engine</option>
                                 <option value="transmisi">Transmisi</option>
+                                <option value="transmisi_a">Transmisi A</option>
+                                <option value="transmisi_b">Transmisi B</option>
+                                <option value="transmisi_c">Transmisi C</option>
                                 <option value="main_line">Main Line</option>
                                 <option value="mowcol">Mowcol</option>
                                 <option value="front_axle">Front Axle</option>
