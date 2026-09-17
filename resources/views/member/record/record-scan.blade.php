@@ -46,9 +46,9 @@
 
         <div class="card mb-3">
             <div class="card-body">
-                <h1 class="text-center text-primary mb-0 rack-big-text"><strong>{{ $recordList->Code_Rack }}</strong></h1>
+                <h1 class="text-center text-primary mb-0 rack-big-text"><strong>{{ $recordList->Location_Rack }}</strong></h1>
                 <h5>{{ $recordList->Code_Part }} - {{ $recordList->Name_Part }}</h5>
-                <p class="text-muted mb-0">Location: <strong class="text-primary detail-rack">{{ $recordList->Location_Rack }}</strong> | Qty: <strong class="text-primary detail-rack">{{ $recordList->Qty }}</strong> | Box: <strong class="text-primary detail-rack">{{ $recordList->Box }}</strong></p>
+                <p class="text-muted mb-0">No Rack: <strong class="text-primary detail-rack">{{ $recordList->Code_Rack }}</strong> | Qty: <strong class="text-primary detail-rack">{{ $recordList->Qty }}</strong> | Box: <strong class="text-primary detail-rack">{{ $recordList->Box }}</strong></p>
                 <p class="text-muted mb-0">Mode: <strong class="text-primary">{{ ucfirst($recordList->Mode) }}</strong> | Pembeda: <strong class="text-primary">{{ $recordList->Difference }}</strong></p>
             </div>
         </div>
@@ -210,17 +210,25 @@
     var currentAudio = null;
     var loopTimeout = null;
 
-    function getFastAudio(ch) {
-        if (!audioCache[ch]) {
-            var audio = new Audio('{{ asset("assets/sounds/" . config("app.sound_theme", "a")) }}/' + ch + '.mp3');
+    function getFastAudio(ch, theme) {
+        theme = theme || 'a';
+        var cacheKey = theme + '_' + ch;
+        if (!audioCache[cacheKey]) {
+            var audio = new Audio('{{ asset("assets/sounds") }}/' + theme + '/' + ch + '.mp3');
             audio.playbackRate = 2;
             audio.preload = 'auto';
-            audioCache[ch] = audio;
+            audioCache[cacheKey] = audio;
         }
-        return audioCache[ch];
+        return audioCache[cacheKey];
     }
 
-    function playCharSounds(chars, index, onComplete) {
+    function playCharSounds(chars, index, theme, onComplete) {
+        if (typeof theme === 'function') {
+            onComplete = theme;
+            theme = 'a';
+        }
+        theme = theme || 'a';
+
         if (currentTimeout) { clearTimeout(currentTimeout); currentTimeout = null; }
         if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
         if (index >= chars.length) {
@@ -228,11 +236,11 @@
             return;
         }
         var ch = chars[index];
-        if (skipChars[ch]) { playCharSounds(chars, index + 1, onComplete); return; }
-        var audio = getFastAudio(ch);
+        if (skipChars[ch]) { playCharSounds(chars, index + 1, theme, onComplete); return; }
+        var audio = getFastAudio(ch, theme);
         audio.currentTime = 0;
         currentAudio = audio;
-        function handleNext() { playCharSounds(chars, index + 1, onComplete); }
+        function handleNext() { playCharSounds(chars, index + 1, theme, onComplete); }
         function startPlayback() {
             var duration = audio.duration;
             if (!duration || duration === Infinity || isNaN(duration)) {
@@ -261,27 +269,32 @@
         if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
     }
 
-    var boksAudio = new Audio('{{ asset("assets/sounds/" . config("app.sound_theme", "a")) }}/boks.mp3');
+    // Suara boks menggunakan asset di folder 'a'
+    var boksAudio = new Audio('{{ asset("assets/sounds/a/boks.mp3") }}');
     boksAudio.playbackRate = 2;
     boksAudio.preload = 'auto';
 
+    var locationValue = '{{ $recordList->Location_Rack }}';
     var boxValue = '{{ $recordList->Box }}';
     var qtyValue = '{{ $recordList->Qty }}';
 
     function playSequence() {
-        var codeRack = '{{ $recordList->Code_Rack }}'.toLowerCase();
-        playCharSounds(codeRack.split(''), 0, function() {
+        // 1. Bunyikan Location Rack (suara folder b)
+        playCharSounds(locationValue.toLowerCase().split(''), 0, 'b', function() {
             loopTimeout = setTimeout(function() {
                 function afterBoks() {
                     loopTimeout = setTimeout(function() {
-                        playCharSounds(boxValue.toLowerCase().split(''), 0, function() {
+                        // 3. Bunyikan Data Box (suara folder a)
+                        playCharSounds(boxValue.toLowerCase().split(''), 0, 'a', function() {
                             loopTimeout = setTimeout(function() {
-                                playCharSounds(qtyValue.split(''), 0);
-                            }, 500);
+                                // 4. Bunyikan Qty (suara folder b)
+                                playCharSounds(qtyValue.toString().split(''), 0, 'b');
+                            }, 300);
                         });
                     }, 300);
                 }
 
+                // 2. Bunyikan kata 'boks' (suara folder a)
                 if (boksAudio) {
                     boksAudio.currentTime = 0;
                     boksAudio.play().then(function() {

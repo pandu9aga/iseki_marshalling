@@ -115,6 +115,10 @@ class RecordController extends Controller
                 if (in_array($area, ['transmisi', 'transmisi_a', 'transmisi_b', 'transmisi_c'])) {
                     return 'transmisi';
                 }
+                // Jika sub-area sub_engine (sub_engine_a, sub_engine_b), anggap sebagai sub_engine
+                if (in_array($area, ['sub_engine', 'sub_engine_a', 'sub_engine_b'])) {
+                    return 'sub_engine';
+                }
                 return $area;
             })
             ->unique()
@@ -183,6 +187,16 @@ class RecordController extends Controller
             $allMarshallings = Marshalling::whereIn('Area', $subAreas)
                 ->where('Id_Type', $type->Id_Type)
                 ->orderByRaw("FIELD(Area, 'transmisi_a', 'transmisi_b', 'transmisi_c', 'transmisi')")
+                ->orderBy('Sequence_No')
+                ->get();
+
+            $marshallings = $allMarshallings;
+        } elseif ($request->area === 'sub_engine') {
+            // Khusus area sub_engine, ambil gabungan sub_engine_a, sub_engine_b (dan sub_engine reguler jika ada)
+            $subAreas = ['sub_engine_a', 'sub_engine_b', 'sub_engine'];
+            $allMarshallings = Marshalling::whereIn('Area', $subAreas)
+                ->where('Id_Type', $type->Id_Type)
+                ->orderByRaw("FIELD(Area, 'sub_engine_a', 'sub_engine_b', 'sub_engine')")
                 ->orderBy('Sequence_No')
                 ->get();
 
@@ -316,9 +330,13 @@ class RecordController extends Controller
                 $redirect = redirect()->route('member.record.scan-part', [$record->Id_Record, $next->Id_Record_List])
                     ->with('success', 'Part recorded! Proceed to next part.');
 
-                if ($recordList->Area !== $next->Area && 
+                $isTransmisiTransition = ($recordList->Area !== $next->Area && 
                     in_array($recordList->Area, ['transmisi_a', 'transmisi_b']) && 
-                    in_array($next->Area, ['transmisi_b', 'transmisi_c'])) {
+                    in_array($next->Area, ['transmisi_b', 'transmisi_c']));
+
+                $isSubEngineTransition = ($recordList->Area === 'sub_engine_a' && $next->Area === 'sub_engine_b');
+
+                if ($isTransmisiTransition || $isSubEngineTransition) {
                     $redirect->with('box_transition', true);
                 }
 
@@ -404,10 +422,14 @@ class RecordController extends Controller
             $redirect = redirect()->route('member.record.scan-part', [$record->Id_Record, $next->Id_Record_List])
                 ->with('success', 'Part recorded! Proceed to next part.');
 
-            // Cek apakah ada pergantian sub-area transmisi (misal: transmisi_a -> transmisi_b atau transmisi_b -> transmisi_c)
-            if ($recordList->Area !== $next->Area && 
+            // Cek apakah ada pergantian sub-area (transmisi_a -> transmisi_b, transmisi_b -> transmisi_c, atau sub_engine_a -> sub_engine_b)
+            $isTransmisiTransition = ($recordList->Area !== $next->Area && 
                 in_array($recordList->Area, ['transmisi_a', 'transmisi_b']) && 
-                in_array($next->Area, ['transmisi_b', 'transmisi_c'])) {
+                in_array($next->Area, ['transmisi_b', 'transmisi_c']));
+
+            $isSubEngineTransition = ($recordList->Area === 'sub_engine_a' && $next->Area === 'sub_engine_b');
+
+            if ($isTransmisiTransition || $isSubEngineTransition) {
                 $redirect->with('box_transition', true);
             }
 
