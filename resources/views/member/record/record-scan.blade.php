@@ -48,7 +48,7 @@
             <div class="card-body">
                 <h1 class="text-center text-primary mb-0 rack-big-text"><strong>{{ $recordList->Location_Rack }}</strong></h1>
                 <h5>{{ $recordList->Code_Part }} - {{ $recordList->Name_Part }}</h5>
-                <p class="text-muted mb-0">No Rack: <strong class="text-primary detail-rack">{{ $recordList->Code_Rack }}</strong> | Qty: <strong class="text-primary detail-rack">{{ $recordList->Qty }}</strong> | Box: <strong class="text-primary detail-rack">{{ $recordList->Box }}</strong></p>
+                <p class="text-muted mb-0">Code Rack: <strong class="text-primary detail-rack">{{ $recordList->Code_Rack }}</strong> | Box: <strong class="text-primary detail-rack">{{ $recordList->Box }}</strong> | Qty: <strong class="text-primary detail-rack">{{ $recordList->Qty }}</strong></p>
                 <p class="text-muted mb-0">Mode: <strong class="text-primary">{{ ucfirst($recordList->Mode) }}</strong> | Pembeda: <strong class="text-primary">{{ $recordList->Difference }}</strong></p>
             </div>
         </div>
@@ -210,24 +210,45 @@
     var currentAudio = null;
     var loopTimeout = null;
 
-    function getFastAudio(ch, theme) {
+    function getFastAudio(ch, theme, speed) {
         theme = theme || 'a';
-        var cacheKey = theme + '_' + ch;
+        speed = speed || ((theme === 'b') ? 1 : 2);
+        var cacheKey = theme + '_' + ch + '_' + speed;
         if (!audioCache[cacheKey]) {
-            var audio = new Audio('{{ asset("assets/sounds") }}/' + theme + '/' + ch + '.mp3');
-            audio.playbackRate = 2;
+            var soundSrc = window.SoundCache ? window.SoundCache.getUrl(theme, ch) : '{{ asset("assets/sounds") }}/' + theme + '/' + ch + '.mp3';
+            var audio = new Audio(soundSrc);
+            audio.playbackRate = speed;
             audio.preload = 'auto';
             audioCache[cacheKey] = audio;
         }
         return audioCache[cacheKey];
     }
 
-    function playCharSounds(chars, index, theme, onComplete) {
+    function getBoksAudio(speed) {
+        speed = speed || 1.2;
+        var cacheKey = 'a_boks_' + speed;
+        if (!audioCache[cacheKey]) {
+            var boksSrc = window.SoundCache ? window.SoundCache.getUrl('a', 'boks') : '{{ asset("assets/sounds/a/boks.mp3") }}';
+            var boksAudio = new Audio(boksSrc);
+            boksAudio.playbackRate = speed;
+            boksAudio.preload = 'auto';
+            audioCache[cacheKey] = boksAudio;
+        }
+        return audioCache[cacheKey];
+    }
+
+    function playCharSounds(chars, index, theme, speed, onComplete) {
+        if (typeof speed === 'function') {
+            onComplete = speed;
+            speed = (theme === 'b') ? 1 : 2;
+        }
         if (typeof theme === 'function') {
             onComplete = theme;
             theme = 'a';
+            speed = 2;
         }
         theme = theme || 'a';
+        speed = speed || ((theme === 'b') ? 1 : 2);
 
         if (currentTimeout) { clearTimeout(currentTimeout); currentTimeout = null; }
         if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
@@ -236,18 +257,20 @@
             return;
         }
         var ch = chars[index];
-        if (skipChars[ch]) { playCharSounds(chars, index + 1, theme, onComplete); return; }
-        var audio = getFastAudio(ch, theme);
+        if (skipChars[ch]) { playCharSounds(chars, index + 1, theme, speed, onComplete); return; }
+        var audio = getFastAudio(ch, theme, speed);
         audio.currentTime = 0;
         currentAudio = audio;
-        function handleNext() { playCharSounds(chars, index + 1, theme, onComplete); }
+        function handleNext() { playCharSounds(chars, index + 1, theme, speed, onComplete); }
         function startPlayback() {
             var duration = audio.duration;
             if (!duration || duration === Infinity || isNaN(duration)) {
                 audio.onended = handleNext;
             } else {
                 audio.onended = null;
-                var stopTimeMs = ((duration * 0.7) / audio.playbackRate) * 1000;
+                // Cutoff di 72% durasi agar pelafalan utuh/tidak terputus, namun jeda hening tetap terpotong
+                var factor = (theme === 'b') ? 0.72 : 0.70;
+                var stopTimeMs = ((duration * factor) / audio.playbackRate) * 1000;
                 currentTimeout = setTimeout(function() {
                     audio.pause();
                     currentTimeout = null;
@@ -269,32 +292,124 @@
         if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
     }
 
-    // Suara boks menggunakan asset di folder 'a'
-    var boksAudio = new Audio('{{ asset("assets/sounds/a/boks.mp3") }}');
-    boksAudio.playbackRate = 2;
-    boksAudio.preload = 'auto';
+    /**
+     * Konversi bilangan bulat (0 - 999999) menjadi urutan token audio bahasa Indonesia
+     * Contoh: 103 -> ['100', '3'], 12 -> ['2', 'belas'], 25 -> ['2', 'puluh', '5'], 115 -> ['100', '5', 'belas']
+     */
+    function numberToIndonesianTokens(n) {
+        n = parseInt(n, 10);
+        if (isNaN(n)) return [];
+        if (n === 0) return ['0'];
+
+        var tokens = [];
+
+        function convertUnder1000(num) {
+            var res = [];
+            if (num >= 100) {
+                var hundreds = Math.floor(num / 100);
+                if (hundreds === 1) {
+                    res.push('100'); // 'seratus'
+                } else {
+                    res.push(hundreds.toString());
+                    res.push('ratus');
+                }
+                num %= 100;
+            }
+
+            if (num >= 20) {
+                var tens = Math.floor(num / 10);
+                res.push(tens.toString());
+                res.push('puluh');
+                num %= 10;
+                if (num > 0) {
+                    res.push(num.toString());
+                }
+            } else if (num === 11) {
+                res.push('11'); // 'sebelas'
+            } else if (num === 10) {
+                res.push('10'); // 'sepuluh'
+            } else if (num >= 12 && num <= 19) {
+                var digit = num % 10;
+                res.push(digit.toString());
+                res.push('belas');
+            } else if (num > 0) {
+                res.push(num.toString());
+            }
+
+            return res;
+        }
+
+        if (n >= 1000) {
+            var thousands = Math.floor(n / 1000);
+            if (thousands === 1) {
+                tokens.push('1000'); // 'seribu'
+            } else {
+                tokens = tokens.concat(convertUnder1000(thousands));
+                tokens.push('ribu');
+            }
+            n %= 1000;
+        }
+
+        if (n > 0) {
+            tokens = tokens.concat(convertUnder1000(n));
+        }
+
+        return tokens;
+    }
+
+    /**
+     * Mem-parse string Location menjadi token audio:
+     * - Huruf dieja satu per satu (misal 'A' -> 'a')
+     * - Angka / blok angka dibaca dengan kaidah bilangan Indonesia (misal '103' -> ['100', '3'])
+     */
+    function parseLocationToTokens(str) {
+        if (!str) return [];
+        var parts = str.toString().match(/[a-zA-Z]+|[0-9]+/g);
+        if (!parts) return [];
+        var tokens = [];
+        parts.forEach(function(part) {
+            if (/^\d+$/.test(part)) {
+                tokens = tokens.concat(numberToIndonesianTokens(part));
+            } else {
+                tokens = tokens.concat(part.toLowerCase().split(''));
+            }
+        });
+        return tokens;
+    }
+
+    function parseQtyToTokens(qty) {
+        return numberToIndonesianTokens(qty);
+    }
 
     var locationValue = '{{ $recordList->Location_Rack }}';
     var boxValue = '{{ $recordList->Box }}';
     var qtyValue = '{{ $recordList->Qty }}';
 
     function playSequence() {
-        // 1. Bunyikan Location Rack (suara folder b)
-        playCharSounds(locationValue.toLowerCase().split(''), 0, 'b', function() {
+        // 1. Bunyikan Location Rack dengan kaidah bahasa Indonesia (suara folder b, speed 1)
+        var locationTokens = parseLocationToTokens(locationValue);
+        playCharSounds(locationTokens, 0, 'b', 1, function() {
             loopTimeout = setTimeout(function() {
                 function afterBoks() {
                     loopTimeout = setTimeout(function() {
-                        // 3. Bunyikan Data Box (suara folder a)
-                        playCharSounds(boxValue.toLowerCase().split(''), 0, 'a', function() {
+                        // 3. Bunyikan Data Box (suara folder a, speed 1.1)
+                        playCharSounds(boxValue.toLowerCase().split(''), 0, 'a', 1.1, function() {
                             loopTimeout = setTimeout(function() {
-                                // 4. Bunyikan Qty (suara folder b)
-                                playCharSounds(qtyValue.toString().split(''), 0, 'b');
+                                // 4. Bunyikan Qty dengan kaidah bahasa Indonesia (suara folder b, speed 1)
+                                var qtyTokens = parseQtyToTokens(qtyValue);
+                                playCharSounds(qtyTokens, 0, 'b', 1, function() {
+                                    // Repeat loop pemutaran suara kembali ke awal setelah jeda 500ms
+                                    loopTimeout = setTimeout(function() {
+                                        playSequence();
+                                    }, 500);
+                                });
                             }, 300);
                         });
-                    }, 300);
+                    }, 0);
                 }
 
-                // 2. Bunyikan kata 'boks' (suara folder a)
+                // 2. Bunyikan kata 'boks' (suara folder a, speed 1)
+                var boksAudio = getBoksAudio(1);
                 if (boksAudio) {
                     boksAudio.currentTime = 0;
                     boksAudio.play().then(function() {
@@ -307,20 +422,18 @@
                                 boksAudio.pause();
                                 currentTimeout = null;
                                 afterBoks();
-                            }, ((duration * 0.7) / boksAudio.playbackRate) * 1000);
+                            }, ((duration * 0.9) / boksAudio.playbackRate) * 1000);
                         }
                     }).catch(function(error) { console.log("Playback dicegah:", error); afterBoks(); });
                 } else {
                     afterBoks();
                 }
-            }, 500);
+            }, 200);
         });
     }
 
     function startScanCountdown() {
-        setTimeout(function() {
-            playSequence();
-        }, 3000);
+        playSequence();
 
         var scanDelay = 7;
         var timerEl = $('#scanTimer');
@@ -364,6 +477,7 @@
                 $('#Code_Rack').val(text).removeClass('is-valid is-invalid');
                 $(this).val('');
                 if (text === expectedCodeRack) {
+                    stopAllSounds();
                     $('#Code_Rack').addClass('is-valid');
                     if (window.isPunished) {
                         $('#Qty_Record').prop('disabled', false);
@@ -387,6 +501,7 @@
     });
 
     $('#btnPartKosong').on('click', function() {
+        stopAllSounds();
         $('#is_empty_flag').val('1');
         $('#Qty_Record').val(0);
         $('#partForm').submit();
@@ -400,6 +515,10 @@
         $('#submitPartBtn').prop('disabled', !$('#Qty_Record').val());
     };
 
+    $('#submitPartBtn').on('click', function() {
+        stopAllSounds();
+    });
+
     $('#Qty_Record').on('input', function() {
         if (window.isPunished) {
             checkFormReady();
@@ -408,6 +527,10 @@
 
     $('#partForm').on('keypress', function(e) {
         if (e.which === 13) return false;
+    });
+
+    $('#partForm').on('submit', function() {
+        stopAllSounds();
     });
 </script>
 @endsection
