@@ -21,6 +21,15 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
+    private function clearPreviousAuth(Request $request): void
+    {
+        Auth::guard('admin')->logout();
+        Auth::guard('member')->logout();
+        Auth::guard('perakitan')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+    }
+
     public function loginAdmin(Request $request)
     {
         $request->validate([
@@ -31,9 +40,10 @@ class AuthController extends Controller
         $admin = \App\Models\User::where('name', $request->name)->first();
 
         if ($admin && $admin->password === $request->password) {
+            $this->clearPreviousAuth($request);
             Auth::guard('admin')->login($admin);
             $request->session()->regenerate();
-            return redirect()->intended(route('admin.dashboard'));
+            return redirect()->route('admin.dashboard');
         }
 
         return back()->withErrors([
@@ -51,9 +61,10 @@ class AuthController extends Controller
         $member = \App\Models\Member::where('nik', $request->nik)->first();
 
         if ($member && $member->password === $request->password) {
+            $this->clearPreviousAuth($request);
             Auth::guard('member')->login($member);
             $request->session()->regenerate();
-            return redirect()->intended(route('member.records.index'));
+            return redirect()->route('member.records.index');
         }
 
         return back()->withErrors([
@@ -71,9 +82,10 @@ class AuthController extends Controller
         $perakitan = \App\Models\Perakitan::where('nik', $request->nik)->first();
 
         if ($perakitan && $perakitan->password === $request->password) {
+            $this->clearPreviousAuth($request);
             Auth::guard('perakitan')->login($perakitan);
             $request->session()->regenerate();
-            return redirect()->intended(route('perakitan.dashboard'));
+            return redirect()->route('perakitan.dashboard');
         }
 
         return back()->withErrors([

@@ -25,4 +25,17 @@ return Application::configure(basePath: dirname(__DIR__))
                     ->with('error', 'Halaman atau data record tidak ditemukan / telah dihapus. Silahkan scan QR kanban baru.');
             }
         });
+
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, \Illuminate\Http\Request $request) {
+            if (in_array($e->getStatusCode(), [409, 419])) {
+                \Illuminate\Support\Facades\Auth::guard('admin')->logout();
+                \Illuminate\Support\Facades\Auth::guard('member')->logout();
+                \Illuminate\Support\Facades\Auth::guard('perakitan')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect()->route('login')
+                    ->with('error', 'Sesi login telah diperbarui. Silahkan login kembali.');
+            }
+        });
     })->create();
