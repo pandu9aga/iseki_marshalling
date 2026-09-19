@@ -11,5 +11,6 @@ class MemberArea extends Model
     protected $fillable = [
         'nik',
         'area',
+        'audio_name',
     ];
 }

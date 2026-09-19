@@ -18,9 +18,6 @@ class Record extends Model
         'Area',
         'Time_Record',
         'Remark',
-        'Perakitan_Comment',
-        'Perakitan_Nik',
-        'Perakitan_Comment_Time',
     ];
 
     public function recordLists()
@@ -32,4 +29,10 @@ class Record extends Model
     {
         return $this->belongsTo(Member::class, 'Id_User', 'id');
     }
+
+    public function partKurangs()
+    {
+        return $this->hasMany(PartKurang::class, 'id_record', 'Id_Record');
+    }
 }
+

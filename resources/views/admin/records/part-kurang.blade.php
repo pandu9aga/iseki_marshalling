@@ -78,6 +78,7 @@
                                 <th>Reporter NIK</th>
                                 <th>Reporter Nama</th>
                                 <th>Catatan Part Kurang</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                     </table>
@@ -91,15 +92,18 @@
     <div class="modal-dialog modal-fullscreen modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title text-primary">
-                    <i class="fas fa-clipboard-list me-2"></i>Detail Laporan Part Kurang Hari Ini
-                </h5>
+                <div class="d-flex align-items-center gap-3">
+                    <h5 class="modal-title text-primary mb-0">
+                        <i class="fas fa-clipboard-list me-2"></i>Part Kurang
+                    </h5>
+                    <span id="audioStatusBadge" class="badge bg-info text-white"><i class="fas fa-volume-up me-1"></i>Audio Aktif (Ulang 5x)</span>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopCarousel()"></button>
             </div>
             <div class="modal-body position-relative">
                 <span id="carouselCounter" class="badge bg-secondary">0 / 0</span>
                 <div id="carouselContainer" class="carousel-box text-center">
-                    <div id="carouselInner" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000" data-bs-pause="false">
+                    <div id="carouselInner" class="carousel slide" data-bs-ride="false" data-bs-interval="false">
                         <div class="carousel-inner" id="carouselInnerContent"></div>
                     </div>
                 </div>
@@ -107,6 +111,9 @@
                     <button type="button" class="btn btn-outline-secondary btn-sm" onclick="slidePrev()">
                         <i class="fas fa-chevron-left me-1"></i> Previous
                     </button>
+                    <div class="text-muted small d-flex align-items-center">
+                        <span id="audioRepetitionCounter">Putaran: 0 / 5</span>
+                    </div>
                     <button type="button" class="btn btn-outline-secondary btn-sm" onclick="slideNext()">
                         Next <i class="fas fa-chevron-right ms-1"></i>
                     </button>
@@ -115,6 +122,10 @@
         </div>
     </div>
 </div>
+
+<!-- Audio Player Element for Slideshow -->
+<audio id="panggilanPlayer" src="{{ asset('assets/sounds/panggilan_kepada.MP3') }}" preload="auto"></audio>
+<audio id="namaPlayer" preload="auto"></audio>
 @endsection
 
 @section('script')
@@ -122,6 +133,12 @@
     var carouselInterval = null;
     var carouselData = [];
     var carouselActiveIndex = 0;
+    var audioLoopCount = 0;
+    var isAudioPlaying = false;
+    var shouldContinueAudio = false;
+
+    var panggilanAudio = document.getElementById('panggilanPlayer');
+    var namaAudio = document.getElementById('namaPlayer');
 
     $(document).ready(function() {
         var table = $('#partKurangTable').DataTable({
@@ -145,17 +162,116 @@
                 { data: 'comment_time', name: 'comment_time' },
                 { data: 'reporter_nik', name: 'reporter_nik' },
                 { data: 'reporter_name', name: 'reporter_name' },
-                { data: 'comment', name: 'comment' }
+                { data: 'comment', name: 'comment' },
+                { data: 'status_badge', name: 'status_badge', orderable: false, searchable: false }
             ]
         });
 
         $('#filter_date').on('change', function() {
             table.ajax.reload();
         });
+
+        // Setup audio sequencer listeners
+        panggilanAudio.addEventListener('ended', function() {
+            if (!shouldContinueAudio) return;
+            var currentItem = carouselData[carouselActiveIndex];
+            if (currentItem && currentItem.member_audio) {
+                namaAudio.src = currentItem.member_audio;
+                namaAudio.play().catch(function(err) {
+                    console.warn('Nama audio play error:', err);
+                    onAudioCycleEnd();
+                });
+            } else {
+                // Jika tidak ada audio nama member, langsung anggap 1 repetisi selesai
+                setTimeout(onAudioCycleEnd, 1000);
+            }
+        });
+
+        panggilanAudio.addEventListener('error', function() {
+            if (!shouldContinueAudio) return;
+            // Jika panggilan_kepada gagal, coba putar nama atau lewati
+            var currentItem = carouselData[carouselActiveIndex];
+            if (currentItem && currentItem.member_audio) {
+                namaAudio.src = currentItem.member_audio;
+                namaAudio.play().catch(function() {
+                    onAudioCycleEnd();
+                });
+            } else {
+                setTimeout(onAudioCycleEnd, 2000);
+            }
+        });
+
+        namaAudio.addEventListener('ended', function() {
+            if (!shouldContinueAudio) return;
+            onAudioCycleEnd();
+        });
+
+        namaAudio.addEventListener('error', function() {
+            if (!shouldContinueAudio) return;
+            onAudioCycleEnd();
+        });
     });
+
+    function onAudioCycleEnd() {
+        if (!shouldContinueAudio) return;
+        audioLoopCount++;
+        $('#audioRepetitionCounter').text('Panggilan: ' + audioLoopCount + ' / 5');
+
+        if (audioLoopCount < 5) {
+            // Tunggu jeda singkat lalu putar lagi
+            setTimeout(function() {
+                if (!shouldContinueAudio) return;
+                playPanggilan();
+            }, 800);
+        } else {
+            // Sudah 5x putar, beralih ke slide berikutnya (otomatis fetch data terbaru)
+            audioLoopCount = 0;
+            slideNext();
+        }
+    }
+
+    function playCurrentSlideAudio() {
+        stopAudioPlayback();
+        if (carouselData.length === 0) return;
+
+        shouldContinueAudio = true;
+        audioLoopCount = 0;
+        $('#audioRepetitionCounter').text('Panggilan: 1 / 5');
+
+        playPanggilan();
+    }
+
+    function playPanggilan() {
+        if (!shouldContinueAudio) return;
+        panggilanAudio.currentTime = 0;
+        panggilanAudio.play().catch(function(err) {
+            console.warn('Panggilan audio play blocked/error:', err);
+            // Browser autoplay policy might require interaction
+            var currentItem = carouselData[carouselActiveIndex];
+            if (currentItem && currentItem.member_audio) {
+                namaAudio.src = currentItem.member_audio;
+                namaAudio.play().catch(function() {
+                    setTimeout(onAudioCycleEnd, 3000);
+                });
+            } else {
+                setTimeout(onAudioCycleEnd, 3000);
+            }
+        });
+    }
+
+    function stopAudioPlayback() {
+        shouldContinueAudio = false;
+        try {
+            panggilanAudio.pause();
+            panggilanAudio.currentTime = 0;
+            namaAudio.pause();
+            namaAudio.currentTime = 0;
+        } catch(e) {}
+    }
 
     function showCarousel() {
         stopCarousel();
+        stopAudioPlayback();
         var date = $('#filter_date').val() || '{{ $today }}';
 
         $.getJSON('{{ route("admin.part-kurang.carousel") }}', { date: date }, function(data) {
@@ -163,7 +279,7 @@
             carouselActiveIndex = 0;
             buildCarousel();
             $('#carouselModal').modal('show');
-            startCarousel();
+            playCurrentSlideAudio();
         });
     }
 
@@ -171,13 +287,14 @@
         var inner = $('#carouselInnerContent');
         inner.empty();
         if (carouselData.length === 0) {
-            inner.html('<div class="carousel-item active"><div class="py-5 text-muted"><i class="fas fa-inbox fa-3x mb-3"></i><p>Tidak ada laporan part kurang untuk tanggal ini.</p></div></div>');
+            inner.html('<div class="carousel-item active"><div class="py-5 text-muted"><i class="fas fa-inbox fa-3x mb-3"></i><p>Tidak ada laporan part kurang pending untuk tanggal ini.</p></div></div>');
             $('#carouselCounter').text('0 / 0');
+            $('#audioRepetitionCounter').text('Panggilan: 0 / 0');
             return;
         }
         $.each(carouselData, function(i, item) {
-            var active = i === 0 ? ' active' : '';
-            var html = '<div class="carousel-item' + active + '">';
+            var active = i === carouselActiveIndex ? ' active' : '';
+            var html = '<div class="carousel-item' + active + '" id="carousel_slide_' + i + '">';
             html += '<div class="row h-100">';
 
             // Left: Member Marshalling photo + name
@@ -188,23 +305,31 @@
                 html += '<div class="member-photo member-photo-placeholder bg-light d-flex align-items-center justify-content-center border"><i class="fas fa-user fa-8x text-secondary"></i></div>';
             }
             html += '<div class="mt-3">';
-            html += '  <span class="badge bg-secondary mb-1">Member Marshalling</span>';
-            html += '  <strong class="d-block text-dark" style="font-size:1.25rem;">' + escHtml(item.member_name) + '</strong>';
+            html += '  <span class="badge bg-primary mb-1">Marshalling</span>';
+            html += '  <strong class="d-block text-dark" style="font-size:2rem;">' + escHtml(item.member_name) + '</strong>';
             html += '  <small class="text-muted d-block">NIK: ' + escHtml(item.member_nik || '-') + '</small>';
+            if (item.member_audio) {
+                html += '  <span class="badge bg-light text-success border mt-1"><i class="fas fa-check-circle me-1"></i>Audio Terdaftar</span>';
+            } else {
+                html += '  <span class="badge bg-light text-muted border mt-1"><i class="fas fa-volume-mute me-1"></i>Audio Belum Diupload</span>';
+            }
             html += '</div>';
             html += '</div>';
 
             // Middle: Kanban Details & Catatan Part Kurang
-            html += '<div class="col-md-6 border-start border-end d-flex align-items-center justify-content-center">';
-            html += '<div class="text-start w-100 px-4 py-3 overflow-auto" style="max-height:65vh;">';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Seq Record</div><div class="col-7 slide-value fw-bold text-primary" style="font-size:1.2rem;">' + escHtml(item.sequence) + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Prod Date</div><div class="col-7 slide-value">' + escHtml(item.production_date) + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Type Traktor</div><div class="col-7 slide-value fw-bold">' + escHtml(item.type) + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Area</div><div class="col-7 slide-value"><span class="badge bg-primary fs-6">' + escHtml(item.area) + '</span></div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Waktu Marshalling</div><div class="col-7 slide-value">' + escHtml(item.time_record) + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Waktu Komentar</div><div class="col-7 slide-value">' + escHtml(item.perakitan_comment_time) + '</div></div>';
-            html += '<hr class="my-3">';
-            html += '<div class="row mb-0"><div class="col-4 slide-label text-danger fw-bold"><i class="fas fa-clipboard-list me-1"></i>Catatan Part Kurang</div><div class="col-8 slide-value text-dark fw-bold" style="background:#fff3cd; border-radius:8px; padding:12px 16px; font-size:1.15rem; border-left: 4px solid #ffc107;">' + escHtml(item.perakitan_comment) + '</div></div>';
+            html += '<div class="col-md-6 border-start border-end d-flex flex-column justify-content-start py-2 h-100">';
+            html += '<div class="text-start w-100 px-4 pt-1 d-flex flex-column h-100">';
+            html += '  <div class="row mb-2"><div class="col-5 slide-label">Seq Record</div><div class="col-7 slide-value fw-bold text-primary" style="font-size:1.2rem;">' + escHtml(item.sequence) + '</div></div>';
+            html += '  <div class="row mb-2"><div class="col-5 slide-label">Prod Date</div><div class="col-7 slide-value">' + escHtml(item.production_date) + '</div></div>';
+            html += '  <div class="row mb-2"><div class="col-5 slide-label">Type Traktor</div><div class="col-7 slide-value fw-bold">' + escHtml(item.type) + '</div></div>';
+            html += '  <div class="row mb-2"><div class="col-5 slide-label">Area</div><div class="col-7 slide-value"><span class="badge bg-primary fs-6">' + escHtml(item.area) + '</span></div></div>';
+            html += '  <div class="row mb-2"><div class="col-5 slide-label">Waktu Marshalling</div><div class="col-7 slide-value">' + escHtml(item.time_record) + '</div></div>';
+            html += '  <div class="row mb-2"><div class="col-5 slide-label">Waktu Komentar</div><div class="col-7 slide-value">' + escHtml(item.perakitan_comment_time) + '</div></div>';
+            html += '  <hr class="my-2">';
+            html += '  <div class="d-flex flex-column flex-grow-1 mb-2">';
+            html += '    <div class="slide-label text-danger fw-bold mb-1" style="font-size:1.05rem;"><i class="fas fa-clipboard-list me-1"></i>Catatan Part Kurang:</div>';
+            html += '    <div class="w-100 text-dark fw-bold flex-grow-1 overflow-auto" style="background:#fff3cd; border-radius:8px; padding:14px 18px; font-size:4rem; border:1px solid #ffeeba; border-left:6px solid #ffc107; word-break:break-word; min-height:140px;">' + escHtml(item.perakitan_comment) + '</div>';
+            html += '  </div>';
             html += '</div>';
             html += '</div>';
 
@@ -216,8 +341,8 @@
                 html += '<div class="member-photo member-photo-placeholder bg-light d-flex align-items-center justify-content-center border"><i class="fas fa-user fa-8x text-secondary"></i></div>';
             }
             html += '<div class="mt-3">';
-            html += '  <span class="badge bg-primary mb-1">Member Perakitan</span>';
-            html += '  <strong class="d-block text-dark" style="font-size:1.25rem;">' + escHtml(item.perakitan_name) + '</strong>';
+            html += '  <span class="badge bg-info mb-1">Perakitan</span>';
+            html += '  <strong class="d-block text-dark" style="font-size:2rem;">' + escHtml(item.perakitan_name) + '</strong>';
             html += '  <small class="text-muted d-block">NIK: ' + escHtml(item.perakitan_nik || '-') + '</small>';
             html += '</div>';
             html += '</div>';
@@ -228,33 +353,72 @@
         updateCounter();
     }
 
-    function startCarousel() {
-        stopCarousel();
-        if (carouselData.length <= 1) return;
-        carouselInterval = setInterval(function() {
-            slideNext();
-        }, 4000);
-    }
-
     function stopCarousel() {
-        if (carouselInterval) {
-            clearInterval(carouselInterval);
-            carouselInterval = null;
-        }
+        stopAudioPlayback();
     }
 
     function slideNext() {
-        if (carouselData.length === 0) return;
-        carouselActiveIndex = (carouselActiveIndex + 1) % carouselData.length;
-        $('#carouselInner').carousel('next');
-        updateCounter();
+        stopAudioPlayback();
+        var date = $('#filter_date').val() || '{{ $today }}';
+
+        // Selalu cek data terbaru ke server setiap kali akan berganti slide
+        $.getJSON('{{ route("admin.part-kurang.carousel") }}', { date: date }, function(data) {
+            var currentId = (carouselData[carouselActiveIndex]) ? carouselData[carouselActiveIndex].Id_Part_Kurang : null;
+            carouselData = data;
+
+            if (carouselData.length === 0) {
+                carouselActiveIndex = 0;
+                buildCarousel();
+                return;
+            }
+
+            // Cari index dari item berikutnya
+            var nextIndex = 0;
+            if (currentId !== null) {
+                var foundIndex = carouselData.findIndex(function(it) {
+                    return it.Id_Part_Kurang === currentId;
+                });
+                if (foundIndex !== -1) {
+                    nextIndex = foundIndex + 1;
+                    if (nextIndex >= carouselData.length) {
+                        nextIndex = 0;
+                    }
+                } else {
+                    // Item lama sudah tidak pending / selesai, arahkan ke slide pada posisi yang sama atau 0
+                    nextIndex = carouselActiveIndex % carouselData.length;
+                }
+            }
+
+            carouselActiveIndex = nextIndex;
+            buildCarousel();
+            goToSlide(carouselActiveIndex);
+        }).fail(function() {
+            // Fallback jika fetch gagal (misal koneksi terputus sesaat)
+            if (carouselData.length > 0) {
+                carouselActiveIndex = (carouselActiveIndex + 1) % carouselData.length;
+                goToSlide(carouselActiveIndex);
+            }
+        });
     }
 
     function slidePrev() {
         if (carouselData.length === 0) return;
-        carouselActiveIndex = (carouselActiveIndex - 1 + carouselData.length) % carouselData.length;
-        $('#carouselInner').carousel('prev');
+        stopAudioPlayback();
+
+        carouselActiveIndex--;
+        if (carouselActiveIndex < 0) {
+            carouselActiveIndex = carouselData.length - 1;
+        }
+
+        goToSlide(carouselActiveIndex);
+    }
+
+    function goToSlide(index) {
+        $('.carousel-item').removeClass('active');
+        $('#carousel_slide_' + index).addClass('active');
+        carouselActiveIndex = index;
         updateCounter();
+        playCurrentSlideAudio();
     }
 
     function updateCounter() {

@@ -54,6 +54,7 @@ Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function
     Route::get('member-areas', [MemberAreaController::class, 'index'])->name('member-areas.index');
     Route::get('member-areas/search', [MemberAreaController::class, 'search'])->name('member-areas.search');
     Route::post('member-areas', [MemberAreaController::class, 'store'])->name('member-areas.store');
+    Route::post('member-areas/{id}/upload-audio', [MemberAreaController::class, 'uploadAudio'])->name('member-areas.upload-audio');
     Route::delete('member-areas/{memberArea}', [MemberAreaController::class, 'destroy'])->name('member-areas.destroy');
 });
 
@@ -81,5 +82,7 @@ Route::middleware('auth:perakitan')->prefix('perakitan')->name('perakitan.')->gr
 
     Route::get('/comment', [PerakitanCommentController::class, 'index'])->name('comment.index');
     Route::get('/comment/search', [PerakitanCommentController::class, 'search'])->name('comment.search');
+    Route::get('/comment/my-list', [PerakitanCommentController::class, 'myList'])->name('comment.my-list');
     Route::post('/comment/{id}/store', [PerakitanCommentController::class, 'store'])->name('comment.store');
+    Route::post('/comment/{id}/receive', [PerakitanCommentController::class, 'markReceived'])->name('comment.receive');
 });
