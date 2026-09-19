@@ -2,7 +2,7 @@
 
 @section('style')
 <style>
-    #reportEmptyTable .badge { font-size: 11px; padding: 3px 6px; }
+    #partKurangTable .badge { font-size: 11px; padding: 3px 6px; }
     #carouselModal .modal-body {
         display: flex;
         flex-direction: column;
@@ -49,38 +49,35 @@
 <div class="container">
     <div class="page-inner">
         <div class="page-header d-flex justify-content-between align-items-center">
-            <h4 class="page-title text-primary mb-0">Report Empty</h4>
+            <h4 class="page-title text-primary mb-0"><i class="fas fa-clipboard-list me-2"></i>Laporan Part Kurang</h4>
         </div>
         <div class="card">
             <div class="card-body">
                 <div class="row mb-3">
                     <div class="col-md-3">
-                        <label>Date</label>
+                        <label class="form-label fw-bold">Tanggal</label>
                         <input type="date" id="filter_date" class="form-control form-control-sm" value="{{ $today }}">
                     </div>
                     <div class="col-md-3 d-flex align-items-end">
                         <button type="button" class="btn btn-info btn-sm" onclick="showCarousel()">
-                            <i class="fas fa-eye me-1"></i> Show
+                            <i class="fas fa-eye me-1"></i> Show Slideshow
                         </button>
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table id="reportEmptyTable" class="table table-bordered table-striped">
+                    <table id="partKurangTable" class="table table-bordered table-striped">
                         <thead>
                             <tr>
                                 <th>No</th>
-                                <th>Member</th>
+                                <th>Member Marshalling</th>
                                 <th>Seq Record</th>
                                 <th>Prod Date</th>
                                 <th>Type</th>
-                                <th>Code Part</th>
-                                <th>Name Part</th>
-                                <th>Box</th>
-                                <th>Qty</th>
                                 <th>Area</th>
-                                <th>Report Time</th>
+                                <th>Waktu Komentar</th>
                                 <th>Reporter NIK</th>
-                                <th>Komentar</th>
+                                <th>Reporter Nama</th>
+                                <th>Catatan Part Kurang</th>
                             </tr>
                         </thead>
                     </table>
@@ -95,7 +92,7 @@
         <div class="modal-content">
             <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title text-primary">
-                    <i class="fas fa-box-open me-2"></i>Detail Report Empty Hari Ini
+                    <i class="fas fa-clipboard-list me-2"></i>Detail Laporan Part Kurang Hari Ini
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopCarousel()"></button>
             </div>
@@ -127,13 +124,13 @@
     var carouselActiveIndex = 0;
 
     $(document).ready(function() {
-        var table = $('#reportEmptyTable').DataTable({
+        var table = $('#partKurangTable').DataTable({
             pageLength: 50,
             lengthMenu: [10, 25, 50, 100],
             processing: true,
             serverSide: true,
             ajax: {
-                url: "{{ url('admin/report-empty') }}",
+                url: "{{ route('admin.part-kurang.list') }}",
                 data: function(d) {
                     d.filter_date = $('#filter_date').val();
                 }
@@ -144,14 +141,11 @@
                 { data: 'sequence_record', name: 'sequence_record' },
                 { data: 'production_date', name: 'production_date' },
                 { data: 'type_record', name: 'type_record' },
-                { data: 'Code_Part', name: 'Code_Part' },
-                { data: 'Name_Part', name: 'Name_Part' },
-                { data: 'Box', name: 'Box' },
-                { data: 'Qty', name: 'Qty' },
                 { data: 'area_record', name: 'area_record' },
-                { data: 'report_empty_time', name: 'report_empty_time' },
+                { data: 'comment_time', name: 'comment_time' },
                 { data: 'reporter_nik', name: 'reporter_nik' },
-                { data: 'report_comment', name: 'report_comment' }
+                { data: 'reporter_name', name: 'reporter_name' },
+                { data: 'comment', name: 'comment' }
             ]
         });
 
@@ -164,7 +158,7 @@
         stopCarousel();
         var date = $('#filter_date').val() || '{{ $today }}';
 
-        $.getJSON('{{ url("admin/report-empty/carousel") }}', { date: date }, function(data) {
+        $.getJSON('{{ route("admin.part-kurang.carousel") }}', { date: date }, function(data) {
             carouselData = data;
             carouselActiveIndex = 0;
             buildCarousel();
@@ -177,7 +171,7 @@
         var inner = $('#carouselInnerContent');
         inner.empty();
         if (carouselData.length === 0) {
-            inner.html('<div class="carousel-item active"><div class="py-5 text-muted"><i class="fas fa-inbox fa-3x mb-3"></i><p>Tidak ada data report empty untuk hari ini.</p></div></div>');
+            inner.html('<div class="carousel-item active"><div class="py-5 text-muted"><i class="fas fa-inbox fa-3x mb-3"></i><p>Tidak ada laporan part kurang untuk tanggal ini.</p></div></div>');
             $('#carouselCounter').text('0 / 0');
             return;
         }
@@ -186,43 +180,46 @@
             var html = '<div class="carousel-item' + active + '">';
             html += '<div class="row h-100">';
 
-            // Left: Member photo + name
-            html += '<div class="col-md-4 d-flex flex-column align-items-center justify-content-center text-center border-end">';
+            // Left: Member Marshalling photo + name
+            html += '<div class="col-md-3 d-flex flex-column align-items-center justify-content-center text-center border-end">';
             if (item.member_photo) {
                 html += '<img src="' + item.member_photo + '" class="member-photo border" onerror="this.style.display=\'none\'">';
             } else {
                 html += '<div class="member-photo member-photo-placeholder bg-light d-flex align-items-center justify-content-center border"><i class="fas fa-user fa-8x text-secondary"></i></div>';
             }
-            html += '<div class="mt-3"><small class="text-muted d-block fw-bold">Member</small><strong class="d-block" style="font-size:1.3rem;">' + escHtml(item.member) + '</strong></div>';
+            html += '<div class="mt-3">';
+            html += '  <span class="badge bg-secondary mb-1">Member Marshalling</span>';
+            html += '  <strong class="d-block text-dark" style="font-size:1.25rem;">' + escHtml(item.member_name) + '</strong>';
+            html += '  <small class="text-muted d-block">NIK: ' + escHtml(item.member_nik || '-') + '</small>';
+            html += '</div>';
             html += '</div>';
 
-            // Middle: part details
-            html += '<div class="col-md-4 border-start border-end d-flex align-items-center justify-content-center">';
-            html += '<div class="text-start w-100 px-2">';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Code Part</div><div class="col-7 slide-value fw-bold">' + escHtml(item.Code_Part) + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Name Part</div><div class="col-7 slide-value">' + escHtml(item.Name_Part || '-') + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Code Rack</div><div class="col-7 slide-value">' + escHtml(item.Code_Rack) + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Box</div><div class="col-7 slide-value">' + escHtml(item.Box || '-') + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Qty</div><div class="col-7 slide-value">' + item.Qty + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Difference</div><div class="col-7 slide-value">' + escHtml(item.Difference || '-') + '</div></div>';
-            html += '<hr>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Seq Record</div><div class="col-7 slide-value">' + escHtml(item.sequence) + '</div></div>';
+            // Middle: Kanban Details & Catatan Part Kurang
+            html += '<div class="col-md-6 border-start border-end d-flex align-items-center justify-content-center">';
+            html += '<div class="text-start w-100 px-4 py-3 overflow-auto" style="max-height:65vh;">';
+            html += '<div class="row mb-3"><div class="col-5 slide-label">Seq Record</div><div class="col-7 slide-value fw-bold text-primary" style="font-size:1.2rem;">' + escHtml(item.sequence) + '</div></div>';
             html += '<div class="row mb-3"><div class="col-5 slide-label">Prod Date</div><div class="col-7 slide-value">' + escHtml(item.production_date) + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Type</div><div class="col-7 slide-value">' + escHtml(item.type) + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Area</div><div class="col-7 slide-value">' + escHtml(item.area) + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Report Time</div><div class="col-7 slide-value">' + item.report_empty + '</div></div>';
-            html += '<div class="row mb-0"><div class="col-5 slide-label text-danger fw-bold"><i class="fas fa-comment-dots me-1"></i>Komentar</div><div class="col-7 slide-value text-dark fw-bold" style="background:#f8f9fa; border-radius:6px; padding:6px 10px;">' + (item.report_comment && item.report_comment !== '-' ? escHtml(item.report_comment) : '<span class="text-muted fst-italic">-</span>') + '</div></div>';
+            html += '<div class="row mb-3"><div class="col-5 slide-label">Type Traktor</div><div class="col-7 slide-value fw-bold">' + escHtml(item.type) + '</div></div>';
+            html += '<div class="row mb-3"><div class="col-5 slide-label">Area</div><div class="col-7 slide-value"><span class="badge bg-primary fs-6">' + escHtml(item.area) + '</span></div></div>';
+            html += '<div class="row mb-3"><div class="col-5 slide-label">Waktu Marshalling</div><div class="col-7 slide-value">' + escHtml(item.time_record) + '</div></div>';
+            html += '<div class="row mb-3"><div class="col-5 slide-label">Waktu Komentar</div><div class="col-7 slide-value">' + escHtml(item.perakitan_comment_time) + '</div></div>';
+            html += '<hr class="my-3">';
+            html += '<div class="row mb-0"><div class="col-4 slide-label text-danger fw-bold"><i class="fas fa-clipboard-list me-1"></i>Catatan Part Kurang</div><div class="col-8 slide-value text-dark fw-bold" style="background:#fff3cd; border-radius:8px; padding:12px 16px; font-size:1.15rem; border-left: 4px solid #ffc107;">' + escHtml(item.perakitan_comment) + '</div></div>';
             html += '</div>';
             html += '</div>';
 
-            // Right: reporter photo + name
-            html += '<div class="col-md-4 text-center d-flex flex-column align-items-center justify-content-center py-3">';
-            if (item.reporter_photo) {
-                html += '<img src="' + item.reporter_photo + '" class="member-photo border" onerror="this.style.display=\'none\'">';
+            // Right: Member Perakitan (Commenter) photo + name
+            html += '<div class="col-md-3 text-center d-flex flex-column align-items-center justify-content-center border-start py-3">';
+            if (item.perakitan_photo) {
+                html += '<img src="' + item.perakitan_photo + '" class="member-photo border" onerror="this.style.display=\'none\'">';
             } else {
                 html += '<div class="member-photo member-photo-placeholder bg-light d-flex align-items-center justify-content-center border"><i class="fas fa-user fa-8x text-secondary"></i></div>';
             }
-            html += '<div class="mt-3"><small class="text-muted d-block fw-bold">Reporter</small><strong class="d-block" style="font-size:1.3rem;">' + escHtml(item.reporter_name) + '</strong></div>';
+            html += '<div class="mt-3">';
+            html += '  <span class="badge bg-primary mb-1">Member Perakitan</span>';
+            html += '  <strong class="d-block text-dark" style="font-size:1.25rem;">' + escHtml(item.perakitan_name) + '</strong>';
+            html += '  <small class="text-muted d-block">NIK: ' + escHtml(item.perakitan_nik || '-') + '</small>';
+            html += '</div>';
             html += '</div>';
 
             html += '</div>';
@@ -249,49 +246,37 @@
     function slideNext() {
         if (carouselData.length === 0) return;
         carouselActiveIndex = (carouselActiveIndex + 1) % carouselData.length;
-        goToSlide(carouselActiveIndex);
+        $('#carouselInner').carousel('next');
+        updateCounter();
     }
 
     function slidePrev() {
         if (carouselData.length === 0) return;
         carouselActiveIndex = (carouselActiveIndex - 1 + carouselData.length) % carouselData.length;
-        goToSlide(carouselActiveIndex);
-    }
-
-    function goToSlide(index) {
-        carouselActiveIndex = index;
-        var items = $('#carouselInnerContent .carousel-item');
-        items.removeClass('active');
-        $(items[index]).addClass('active');
+        $('#carouselInner').carousel('prev');
         updateCounter();
-
-        // refresh data on last slide
-        if (index === items.length - 1) {
-            refreshCarouselData();
-        }
     }
 
     function updateCounter() {
-        $('#carouselCounter').text((carouselActiveIndex + 1) + ' / ' + carouselData.length);
+        if (carouselData.length === 0) {
+            $('#carouselCounter').text('0 / 0');
+        } else {
+            $('#carouselCounter').text((carouselActiveIndex + 1) + ' / ' + carouselData.length);
+        }
     }
 
-    function refreshCarouselData() {
-        var date = $('#filter_date').val() || '{{ $today }}';
-        $.getJSON('{{ url("admin/report-empty/carousel") }}', { date: date }, function(data) {
-            var oldLen = carouselData.length;
-            carouselData = data;
-            if (data.length !== oldLen) {
-                var activeItem = $('#carouselInnerContent .carousel-item.active');
-                var activeIdx = carouselActiveIndex;
-                buildCarousel();
-                goToSlide(Math.min(activeIdx, data.length - 1));
-            }
-        });
-    }
+    $('#carouselModal').on('hidden.bs.modal', function() {
+        stopCarousel();
+    });
 
     function escHtml(str) {
-        if (!str) return '-';
-        return $('<span>').text(str).html();
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 </script>
 @endsection

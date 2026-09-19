@@ -182,6 +182,12 @@
                                 <p class="{{ request()->routeIs('admin.report-empty.*') ? 'text-primary' : '' }}">Report Empty</p>
                             </a>
                         </li>
+                        <li class="nav-item {{ request()->routeIs('admin.part-kurang.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.part-kurang.list') }}">
+                                <i class="fas fa-clipboard-list"></i>
+                                <p class="{{ request()->routeIs('admin.part-kurang.*') ? 'text-primary' : '' }}">Part Kurang</p>
+                            </a>
+                        </li>
                         <li class="nav-item {{ request()->routeIs('admin.punishments.*') ? 'active' : '' }}">
                             <a href="{{ route('admin.punishments.index') }}">
                                 <i class="fas fa-gavel"></i>

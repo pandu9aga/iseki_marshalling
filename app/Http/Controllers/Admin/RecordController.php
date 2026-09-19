@@ -229,9 +229,6 @@ class RecordController extends Controller
                 ->addColumn('report_comment', function ($row) {
                     return $row->Report_Comment ? e($row->Report_Comment) : '-';
                 })
-                ->addColumn('perakitan_comment', function ($row) {
-                    return $row->record && $row->record->Perakitan_Comment ? e($row->record->Perakitan_Comment) : '-';
-                })
                 ->make(true);
         }
 
@@ -252,9 +249,6 @@ class RecordController extends Controller
             ->map(function ($rl) use ($photoBase) {
                 $memberPhoto = null;
                 $reporterPhoto = null;
-                $perakitanPhoto = null;
-                $perakitanName = null;
-
                 if ($rl->record && $rl->record->member) {
                     $memberPhoto = $rl->record->member->photo_employee ? $photoBase . '/' . $rl->record->member->photo_employee : null;
                 }
@@ -262,41 +256,25 @@ class RecordController extends Controller
                     $reporter = DB::connection('rifa')->table('employees')->where('nik', $rl->Reporter_Nik)->first(['nama', 'photo_employee']);
                     $reporterPhoto = $reporter && $reporter->photo_employee ? $photoBase . '/' . $reporter->photo_employee : null;
                 }
-                if ($rl->record && $rl->record->Perakitan_Nik) {
-                    $perakitanUser = DB::connection('rifa')->table('employees')->where('nik', $rl->record->Perakitan_Nik)->first(['nama', 'photo_employee']);
-                    if ($perakitanUser) {
-                        $perakitanName = $perakitanUser->nama;
-                        $perakitanPhoto = $perakitanUser->photo_employee ? $photoBase . '/' . $perakitanUser->photo_employee : null;
-                    } else {
-                        $perakitanName = $rl->record->Perakitan_Nik;
-                    }
-                }
-
                 return [
-                    'Id_Record_List'         => $rl->Id_Record_List,
-                    'Code_Part'              => $rl->Code_Part,
-                    'Name_Part'              => $rl->Name_Part,
-                    'Code_Rack'              => $rl->Code_Rack,
-                    'Box'                    => $rl->Box,
-                    'Qty'                    => $rl->Qty,
-                    'Difference'             => $rl->Difference,
-                    'sequence'               => $rl->record ? $rl->record->Sequence_No_Record : '-',
-                    'production_date'        => $rl->record ? $rl->record->Production_Date_Record : '-',
-                    'type'                   => $rl->record ? $rl->record->Type : '-',
-                    'area'                   => $rl->record ? ucwords(str_replace('_', ' ', $rl->record->Area)) : '-',
-                    'member'                 => $rl->record && $rl->record->member ? $rl->record->member->nama : '-',
-                    'member_nik'             => $rl->record && $rl->record->member ? ($rl->record->member->nik ?? '-') : '-',
-                    'member_photo'           => $memberPhoto,
-                    'reporter_nik'           => $rl->Reporter_Nik ?? '-',
-                    'reporter_name'          => $rl->Reporter_Nik ? (DB::connection('rifa')->table('employees')->where('nik', $rl->Reporter_Nik)->value('nama') ?? $rl->Reporter_Nik) : '-',
-                    'reporter_photo'         => $reporterPhoto,
-                    'report_empty'           => $rl->Report_Empty ? \Carbon\Carbon::parse($rl->Report_Empty)->format('d/m/Y H:i') : '-',
-                    'report_comment'         => $rl->Report_Comment ?? '-',
-                    'perakitan_comment'      => $rl->record ? $rl->record->Perakitan_Comment : null,
-                    'perakitan_nik'          => $rl->record ? $rl->record->Perakitan_Nik : null,
-                    'perakitan_name'         => $perakitanName,
-                    'perakitan_photo'        => $perakitanPhoto,
-                    'perakitan_comment_time' => ($rl->record && $rl->record->Perakitan_Comment_Time) ? \Carbon\Carbon::parse($rl->record->Perakitan_Comment_Time)->format('d/m/Y H:i') : null,
+                    'Id_Record_List' => $rl->Id_Record_List,
+                    'Code_Part'      => $rl->Code_Part,
+                    'Name_Part'      => $rl->Name_Part,
+                    'Code_Rack'      => $rl->Code_Rack,
+                    'Box'            => $rl->Box,
+                    'Qty'            => $rl->Qty,
+                    'Difference'     => $rl->Difference,
+                    'sequence'       => $rl->record ? $rl->record->Sequence_No_Record : '-',
+                    'production_date' => $rl->record ? $rl->record->Production_Date_Record : '-',
+                    'type'           => $rl->record ? $rl->record->Type : '-',
+                    'area'           => $rl->record ? ucwords(str_replace('_', ' ', $rl->record->Area)) : '-',
+                    'member'         => $rl->record && $rl->record->member ? $rl->record->member->nama : '-',
+                    'member_photo'   => $memberPhoto,
+                    'reporter_nik'   => $rl->Reporter_Nik ?? '-',
+                    'reporter_name'  => $rl->Reporter_Nik ? (DB::connection('rifa')->table('employees')->where('nik', $rl->Reporter_Nik)->value('nama') ?? $rl->Reporter_Nik) : '-',
+                    'reporter_photo' => $reporterPhoto,
+                    'report_empty'   => $rl->Report_Empty ? \Carbon\Carbon::parse($rl->Report_Empty)->format('d/m/Y H:i') : '-',
+                    'report_comment' => $rl->Report_Comment ?? '-',
                 ];
             });
 
@@ -361,5 +339,105 @@ class RecordController extends Controller
         $areas = Record::select('Area')->distinct()->whereNotNull('Area')->orderBy('Area')->pluck('Area');
 
         return view('admin.records.empty-part', compact('members', 'types', 'areas'));
+    }
+
+    public function partKurangList(Request $request)
+    {
+        if ($request->ajax()) {
+            $data = Record::with('member')
+                ->whereNotNull('Perakitan_Comment')
+                ->where('Perakitan_Comment', '!=', '')
+                ->orderBy('Perakitan_Comment_Time', 'desc');
+
+            if ($request->filled('filter_date')) {
+                $data->whereDate('Perakitan_Comment_Time', $request->filter_date);
+            }
+
+            return datatables($data)
+                ->addIndexColumn()
+                ->addColumn('member_name', function ($row) {
+                    return $row->member ? $row->member->nama : '-';
+                })
+                ->addColumn('sequence_record', function ($row) {
+                    return $row->Sequence_No_Record ?? '-';
+                })
+                ->addColumn('production_date', function ($row) {
+                    return $row->Production_Date_Record ?? '-';
+                })
+                ->addColumn('type_record', function ($row) {
+                    return $row->Type ?? '-';
+                })
+                ->addColumn('area_record', function ($row) {
+                    return ucwords(str_replace('_', ' ', $row->Area ?? '-'));
+                })
+                ->addColumn('comment_time', function ($row) {
+                    return $row->Perakitan_Comment_Time ? \Carbon\Carbon::parse($row->Perakitan_Comment_Time)->format('d/m/Y H:i') : '-';
+                })
+                ->addColumn('reporter_nik', function ($row) {
+                    return $row->Perakitan_Nik ?? '-';
+                })
+                ->addColumn('reporter_name', function ($row) {
+                    if (!$row->Perakitan_Nik) return '-';
+                    return DB::connection('rifa')->table('employees')->where('nik', $row->Perakitan_Nik)->value('nama') ?? $row->Perakitan_Nik;
+                })
+                ->addColumn('comment', function ($row) {
+                    return e($row->Perakitan_Comment);
+                })
+                ->make(true);
+        }
+
+        $today = now()->format('Y-m-d');
+        return view('admin.records.part-kurang', compact('today'));
+    }
+
+    public function partKurangCarousel(Request $request)
+    {
+        $date = $request->date ?: now()->format('Y-m-d');
+        $photoBase = '/iseki_rifa/public/photo_employee';
+
+        $items = Record::with('member')
+            ->whereNotNull('Perakitan_Comment')
+            ->where('Perakitan_Comment', '!=', '')
+            ->whereDate('Perakitan_Comment_Time', $date)
+            ->orderBy('Perakitan_Comment_Time', 'desc')
+            ->get()
+            ->map(function ($r) use ($photoBase) {
+                $memberPhoto = null;
+                $perakitanPhoto = null;
+                $perakitanName = null;
+
+                if ($r->member) {
+                    $memberPhoto = $r->member->photo_employee ? $photoBase . '/' . $r->member->photo_employee : null;
+                }
+
+                if ($r->Perakitan_Nik) {
+                    $emp = DB::connection('rifa')->table('employees')->where('nik', $r->Perakitan_Nik)->first(['nama', 'photo_employee']);
+                    if ($emp) {
+                        $perakitanName = $emp->nama;
+                        $perakitanPhoto = $emp->photo_employee ? $photoBase . '/' . $emp->photo_employee : null;
+                    } else {
+                        $perakitanName = $r->Perakitan_Nik;
+                    }
+                }
+
+                return [
+                    'Id_Record'              => $r->Id_Record,
+                    'sequence'               => $r->Sequence_No_Record,
+                    'production_date'        => $r->Production_Date_Record,
+                    'type'                   => $r->Type,
+                    'area'                   => ucwords(str_replace('_', ' ', $r->Area)),
+                    'time_record'            => $r->Time_Record ? \Carbon\Carbon::parse($r->Time_Record)->format('d/m/Y H:i') : '-',
+                    'member_name'            => $r->member ? $r->member->nama : '-',
+                    'member_nik'             => $r->member ? ($r->member->nik ?? '-') : '-',
+                    'member_photo'           => $memberPhoto,
+                    'perakitan_comment'      => $r->Perakitan_Comment,
+                    'perakitan_nik'          => $r->Perakitan_Nik ?? '-',
+                    'perakitan_name'         => $perakitanName ?? ($r->Perakitan_Nik ?? '-'),
+                    'perakitan_photo'        => $perakitanPhoto,
+                    'perakitan_comment_time' => $r->Perakitan_Comment_Time ? \Carbon\Carbon::parse($r->Perakitan_Comment_Time)->format('d/m/Y H:i') : '-',
+                ];
+            });
+
+        return response()->json($items);
     }
 }
