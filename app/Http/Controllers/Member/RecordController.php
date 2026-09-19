@@ -248,16 +248,18 @@ class RecordController extends Controller
     {
         $record = Record::with(['recordLists' => function ($q) {
             $q->orderBy('Sequence_No');
-        }])->findOrFail($recordId);
+        }])->find($recordId);
 
         $member = Auth::guard('member')->user();
-        if ($record->Id_User != $member->id) {
-            abort(403);
+        if (!$record || $record->Id_User != $member->id) {
+            return redirect()->route('member.record.create')
+                ->with('error', 'Record tidak ditemukan atau telah dihapus. Silahkan scan QR kanban baru.');
         }
 
         $recordList = $record->recordLists->firstWhere('Id_Record_List', $recordListId);
         if (!$recordList) {
-            abort(404);
+            return redirect()->route('member.record.create')
+                ->with('error', 'List part tidak ditemukan atau telah dihapus. Silahkan scan QR kanban baru.');
         }
 
         if ($recordList->Time_Record !== null) {
@@ -271,14 +273,20 @@ class RecordController extends Controller
 
     public function updatePart(Request $request, $recordListId)
     {
-        $recordList = Record_List::findOrFail($recordListId);
+        $recordList = Record_List::find($recordListId);
+        if (!$recordList) {
+            return redirect()->route('member.record.create')
+                ->with('error', 'Record part tidak ditemukan atau telah dihapus oleh Admin. Silahkan scan QR kanban baru.');
+        }
+
         $record = Record::with(['recordLists' => function ($q) {
             $q->orderBy('Sequence_No');
-        }])->findOrFail($recordList->Id_Record);
+        }])->find($recordList->Id_Record);
 
         $member = Auth::guard('member')->user();
-        if ($record->Id_User != $member->id) {
-            abort(403);
+        if (!$record || $record->Id_User != $member->id) {
+            return redirect()->route('member.record.create')
+                ->with('error', 'Record tidak ditemukan atau telah dihapus oleh Admin. Silahkan scan QR kanban baru.');
         }
 
         $isEmpty = $request->boolean('Is_Empty');
@@ -442,10 +450,11 @@ class RecordController extends Controller
 
     public function saveRemark(Request $request, $recordId)
     {
-        $record = Record::findOrFail($recordId);
+        $record = Record::find($recordId);
         $member = Auth::guard('member')->user();
-        if ($record->Id_User != $member->id) {
-            abort(403);
+        if (!$record || $record->Id_User != $member->id) {
+            return redirect()->route('member.record.create')
+                ->with('error', 'Record tidak ditemukan atau telah dihapus.');
         }
 
         $request->validate([

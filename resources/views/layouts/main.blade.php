@@ -224,6 +224,12 @@
                                 <p class="{{ request()->routeIs('perakitan.prosedur.*') ? 'text-primary' : '' }}">Prosedur</p>
                             </a>
                         </li>
+                        <li class="nav-item {{ request()->routeIs('perakitan.comment.*') ? 'active' : '' }}">
+                            <a href="{{ route('perakitan.comment.index') }}">
+                                <i class="fas fa-comment-dots"></i>
+                                <p class="{{ request()->routeIs('perakitan.comment.*') ? 'text-primary' : '' }}">Part Kurang</p>
+                            </a>
+                        </li>
                         @endif
                     </ul>
                 </div>

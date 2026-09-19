@@ -19,5 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e, \Illuminate\Http\Request $request) {
+            if ($request->is('member/record/*') || $request->is('member/records/*')) {
+                return redirect()->route('member.record.create')
+                    ->with('error', 'Halaman atau data record tidak ditemukan / telah dihapus. Silahkan scan QR kanban baru.');
+            }
+        });
     })->create();

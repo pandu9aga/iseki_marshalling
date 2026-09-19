@@ -114,14 +114,26 @@ class KanbanController extends Controller
         $recordList = Record_List::findOrFail($id);
         $user = Auth::guard('perakitan')->user();
 
+        $comment = $request->input('comment');
+        if (is_string($comment)) {
+            $comment = trim($comment);
+            if ($comment === '') {
+                $comment = null;
+            }
+        } else {
+            $comment = null;
+        }
+
         $recordList->update([
-            'Report_Empty'  => now(),
-            'Reporter_Nik'  => $user->nik,
+            'Report_Empty'   => now(),
+            'Reporter_Nik'   => $user->nik,
+            'Report_Comment' => $comment,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Part berhasil dilaporkan kosong.',
+            'comment' => $comment,
         ]);
     }
 }

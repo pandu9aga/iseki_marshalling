@@ -75,6 +75,9 @@
                                 <th>Time Record</th>
                                 <th>Status</th>
                                 <th>Remark</th>
+                                @if($canDelete)
+                                <th>Action</th>
+                                @endif
                             </tr>
                         </thead>
                     </table>
@@ -112,6 +115,23 @@
 @section('script')
 <script>
     $(document).ready(function() {
+        var canDelete = @json($canDelete ?? false);
+        var tableColumns = [
+            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+            { data: 'Sequence_No_Record', name: 'Sequence_No_Record' },
+            { data: 'Production_Date_Record', name: 'Production_Date_Record' },
+            { data: 'Type', name: 'Type' },
+            { data: 'Area', name: 'Area' },
+            { data: 'member_name', name: 'member_name' },
+            { data: 'Time_Record', name: 'Time_Record' },
+            { data: 'status', name: 'status' },
+            { data: 'remark', name: 'remark' }
+        ];
+
+        if (canDelete) {
+            tableColumns.push({ data: 'action', name: 'action', orderable: false, searchable: false });
+        }
+
         var table = $('#recordsTable').DataTable({
             pageLength: 50,
             lengthMenu: [10, 25, 50, 100],
@@ -126,21 +146,36 @@
                     d.filter_type = $('#filterForm [name="filter_type"]').val();
                 }
             },
-            columns: [
-                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-                { data: 'Sequence_No_Record', name: 'Sequence_No_Record' },
-                { data: 'Production_Date_Record', name: 'Production_Date_Record' },
-                { data: 'Type', name: 'Type' },
-                { data: 'Area', name: 'Area' },
-                { data: 'member_name', name: 'member_name' },
-                { data: 'Time_Record', name: 'Time_Record' },
-                { data: 'status', name: 'status' },
-                { data: 'remark', name: 'remark' }
-            ],
+            columns: tableColumns,
             createdRow: function(row, data, dataIndex) {
                 $(row).css('cursor', 'pointer');
-                $(row).on('click', function() {
+                $(row).on('click', function(e) {
+                    if ($(e.target).closest('.delete-btn').length > 0) {
+                        return;
+                    }
                     showRecordDetail(data.Id_Record);
+                });
+            }
+        });
+
+        $(document).on('click', '.delete-btn', function(e) {
+            e.stopPropagation();
+            var id = $(this).data('id');
+            if (confirm('Apakah Anda yakin ingin menghapus record ini beserta seluruh list part-nya?')) {
+                $.ajax({
+                    url: "{{ url('admin/records') }}/" + id,
+                    type: 'DELETE',
+                    data: { _token: '{{ csrf_token() }}' },
+                    success: function(res) {
+                        if (res.success) {
+                            table.ajax.reload();
+                        } else {
+                            alert(res.message || 'Gagal menghapus record');
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('Terjadi kesalahan saat menghapus record.');
+                    }
                 });
             }
         });

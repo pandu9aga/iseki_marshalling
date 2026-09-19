@@ -80,6 +80,8 @@
                                 <th>Area</th>
                                 <th>Report Time</th>
                                 <th>Reporter NIK</th>
+                                <th>Komentar Part</th>
+                                <th>Komentar Perakitan</th>
                             </tr>
                         </thead>
                     </table>
@@ -149,7 +151,9 @@
                 { data: 'Qty', name: 'Qty' },
                 { data: 'area_record', name: 'area_record' },
                 { data: 'report_empty_time', name: 'report_empty_time' },
-                { data: 'reporter_nik', name: 'reporter_nik' }
+                { data: 'reporter_nik', name: 'reporter_nik' },
+                { data: 'report_comment', name: 'report_comment' },
+                { data: 'perakitan_comment', name: 'perakitan_comment' }
             ]
         });
 
@@ -184,42 +188,57 @@
             var html = '<div class="carousel-item' + active + '">';
             html += '<div class="row h-100">';
 
-            // Left: Member photo + name
-            html += '<div class="col-md-4 d-flex flex-column align-items-center justify-content-center text-center border-end">';
+            // Left: Member Marshalling photo + name
+            html += '<div class="col-md-3 d-flex flex-column align-items-center justify-content-center text-center border-end">';
             if (item.member_photo) {
                 html += '<img src="' + item.member_photo + '" class="member-photo border" onerror="this.style.display=\'none\'">';
             } else {
                 html += '<div class="member-photo member-photo-placeholder bg-light d-flex align-items-center justify-content-center border"><i class="fas fa-user fa-8x text-secondary"></i></div>';
             }
-            html += '<div class="mt-3"><small class="text-muted d-block fw-bold">Member</small><strong class="d-block" style="font-size:1.3rem;">' + escHtml(item.member) + '</strong></div>';
-            html += '</div>';
-
-            // Middle: part details
-            html += '<div class="col-md-4 border-start border-end d-flex align-items-center justify-content-center">';
-            html += '<div class="text-start w-100 px-2">';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Code Part</div><div class="col-7 slide-value fw-bold">' + escHtml(item.Code_Part) + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Name Part</div><div class="col-7 slide-value">' + escHtml(item.Name_Part || '-') + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Code Rack</div><div class="col-7 slide-value">' + escHtml(item.Code_Rack) + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Box</div><div class="col-7 slide-value">' + escHtml(item.Box || '-') + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Qty</div><div class="col-7 slide-value">' + item.Qty + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Difference</div><div class="col-7 slide-value">' + escHtml(item.Difference || '-') + '</div></div>';
-            html += '<hr>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Seq Record</div><div class="col-7 slide-value">' + escHtml(item.sequence) + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Prod Date</div><div class="col-7 slide-value">' + escHtml(item.production_date) + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Type</div><div class="col-7 slide-value">' + escHtml(item.type) + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Area</div><div class="col-7 slide-value">' + escHtml(item.area) + '</div></div>';
-            html += '<div class="row mb-0"><div class="col-5 slide-label">Report Time</div><div class="col-7 slide-value">' + item.report_empty + '</div></div>';
+            html += '<div class="mt-3">';
+            html += '  <span class="badge bg-secondary mb-1">Member Marshalling</span>';
+            html += '  <strong class="d-block text-dark" style="font-size:1.25rem;">' + escHtml(item.member) + '</strong>';
+            html += '  <small class="text-muted d-block">NIK: ' + escHtml(item.member_nik || '-') + '</small>';
             html += '</div>';
             html += '</div>';
 
-            // Right: reporter photo + name
-            html += '<div class="col-md-4 text-center d-flex flex-column align-items-center justify-content-center py-3">';
-            if (item.reporter_photo) {
-                html += '<img src="' + item.reporter_photo + '" class="member-photo border" onerror="this.style.display=\'none\'">';
+            // Middle: part details + comments
+            html += '<div class="col-md-6 border-start border-end d-flex align-items-center justify-content-center">';
+            html += '<div class="text-start w-100 px-3 py-2 overflow-auto" style="max-height:65vh;">';
+            html += '<div class="row mb-2"><div class="col-5 slide-label">Code Part</div><div class="col-7 slide-value fw-bold text-primary">' + escHtml(item.Code_Part) + '</div></div>';
+            html += '<div class="row mb-2"><div class="col-5 slide-label">Name Part</div><div class="col-7 slide-value">' + escHtml(item.Name_Part || '-') + '</div></div>';
+            html += '<div class="row mb-2"><div class="col-5 slide-label">Code Rack</div><div class="col-7 slide-value">' + escHtml(item.Code_Rack) + '</div></div>';
+            html += '<div class="row mb-2"><div class="col-5 slide-label">Box</div><div class="col-7 slide-value">' + escHtml(item.Box || '-') + '</div></div>';
+            html += '<div class="row mb-2"><div class="col-5 slide-label">Qty</div><div class="col-7 slide-value">' + item.Qty + '</div></div>';
+            html += '<div class="row mb-2"><div class="col-5 slide-label">Difference</div><div class="col-7 slide-value">' + escHtml(item.Difference || '-') + '</div></div>';
+            html += '<hr class="my-2">';
+            html += '<div class="row mb-2"><div class="col-5 slide-label">Seq Record</div><div class="col-7 slide-value">' + escHtml(item.sequence) + '</div></div>';
+            html += '<div class="row mb-2"><div class="col-5 slide-label">Prod Date</div><div class="col-7 slide-value">' + escHtml(item.production_date) + '</div></div>';
+            html += '<div class="row mb-2"><div class="col-5 slide-label">Type</div><div class="col-7 slide-value">' + escHtml(item.type) + '</div></div>';
+            html += '<div class="row mb-2"><div class="col-5 slide-label">Area</div><div class="col-7 slide-value">' + escHtml(item.area) + '</div></div>';
+            html += '<div class="row mb-2"><div class="col-5 slide-label">Report Time</div><div class="col-7 slide-value">' + item.report_empty + '</div></div>';
+            html += '<hr class="my-2">';
+            html += '<div class="row mb-2"><div class="col-5 slide-label text-danger fw-bold"><i class="fas fa-exclamation-circle me-1"></i>Komentar Part</div><div class="col-7 slide-value text-dark" style="background:#fff3cd; border-radius:6px; padding:6px 10px;">' + (item.report_comment && item.report_comment !== '-' ? escHtml(item.report_comment) : '<span class="text-muted fst-italic">-</span>') + '</div></div>';
+            html += '<div class="row mb-0"><div class="col-5 slide-label text-primary fw-bold"><i class="fas fa-clipboard-list me-1"></i>Part Kurang</div><div class="col-7 slide-value text-dark fw-bold" style="background:#e8f4fd; border-radius:6px; padding:6px 10px;">' + (item.perakitan_comment ? escHtml(item.perakitan_comment) : '<span class="text-muted fst-italic">Tidak ada</span>') + (item.perakitan_comment_time ? '<br><small class="text-muted fw-normal fst-italic"><i class="far fa-clock me-1"></i>' + escHtml(item.perakitan_comment_time) + '</small>' : '') + '</div></div>';
+            html += '</div>';
+            html += '</div>';
+
+            // Right: Perakitan (Reporter / Commenter) photo + name
+            var rightPhoto = item.perakitan_photo || item.reporter_photo;
+            var rightName = item.perakitan_name || item.reporter_name;
+            var rightNik = item.perakitan_nik || item.reporter_nik;
+
+            html += '<div class="col-md-3 text-center d-flex flex-column align-items-center justify-content-center border-start py-3">';
+            if (rightPhoto) {
+                html += '<img src="' + rightPhoto + '" class="member-photo border" onerror="this.style.display=\'none\'">';
             } else {
                 html += '<div class="member-photo member-photo-placeholder bg-light d-flex align-items-center justify-content-center border"><i class="fas fa-user fa-8x text-secondary"></i></div>';
             }
-            html += '<div class="mt-3"><small class="text-muted d-block fw-bold">Reporter</small><strong class="d-block" style="font-size:1.3rem;">' + escHtml(item.reporter_name) + '</strong></div>';
+            html += '<div class="mt-3">';
+            html += '  <span class="badge bg-primary mb-1">Member Perakitan</span>';
+            html += '  <strong class="d-block text-dark" style="font-size:1.25rem;">' + escHtml(rightName) + '</strong>';
+            html += '  <small class="text-muted d-block">NIK: ' + escHtml(rightNik) + '</small>';
+            html += '</div>';
             html += '</div>';
 
             html += '</div>';

@@ -8,10 +8,21 @@ use App\Models\Record;
 use App\Models\Record_List;
 use App\Models\Type;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class RecordController extends Controller
 {
+    private function canDeleteRecord(): bool
+    {
+        $admin = Auth::guard('admin')->user();
+        if (!$admin) {
+            return false;
+        }
+        $name = strtolower(trim($admin->name));
+        return in_array($name, ['aga', 'saiful'], true);
+    }
+
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -31,6 +42,8 @@ class RecordController extends Controller
                 $data->where('Type', $request->filter_type);
             }
 
+            $canDelete = $this->canDeleteRecord();
+
             return datatables($data)
                 ->addIndexColumn()
                 ->addColumn('member_name', function ($row) {
@@ -47,21 +60,56 @@ class RecordController extends Controller
                 ->addColumn('remark', function ($row) {
                     return $row->Remark ? '<span title="'.e($row->Remark).'">'.e(\Illuminate\Support\Str::limit($row->Remark, 40)).'</span>' : '-';
                 })
-                ->rawColumns(['remark'])
+                ->addColumn('action', function ($row) use ($canDelete) {
+                    if ($canDelete) {
+                        return '<button type="button" class="btn btn-danger btn-sm delete-btn" data-id="'.$row->Id_Record.'" title="Delete Record"><i class="fas fa-trash"></i></button>';
+                    }
+                    return '-';
+                })
+                ->rawColumns(['remark', 'action'])
                 ->make(true);
         }
 
         $members = Member::orderBy('nama')->get();
         $types = Type::orderBy('Type')->get();
         $areas = Record::select('Area')->distinct()->whereNotNull('Area')->orderBy('Area')->pluck('Area');
+        $canDelete = $this->canDeleteRecord();
 
-        return view('admin.records.index', compact('members', 'types', 'areas'));
+        return view('admin.records.index', compact('members', 'types', 'areas', 'canDelete'));
     }
 
     public function show($id)
     {
         $record = Record::with(['recordLists', 'member'])->findOrFail($id);
         return response()->json($record);
+    }
+
+    public function destroy($id)
+    {
+        if (!$this->canDeleteRecord()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk menghapus record.'
+            ], 403);
+        }
+
+        $record = Record::findOrFail($id);
+
+        DB::transaction(function () use ($record) {
+            $recordLists = Record_List::where('Id_Record', $record->Id_Record)->get();
+            foreach ($recordLists as $rl) {
+                if ($rl->Image_Ng && file_exists(public_path($rl->Image_Ng))) {
+                    @unlink(public_path($rl->Image_Ng));
+                }
+            }
+            Record_List::where('Id_Record', $record->Id_Record)->delete();
+            $record->delete();
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Record successfully deleted.'
+        ]);
     }
 
     public function ngList(Request $request)
@@ -178,6 +226,12 @@ class RecordController extends Controller
                 ->addColumn('reporter_nik', function ($row) {
                     return $row->Reporter_Nik ?? '-';
                 })
+                ->addColumn('report_comment', function ($row) {
+                    return $row->Report_Comment ? e($row->Report_Comment) : '-';
+                })
+                ->addColumn('perakitan_comment', function ($row) {
+                    return $row->record && $row->record->Perakitan_Comment ? e($row->record->Perakitan_Comment) : '-';
+                })
                 ->make(true);
         }
 
@@ -198,6 +252,9 @@ class RecordController extends Controller
             ->map(function ($rl) use ($photoBase) {
                 $memberPhoto = null;
                 $reporterPhoto = null;
+                $perakitanPhoto = null;
+                $perakitanName = null;
+
                 if ($rl->record && $rl->record->member) {
                     $memberPhoto = $rl->record->member->photo_employee ? $photoBase . '/' . $rl->record->member->photo_employee : null;
                 }
@@ -205,24 +262,41 @@ class RecordController extends Controller
                     $reporter = DB::connection('rifa')->table('employees')->where('nik', $rl->Reporter_Nik)->first(['nama', 'photo_employee']);
                     $reporterPhoto = $reporter && $reporter->photo_employee ? $photoBase . '/' . $reporter->photo_employee : null;
                 }
+                if ($rl->record && $rl->record->Perakitan_Nik) {
+                    $perakitanUser = DB::connection('rifa')->table('employees')->where('nik', $rl->record->Perakitan_Nik)->first(['nama', 'photo_employee']);
+                    if ($perakitanUser) {
+                        $perakitanName = $perakitanUser->nama;
+                        $perakitanPhoto = $perakitanUser->photo_employee ? $photoBase . '/' . $perakitanUser->photo_employee : null;
+                    } else {
+                        $perakitanName = $rl->record->Perakitan_Nik;
+                    }
+                }
+
                 return [
-                    'Id_Record_List' => $rl->Id_Record_List,
-                    'Code_Part'      => $rl->Code_Part,
-                    'Name_Part'      => $rl->Name_Part,
-                    'Code_Rack'      => $rl->Code_Rack,
-                    'Box'            => $rl->Box,
-                    'Qty'            => $rl->Qty,
-                    'Difference'     => $rl->Difference,
-                    'sequence'       => $rl->record ? $rl->record->Sequence_No_Record : '-',
-                    'production_date' => $rl->record ? $rl->record->Production_Date_Record : '-',
-                    'type'           => $rl->record ? $rl->record->Type : '-',
-                    'area'           => $rl->record ? ucwords(str_replace('_', ' ', $rl->record->Area)) : '-',
-                    'member'         => $rl->record && $rl->record->member ? $rl->record->member->nama : '-',
-                    'member_photo'   => $memberPhoto,
-                    'reporter_nik'   => $rl->Reporter_Nik ?? '-',
-                    'reporter_name'  => $rl->Reporter_Nik ? (DB::connection('rifa')->table('employees')->where('nik', $rl->Reporter_Nik)->value('nama') ?? $rl->Reporter_Nik) : '-',
-                    'reporter_photo' => $reporterPhoto,
-                    'report_empty'   => $rl->Report_Empty ? \Carbon\Carbon::parse($rl->Report_Empty)->format('d/m/Y H:i') : '-',
+                    'Id_Record_List'         => $rl->Id_Record_List,
+                    'Code_Part'              => $rl->Code_Part,
+                    'Name_Part'              => $rl->Name_Part,
+                    'Code_Rack'              => $rl->Code_Rack,
+                    'Box'                    => $rl->Box,
+                    'Qty'                    => $rl->Qty,
+                    'Difference'             => $rl->Difference,
+                    'sequence'               => $rl->record ? $rl->record->Sequence_No_Record : '-',
+                    'production_date'        => $rl->record ? $rl->record->Production_Date_Record : '-',
+                    'type'                   => $rl->record ? $rl->record->Type : '-',
+                    'area'                   => $rl->record ? ucwords(str_replace('_', ' ', $rl->record->Area)) : '-',
+                    'member'                 => $rl->record && $rl->record->member ? $rl->record->member->nama : '-',
+                    'member_nik'             => $rl->record && $rl->record->member ? ($rl->record->member->nik ?? '-') : '-',
+                    'member_photo'           => $memberPhoto,
+                    'reporter_nik'           => $rl->Reporter_Nik ?? '-',
+                    'reporter_name'          => $rl->Reporter_Nik ? (DB::connection('rifa')->table('employees')->where('nik', $rl->Reporter_Nik)->value('nama') ?? $rl->Reporter_Nik) : '-',
+                    'reporter_photo'         => $reporterPhoto,
+                    'report_empty'           => $rl->Report_Empty ? \Carbon\Carbon::parse($rl->Report_Empty)->format('d/m/Y H:i') : '-',
+                    'report_comment'         => $rl->Report_Comment ?? '-',
+                    'perakitan_comment'      => $rl->record ? $rl->record->Perakitan_Comment : null,
+                    'perakitan_nik'          => $rl->record ? $rl->record->Perakitan_Nik : null,
+                    'perakitan_name'         => $perakitanName,
+                    'perakitan_photo'        => $perakitanPhoto,
+                    'perakitan_comment_time' => ($rl->record && $rl->record->Perakitan_Comment_Time) ? \Carbon\Carbon::parse($rl->record->Perakitan_Comment_Time)->format('d/m/Y H:i') : null,
                 ];
             });
 

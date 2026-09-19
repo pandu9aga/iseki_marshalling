@@ -18,6 +18,9 @@ class Record extends Model
         'Area',
         'Time_Record',
         'Remark',
+        'Perakitan_Comment',
+        'Perakitan_Nik',
+        'Perakitan_Comment_Time',
     ];
 
     public function recordLists()

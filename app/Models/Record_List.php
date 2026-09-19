@@ -30,6 +30,7 @@ class Record_List extends Model
         'Is_Empty',
         'Report_Empty',
         'Reporter_Nik',
+        'Report_Comment',
     ];
 
     public function record()

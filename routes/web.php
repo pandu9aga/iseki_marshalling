@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Perakitan\DashboardController as PerakitanDashboardController;
 use App\Http\Controllers\Perakitan\KanbanController as PerakitanKanbanController;
 use App\Http\Controllers\Perakitan\ProsedurController as PerakitanProsedurController;
+use App\Http\Controllers\Perakitan\CommentController as PerakitanCommentController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -37,6 +38,7 @@ Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function
     Route::resource('marshallings', MarshallingController::class);
     Route::get('records', [AdminRecordController::class, 'index'])->name('records.index');
     Route::get('records/{record}', [AdminRecordController::class, 'show'])->name('records.show');
+    Route::delete('records/{record}', [AdminRecordController::class, 'destroy'])->name('records.destroy');
     Route::get('ng', [AdminRecordController::class, 'ngList'])->name('ng.index');
     Route::get('ng-detail/{recordList}', [AdminRecordController::class, 'ngDetail'])->name('ng.detail');
     Route::post('record-lists/{recordList}/approve', [AdminRecordController::class, 'approveNg'])->name('record-lists.approve');
@@ -74,4 +76,8 @@ Route::middleware('auth:perakitan')->prefix('perakitan')->name('perakitan.')->gr
 
     Route::get('/prosedur', [PerakitanProsedurController::class, 'index'])->name('prosedur.index');
     Route::get('/prosedur/{tractor}', [PerakitanProsedurController::class, 'show'])->name('prosedur.show');
+
+    Route::get('/comment', [PerakitanCommentController::class, 'index'])->name('comment.index');
+    Route::get('/comment/search', [PerakitanCommentController::class, 'search'])->name('comment.search');
+    Route::post('/comment/{id}/store', [PerakitanCommentController::class, 'store'])->name('comment.store');
 });

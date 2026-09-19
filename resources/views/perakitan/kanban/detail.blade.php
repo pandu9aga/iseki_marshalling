@@ -100,9 +100,13 @@
                                         <small class="text-muted" style="font-size:0.7rem;">
                                             {{ \Carbon\Carbon::parse($rl->Report_Empty)->format('d/m/Y H:i') }}<br>
                                             NIK: {{ $rl->Reporter_Nik }}
+                                            @if($rl->Report_Comment)
+                                                <br><span class="text-primary fst-italic">"{{ $rl->Report_Comment }}"</span>
+                                            @endif
                                         </small>
                                     @else
-                                        <button type="button" class="btn btn-outline-warning btn-sm report-btn" onclick="reportEmpty({{ $rl->Id_Record_List }})">
+                                        <button type="button" class="btn btn-outline-warning btn-sm report-btn" 
+                                            onclick="openReportEmptyModal({{ $rl->Id_Record_List }}, '{{ addslashes($rl->Code_Part) }}', '{{ addslashes($rl->Name_Part ?? '') }}', '{{ addslashes($rl->Code_Rack) }}', '{{ addslashes($rl->Box ?? '') }}')">
                                             <i class="fas fa-box-open"></i> Laporkan Kosong
                                         </button>
                                     @endif
@@ -186,6 +190,40 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Laporkan Part Kosong -->
+<div class="modal fade" id="reportEmptyModal" tabindex="-1" aria-labelledby="reportEmptyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning text-dark py-2 px-3">
+                <h6 class="modal-title fw-bold mb-0" id="reportEmptyModalLabel">
+                    <i class="fas fa-box-open me-2"></i>Laporkan Part Kosong
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <input type="hidden" id="reportEmptyRecordListId">
+                <div class="alert alert-light border mb-3 p-2" style="font-size:0.85rem;">
+                    <div><strong>Code Part:</strong> <span id="modalPartCode" class="text-primary">-</span></div>
+                    <div><strong>Name Part:</strong> <span id="modalPartName">-</span></div>
+                    <div><strong>Code Rack:</strong> <span id="modalRackCode" class="badge bg-secondary">-</span> &nbsp;|&nbsp; <strong>Box:</strong> <span id="modalBoxName">-</span></div>
+                </div>
+                <div class="mb-2">
+                    <label for="reportComment" class="form-label fw-bold mb-1" style="font-size:0.85rem;">
+                        <i class="fas fa-comment-dots text-primary me-1"></i>Komentar / Keterangan (Opsional):
+                    </label>
+                    <textarea class="form-control" id="reportComment" rows="3" placeholder="Contoh: Stok di rak habis, barang belum datang, dll..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer py-2 px-3">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-warning btn-sm fw-bold" id="btnSubmitReportEmpty" onclick="submitReportEmpty()">
+                    <i class="fas fa-paper-plane me-1"></i>Kirim Laporan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('script')
@@ -222,22 +260,54 @@
         });
     });
 
-    function reportEmpty(id) {
-        if (!confirm('Laporkan part ini sebagai kosong?')) return;
+    var reportModalObj = null;
+
+    function openReportEmptyModal(id, codePart, namePart, codeRack, box) {
+        $('#reportEmptyRecordListId').val(id);
+        $('#modalPartCode').text(codePart || '-');
+        $('#modalPartName').text(namePart || '-');
+        $('#modalRackCode').text(codeRack || '-');
+        $('#modalBoxName').text(box || '-');
+        $('#reportComment').val('');
+
+        if (!reportModalObj) {
+            reportModalObj = new bootstrap.Modal(document.getElementById('reportEmptyModal'));
+        }
+        reportModalObj.show();
+    }
+
+    function submitReportEmpty() {
+        var id = $('#reportEmptyRecordListId').val();
+        var comment = $('#reportComment').val();
+        var submitBtn = $('#btnSubmitReportEmpty');
+
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Mengirim...');
+
         $.post('{{ url("perakitan/kanban") }}/' + id + '/report-empty', {
-            _token: '{{ csrf_token() }}'
+            _token: '{{ csrf_token() }}',
+            comment: comment
         }, function(res) {
+            submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane me-1"></i>Kirim Laporan');
             if (res.success) {
+                if (reportModalObj) {
+                    reportModalObj.hide();
+                }
+
                 var cell = $('#report-cell-' + id);
+                var commentHtml = res.comment ? '<br><span class="text-primary fst-italic">"' + $('<span>').text(res.comment).html() + '"</span>' : '';
                 cell.html(
                     '<span class="badge bg-secondary"><i class="fas fa-box-open"></i> Dilaporkan Kosong</span><br>' +
                     '<small class="text-muted" style="font-size:0.7rem;">' +
                     '{{ now()->format('d/m/Y H:i') }}<br>' +
                     'NIK: {{ Auth::guard('perakitan')->user()->nik }}' +
+                    commentHtml +
                     '</small>'
                 );
+            } else {
+                alert(res.message || 'Gagal melaporkan part kosong.');
             }
         }).fail(function() {
+            submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane me-1"></i>Kirim Laporan');
             alert('Gagal melaporkan part kosong.');
         });
     }
