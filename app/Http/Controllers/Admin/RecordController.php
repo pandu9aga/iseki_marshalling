@@ -10,6 +10,10 @@ use App\Models\Type;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class RecordController extends Controller
 {
@@ -352,6 +356,22 @@ class RecordController extends Controller
                 $data->whereDate('comment_time', $request->filter_date);
             }
 
+            if ($request->filled('member_id')) {
+                $data->where('id_user', $request->member_id);
+            }
+
+            if ($request->filled('reporter_nik')) {
+                $data->where('perakitan_nik', $request->reporter_nik);
+            }
+
+            if ($request->filled('filter_status')) {
+                if ($request->filter_status === 'diterima' || $request->filter_status === 'oke') {
+                    $data->where('status', 'oke');
+                } elseif ($request->filter_status === 'pending') {
+                    $data->where('status', 'pending');
+                }
+            }
+
             return datatables($data)
                 ->addIndexColumn()
                 ->addColumn('member_name', function ($row) {
@@ -392,19 +412,184 @@ class RecordController extends Controller
                 ->make(true);
         }
 
-        $today = now()->format('Y-m-d');
-        return view('admin.records.part-kurang', compact('today'));
+        // Ambil daftar member marshalling yang ada di part_kurangs
+        $memberUserIds = \App\Models\PartKurang::whereNotNull('id_user')->distinct()->pluck('id_user');
+        $marshallingMembers = \App\Models\Member::whereIn('id', $memberUserIds)->orderBy('nama', 'asc')->get(['id', 'nama', 'nik']);
+
+        // Ambil daftar pelapor (perakitan) yang ada di part_kurangs
+        $reporterNiks = \App\Models\PartKurang::whereNotNull('perakitan_nik')->distinct()->pluck('perakitan_nik');
+        $reporters = DB::connection('rifa')->table('employees')
+            ->whereIn('nik', $reporterNiks)
+            ->orderBy('nama', 'asc')
+            ->get(['nik', 'nama']);
+
+        return view('admin.records.part-kurang', compact('marshallingMembers', 'reporters'));
+    }
+
+    public function exportPartKurang(Request $request)
+    {
+        $query = \App\Models\PartKurang::with(['member', 'record'])
+            ->orderBy('comment_time', 'asc');
+
+        $date = $request->filter_date;
+        if (!empty($date)) {
+            $query->whereDate('comment_time', $date);
+        }
+
+        if ($request->filled('member_id')) {
+            $query->where('id_user', $request->member_id);
+        }
+
+        if ($request->filled('reporter_nik')) {
+            $query->where('perakitan_nik', $request->reporter_nik);
+        }
+
+        if ($request->filled('filter_status')) {
+            if ($request->filter_status === 'diterima' || $request->filter_status === 'oke') {
+                $query->where('status', 'oke');
+            } elseif ($request->filter_status === 'pending') {
+                $query->where('status', 'pending');
+            }
+        }
+
+        $items = $query->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheetTitle = !empty($date) ? 'Part Kurang ' . $date : 'Part Kurang Semua';
+        $sheet->setTitle(substr($sheetTitle, 0, 31));
+
+        // Title & Period (Merged so Column A is not stretched by title text)
+        $sheet->setCellValue('A1', 'LAPORAN PART KURANG');
+        $sheet->mergeCells('A1:E1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+
+        $periodText = !empty($date) ? \Carbon\Carbon::parse($date)->translatedFormat('d F Y') : 'Semua Tanggal';
+        $sheet->setCellValue('A2', 'Tanggal: ' . $periodText);
+        $sheet->mergeCells('A2:E2');
+        $sheet->getStyle('A2')->getFont()->setSize(11);
+
+        // Header Table
+        $headers = [
+            'A4' => 'No',
+            'B4' => 'Member Marshalling',
+            'C4' => 'Seq Record',
+            'D4' => 'Prod Date',
+            'E4' => 'Type Traktor',
+            'F4' => 'Area',
+            'G4' => 'Waktu Marshalling',
+            'H4' => 'Waktu Komentar',
+            'I4' => 'Reporter NIK',
+            'J4' => 'Reporter Nama',
+            'K4' => 'Catatan Part Kurang',
+            'L4' => 'Status',
+            'M4' => 'Waktu Diterima',
+        ];
+
+        foreach ($headers as $cell => $text) {
+            $sheet->setCellValue($cell, $text);
+        }
+
+        // Header style
+        $sheet->getStyle('A4:M4')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['rgb' => 'E91E63'],
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+        ]);
+        $sheet->getRowDimension(4)->setRowHeight(26);
+
+        // Data Rows
+        $row = 5;
+        $no = 1;
+        foreach ($items as $item) {
+            $reporterName = '-';
+            if ($item->perakitan_nik) {
+                $reporterName = DB::connection('rifa')
+                    ->table('employees')
+                    ->where('nik', $item->perakitan_nik)
+                    ->value('nama') ?? $item->perakitan_nik;
+            }
+
+            $marshallingTime = ($item->record && $item->record->Time_Record) 
+                ? \Carbon\Carbon::parse($item->record->Time_Record)->format('d/m/Y H:i') 
+                : '-';
+
+            $commentTime = $item->comment_time ? $item->comment_time->format('d/m/Y H:i') : '-';
+            $receivedTime = $item->received_time ? $item->received_time->format('d/m/Y H:i') : '-';
+            $statusLabel = ($item->status === 'oke') ? 'Sudah Diterima' : 'Pending';
+
+            $sheet->setCellValue('A' . $row, $no);
+            $sheet->setCellValue('B' . $row, $item->member ? $item->member->nama : '-');
+            $sheet->setCellValue('C' . $row, $item->sequence_no ?? '-');
+            $sheet->setCellValue('D' . $row, $item->production_date ?? '-');
+            $sheet->setCellValue('E' . $row, $item->type ?? '-');
+            $sheet->setCellValue('F' . $row, ucwords(str_replace('_', ' ', $item->area ?? '-')));
+            $sheet->setCellValue('G' . $row, $marshallingTime);
+            $sheet->setCellValue('H' . $row, $commentTime);
+            $sheet->setCellValue('I' . $row, $item->perakitan_nik ?? '-');
+            $sheet->setCellValue('J' . $row, $reporterName);
+            $sheet->setCellValue('K' . $row, $item->comment ?? '-');
+            $sheet->setCellValue('L' . $row, $statusLabel);
+            $sheet->setCellValue('M' . $row, $receivedTime);
+
+            // Center alignment for some columns
+            $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("C{$row}:E{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("G{$row}:I{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("L{$row}:M{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+            // Status background
+            if ($item->status === 'oke') {
+                $sheet->getStyle("L{$row}")->getFont()->getColor()->setRGB('198754');
+                $sheet->getStyle("L{$row}")->getFont()->setBold(true);
+            } else {
+                $sheet->getStyle("L{$row}")->getFont()->getColor()->setRGB('D39E00');
+                $sheet->getStyle("L{$row}")->getFont()->setBold(true);
+            }
+
+            $row++;
+            $no++;
+        }
+
+        $lastRow = max(5, $row - 1);
+
+        // Borders
+        $sheet->getStyle("A4:M{$lastRow}")->getBorders()->applyFromArray([
+            'allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CCCCCC']],
+        ]);
+
+        // Auto-fit column widths (kecuali kolom A diberi width pas untuk nomor)
+        $sheet->getColumnDimension('A')->setAutoSize(false)->setWidth(8);
+        foreach (range('B', 'M') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Aktifkan Filter di header tabel
+        $sheet->setAutoFilter("A4:M{$lastRow}");
+
+        $writer = new Xlsx($spreadsheet);
+        $fileName = !empty($date) ? ('Laporan_Part_Kurang_' . $date . '.xlsx') : ('Laporan_Part_Kurang_Semua_' . now()->format('Ymd_His') . '.xlsx');
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $fileName . '"');
+        header('Cache-Control: max-age=0');
+        $writer->save('php://output');
+        exit;
     }
 
     public function partKurangCarousel(Request $request)
     {
-        $date = $request->date ?: now()->format('Y-m-d');
         $photoBase = '/iseki_rifa/public/photo_employee';
 
-        // Hanya tampilkan part kurang dari tabel part_kurangs yang berstatus pending
+        // Tampilkan semua part kurang dari tabel part_kurangs yang berstatus pending entah tanggal berapapun
         $items = \App\Models\PartKurang::with(['member', 'record'])
             ->where('status', 'pending')
-            ->whereDate('comment_time', $date)
             ->orderBy('comment_time', 'desc')
             ->get()
             ->map(function ($pk) use ($photoBase) {

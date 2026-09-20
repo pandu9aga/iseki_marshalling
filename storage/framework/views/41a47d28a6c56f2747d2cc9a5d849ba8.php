@@ -1,6 +1,4 @@
-@extends('layouts.main')
-
-@section('style')
+<?php $__env->startSection('style'); ?>
 <style>
     #partKurangTable .badge { font-size: 11px; padding: 3px 6px; }
     #carouselModal .modal-body {
@@ -43,9 +41,9 @@
         z-index: 5;
     }
 </style>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="container">
     <div class="page-inner">
         <div class="page-header d-flex justify-content-between align-items-center">
@@ -81,18 +79,18 @@
                         <label class="form-label fw-bold mb-1">Member Marshalling</label>
                         <select id="filter_member" class="form-select form-select-sm">
                             <option value="">Semua Member Marshalling</option>
-                            @foreach($marshallingMembers as $mm)
-                                <option value="{{ $mm->id }}">{{ $mm->nama }} ({{ $mm->nik }})</option>
-                            @endforeach
+                            <?php $__currentLoopData = $marshallingMembers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $mm): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($mm->id); ?>"><?php echo e($mm->nama); ?> (<?php echo e($mm->nik); ?>)</option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
                     <div class="col-12 col-sm-6 col-md-3 col-lg-2">
                         <label class="form-label fw-bold mb-1">Pelapor (Perakitan)</label>
                         <select id="filter_reporter" class="form-select form-select-sm">
                             <option value="">Semua Pelapor</option>
-                            @foreach($reporters as $rep)
-                                <option value="{{ $rep->nik }}">{{ $rep->nama }} ({{ $rep->nik }})</option>
-                            @endforeach
+                            <?php $__currentLoopData = $reporters; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $rep): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($rep->nik); ?>"><?php echo e($rep->nama); ?> (<?php echo e($rep->nik); ?>)</option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
                     <div class="col-12 col-sm-12 col-md-12 col-lg-3 d-flex flex-wrap gap-2 justify-content-lg-end mt-2 mt-lg-0">
@@ -164,11 +162,11 @@
 </div>
 
 <!-- Audio Player Element for Slideshow -->
-<audio id="panggilanPlayer" src="{{ asset('assets/sounds/panggilan_kepada.MP3') }}" preload="auto"></audio>
+<audio id="panggilanPlayer" src="<?php echo e(asset('assets/sounds/panggilan_kepada.MP3')); ?>" preload="auto"></audio>
 <audio id="namaPlayer" preload="auto"></audio>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@section('script')
+<?php $__env->startSection('script'); ?>
 <script>
     var carouselInterval = null;
     var carouselData = [];
@@ -187,7 +185,7 @@
             processing: true,
             serverSide: true,
             ajax: {
-                url: "{{ route('admin.part-kurang.list') }}",
+                url: "<?php echo e(route('admin.part-kurang.list')); ?>",
                 data: function(d) {
                     d.filter_date = $('#filter_date').val();
                     d.filter_status = $('#filter_status').val();
@@ -341,7 +339,7 @@
         stopCarousel();
         stopAudioPlayback();
 
-        $.getJSON('{{ route("admin.part-kurang.carousel") }}', function(data) {
+        $.getJSON('<?php echo e(route("admin.part-kurang.carousel")); ?>', function(data) {
             carouselData = data;
             carouselActiveIndex = 0;
             buildCarousel();
@@ -428,7 +426,7 @@
         stopAudioPlayback();
 
         // Selalu cek data terbaru ke server setiap kali akan berganti slide (semua pending)
-        $.getJSON('{{ route("admin.part-kurang.carousel") }}', function(data) {
+        $.getJSON('<?php echo e(route("admin.part-kurang.carousel")); ?>', function(data) {
             var currentId = (carouselData[carouselActiveIndex]) ? carouselData[carouselActiveIndex].Id_Part_Kurang : null;
             carouselData = data;
 
@@ -511,7 +509,7 @@
         if (memberId) params.append('member_id', memberId);
         if (reporterNik) params.append('reporter_nik', reporterNik);
 
-        var url = "{{ route('admin.part-kurang.export') }}?" + params.toString();
+        var url = "<?php echo e(route('admin.part-kurang.export')); ?>?" + params.toString();
         window.location.href = url;
     }
 
@@ -525,4 +523,6 @@
             .replace(/'/g, '&#039;');
     }
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.main', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\iseki_marshalling\resources\views/admin/records/part-kurang.blade.php ENDPATH**/ ?>

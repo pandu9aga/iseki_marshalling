@@ -58,6 +58,7 @@ Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function
     Route::get('report-empty', [AdminRecordController::class, 'reportEmptyList'])->name('report-empty.list');
     Route::get('report-empty/carousel', [AdminRecordController::class, 'carouselData'])->name('report-empty.carousel');
     Route::get('part-kurang', [AdminRecordController::class, 'partKurangList'])->name('part-kurang.list');
+    Route::get('part-kurang/export', [AdminRecordController::class, 'exportPartKurang'])->name('part-kurang.export');
     Route::get('part-kurang/carousel', [AdminRecordController::class, 'partKurangCarousel'])->name('part-kurang.carousel');
     Route::get('punishments', [PunishmentController::class, 'index'])->name('punishments.index');
     Route::get('punishments/search', [PunishmentController::class, 'search'])->name('punishments.search');
