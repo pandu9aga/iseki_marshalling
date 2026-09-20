@@ -1,6 +1,4 @@
-@extends('layouts.main')
-
-@section('style')
+<?php $__env->startSection('style'); ?>
 <style>
     .scan-locked { opacity: 0.5; pointer-events: none; }
     .form-control[readonly].is-valid { border-color: #28a745; box-shadow: 0 0 0 0.2rem rgba(40,167,69,.25); }
@@ -32,29 +30,29 @@
         border-radius: 8px; color: #fff;
     }
 </style>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="container">
     <div class="page-inner">
         <div class="page-header">
             <div>
                 <h4 class="page-title text-primary mb-0">Scan Part</h4>
-                <small>Record: <strong class="text-primary">{{ $record->Sequence_No_Record }}</strong> | Area: <strong class="text-primary">{{ ucwords(str_replace('_', ' ', $record->Area)) }}</strong></small>
+                <small>Record: <strong class="text-primary"><?php echo e($record->Sequence_No_Record); ?></strong> | Area: <strong class="text-primary"><?php echo e(ucwords(str_replace('_', ' ', $record->Area))); ?></strong></small>
             </div>
         </div>
 
         <div class="card mb-3">
             <div class="card-body">
-                <h1 class="text-center text-primary mb-0 rack-big-text"><strong>{{ $recordList->Location_Rack }}</strong></h1>
-                <h5>{{ $recordList->Code_Part }} - {{ $recordList->Name_Part }}</h5>
-                <p class="text-muted mb-0">Code Rack: <strong class="text-primary detail-rack">{{ $recordList->Code_Rack }}</strong> | Box: <strong class="text-primary detail-rack">{{ $recordList->Box }}</strong> | Qty: <strong class="text-primary detail-rack">{{ $recordList->Qty }}</strong></p>
-                <p class="text-muted mb-0">Mode: <strong class="text-primary">{{ ucfirst($recordList->Mode) }}</strong> | Pembeda: <strong class="text-primary">{{ $recordList->Difference }}</strong></p>
+                <h1 class="text-center text-primary mb-0 rack-big-text"><strong><?php echo e($recordList->Location_Rack); ?></strong></h1>
+                <h5><?php echo e($recordList->Code_Part); ?> - <?php echo e($recordList->Name_Part); ?></h5>
+                <p class="text-muted mb-0">Code Rack: <strong class="text-primary detail-rack"><?php echo e($recordList->Code_Rack); ?></strong> | Box: <strong class="text-primary detail-rack"><?php echo e($recordList->Box); ?></strong> | Qty: <strong class="text-primary detail-rack"><?php echo e($recordList->Qty); ?></strong></p>
+                <p class="text-muted mb-0">Mode: <strong class="text-primary"><?php echo e(ucfirst($recordList->Mode)); ?></strong> | Pembeda: <strong class="text-primary"><?php echo e($recordList->Difference); ?></strong></p>
             </div>
         </div>
 
-        <form action="{{ route('member.record.update-part', $recordList->Id_Record_List) }}" method="POST" id="partForm">
-            @csrf
+        <form action="<?php echo e(route('member.record.update-part', $recordList->Id_Record_List)); ?>" method="POST" id="partForm">
+            <?php echo csrf_field(); ?>
             <input type="hidden" name="Is_Empty" id="is_empty_flag" value="0">
             <div class="row">
                 <div class="col-md-6">
@@ -83,8 +81,8 @@
                     </div>
                 </div>
                 <div class="col-md-6">
-                    @if($isPunished)
-                        @if($recordList->Mode == 'manual')
+                    <?php if($isPunished): ?>
+                        <?php if($recordList->Mode == 'manual'): ?>
                         <div class="card mb-3 scan-locked" id="step2Card">
                             <div class="card-header">
                                 <h6 class="mb-0">Step 2: Input Qty (Manual)</h6>
@@ -96,13 +94,13 @@
                                 </div>
                             </div>
                         </div>
-                        @else
+                        <?php else: ?>
                         <div class="card mb-3 scan-locked" id="step2CardAI">
                             <div class="card-header">
                                 <h6 class="mb-0">Step 2: AI Object Counting</h6>
                             </div>
                             <div class="card-body text-center">
-                                <p class="text-muted">Take a photo and block on an item to count. Expected count: <strong>{{ $recordList->Qty }}</strong></p>
+                                <p class="text-muted">Take a photo and block on an item to count. Expected count: <strong><?php echo e($recordList->Qty); ?></strong></p>
 
                                 <div id="countCapturePrompt">
                                     <button type="button" id="startCountCamera" class="btn btn-primary" disabled><i class="fas fa-camera"></i> Open Camera</button>
@@ -141,32 +139,32 @@
                                 </div>
                             </div>
                         </div>
-                        @endif
-                    @else
+                        <?php endif; ?>
+                    <?php else: ?>
                     <div class="card mb-3">
                         <div class="card-header">
                             <h6 class="mb-0">Step 2: Qty Otomatis</h6>
                         </div>
                         <div class="card-body">
                             <p class="text-muted mb-2">Qty part ini akan diisi otomatis dari list saat scan rack selesai.</p>
-                            <h3 class="text-primary mb-0"><strong>{{ $recordList->Qty }}</strong></h3>
+                            <h3 class="text-primary mb-0"><strong><?php echo e($recordList->Qty); ?></strong></h3>
                             <p class="text-muted mb-0 mt-2 small">Setelah scan rack yang sesuai, part otomatis dilanjutkan ke berikutnya.</p>
                         </div>
-                        <input type="hidden" name="Qty_Record" id="Qty_Record" value="{{ $recordList->Qty }}">
+                        <input type="hidden" name="Qty_Record" id="Qty_Record" value="<?php echo e($recordList->Qty); ?>">
                     </div>
-                    @endif
+                    <?php endif; ?>
                 </div>
             </div>
-            @if($isPunished)
+            <?php if($isPunished): ?>
             <button type="submit" class="btn btn-primary w-100" id="submitPartBtn" disabled>
                 <i class="fas fa-check"></i> Submit Record
             </button>
-            @endif
+            <?php endif; ?>
         </form>
     </div>
 </div>
 
-@if(session('box_transition'))
+<?php if(session('box_transition')): ?>
 <div class="modal fade" id="boxTransitionModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered text-center">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
@@ -186,21 +184,21 @@
         </div>
     </div>
 </div>
-@endif
-@endsection
+<?php endif; ?>
+<?php $__env->stopSection(); ?>
 
-@section('script')
-@if($recordList->Mode == 'ai' && $isPunished)
-<script src="{{ asset('assets/js/plugin/opencv.js') }}" async onload="window.onOpenCvReady();"></script>
-<script src="{{ asset('assets/js/plugin/record-scan-ai.js') }}"></script>
-@endif
+<?php $__env->startSection('script'); ?>
+<?php if($recordList->Mode == 'ai' && $isPunished): ?>
+<script src="<?php echo e(asset('assets/js/plugin/opencv.js')); ?>" async onload="window.onOpenCvReady();"></script>
+<script src="<?php echo e(asset('assets/js/plugin/record-scan-ai.js')); ?>"></script>
+<?php endif; ?>
 <script>
     window.cvReady = false;
-    window.expectedQty = {{ $recordList->Qty ?? 0 }};
-    window.currentMode = @json($recordList->Mode ?? 'manual');
-    window.isPunished = @json($isPunished ?? false);
-    var expectedCodeRack = '{{ $recordList->Code_Rack }}'.toUpperCase();
-    var hasBoxTransition = @json(session('box_transition') ? true : false);
+    window.expectedQty = <?php echo e($recordList->Qty ?? 0); ?>;
+    window.currentMode = <?php echo json_encode($recordList->Mode ?? 'manual', 15, 512) ?>;
+    window.isPunished = <?php echo json_encode($isPunished ?? false, 15, 512) ?>;
+    var expectedCodeRack = '<?php echo e($recordList->Code_Rack); ?>'.toUpperCase();
+    var hasBoxTransition = <?php echo json_encode(session('box_transition') ? true : false, 15, 512) ?>;
 
     window.onOpenCvReady = function() { window.cvReady = true; };
 
@@ -215,7 +213,7 @@
         speed = speed || ((theme === 'b') ? 1 : 2);
         var cacheKey = theme + '_' + ch + '_' + speed;
         if (!audioCache[cacheKey]) {
-            var soundSrc = window.SoundCache ? window.SoundCache.getUrl(theme, ch) : '{{ asset("assets/sounds") }}/' + theme + '/' + ch + '.mp3';
+            var soundSrc = window.SoundCache ? window.SoundCache.getUrl(theme, ch) : '<?php echo e(asset("assets/sounds")); ?>/' + theme + '/' + ch + '.mp3';
             var audio = new Audio(soundSrc);
             audio.playbackRate = speed;
             audio.preload = 'auto';
@@ -228,7 +226,7 @@
         speed = speed || 1.2;
         var cacheKey = 'a_boks_' + speed;
         if (!audioCache[cacheKey]) {
-            var boksSrc = window.SoundCache ? window.SoundCache.getUrl('a', 'boks') : '{{ asset("assets/sounds/a/boks.mp3") }}';
+            var boksSrc = window.SoundCache ? window.SoundCache.getUrl('a', 'boks') : '<?php echo e(asset("assets/sounds/a/boks.mp3")); ?>';
             var boksAudio = new Audio(boksSrc);
             boksAudio.playbackRate = speed;
             boksAudio.preload = 'auto';
@@ -381,9 +379,9 @@
         return numberToIndonesianTokens(qty);
     }
 
-    var locationValue = '{{ $recordList->Location_Rack }}';
-    var boxValue = '{{ $recordList->Box }}';
-    var qtyValue = '{{ $recordList->Qty }}';
+    var locationValue = '<?php echo e($recordList->Location_Rack); ?>';
+    var boxValue = '<?php echo e($recordList->Box); ?>';
+    var qtyValue = '<?php echo e($recordList->Qty); ?>';
 
     function playSequence() {
         // 1. Bunyikan Location Rack dengan kaidah bahasa Indonesia (suara folder b, speed 1)
@@ -533,4 +531,5 @@
         stopAllSounds();
     });
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('layouts.main', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\iseki_marshalling\resources\views/member/record/record-scan.blade.php ENDPATH**/ ?>
