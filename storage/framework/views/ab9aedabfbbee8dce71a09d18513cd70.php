@@ -1,6 +1,4 @@
-@extends('layouts.main')
-
-@section('style')
+<?php $__env->startSection('style'); ?>
 <style>
     body {
         overflow: hidden;
@@ -39,23 +37,23 @@
         100% { transform: translateY(100vh) rotate(720deg) scale(0.3); opacity: 0; }
     }
 </style>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@section('content')
-@php
+<?php $__env->startSection('content'); ?>
+<?php
     $colors = ['#fbb', '#f9a', '#fcc', '#f8a', '#f9b', '#fdd', '#fda', '#faa'];
     $sizes = [8, 9, 10, 11, 12, 13, 14, 15];
-@endphp
-@for ($i = 0; $i < 333; $i++)
-@php
+?>
+<?php for($i = 0; $i < 333; $i++): ?>
+<?php
     $left = rand(2, 98);
     $duration = rand(7, 15);
     $delay = rand(0, 10);
     $size = $sizes[array_rand($sizes)];
     $color = $colors[array_rand($colors)];
-@endphp
-<div class="sakura" style="left:{{ $left }}%;width:{{ $size }}px;height:{{ $size }}px;background:{{ $color }};animation-duration:{{ $duration }}s;animation-delay:{{ $delay }}s;"></div>
-@endfor
+?>
+<div class="sakura" style="left:<?php echo e($left); ?>%;width:<?php echo e($size); ?>px;height:<?php echo e($size); ?>px;background:<?php echo e($color); ?>;animation-duration:<?php echo e($duration); ?>s;animation-delay:<?php echo e($delay); ?>s;"></div>
+<?php endfor; ?>
 <div class="login-container">
     <div class="card shadow-sm">
         <div class="card-header text-center pt-4">
@@ -76,8 +74,8 @@
 
             <div class="tab-content">
                 <div class="tab-pane fade show active" id="member" role="tabpanel">
-                    <form action="{{ route('login.member') }}" method="POST">
-                        @csrf
+                    <form action="<?php echo e(route('login.member')); ?>" method="POST">
+                        <?php echo csrf_field(); ?>
                         <div class="mb-3">
                             <label class="form-label text-primary">NIK</label>
                             <input type="text" name="nik" class="form-control" placeholder="Input NIK" required>
@@ -91,8 +89,8 @@
                 </div>
 
                 <div class="tab-pane fade" id="perakitan" role="tabpanel">
-                    <form action="{{ route('login.perakitan') }}" method="POST">
-                        @csrf
+                    <form action="<?php echo e(route('login.perakitan')); ?>" method="POST">
+                        <?php echo csrf_field(); ?>
                         <div class="mb-3">
                             <label class="form-label text-primary">NIK</label>
                             <input type="text" name="nik" class="form-control" placeholder="Input NIK" required>
@@ -106,8 +104,8 @@
                 </div>
 
                 <div class="tab-pane fade" id="admin" role="tabpanel">
-                    <form action="{{ route('login.admin') }}" method="POST">
-                        @csrf
+                    <form action="<?php echo e(route('login.admin')); ?>" method="POST">
+                        <?php echo csrf_field(); ?>
                         <div class="mb-3">
                             <label class="form-label text-primary">Name</label>
                             <input type="text" name="name" class="form-control" placeholder="Input Name" required>
@@ -124,7 +122,7 @@
             <br>
             <hr class="my-3 text-muted">
             <div class="text-center">
-                <a href="{{ route('public.part-kurang.index') }}" class="btn btn-outline-primary w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center">
+                <a href="<?php echo e(route('public.part-kurang.index')); ?>" class="btn btn-outline-primary w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center">
                     <i class="fas fa-clipboard-list fa-lg me-2"></i>Part Kurang
                 </a>
                 <small class="text-muted d-block mt-1">Input & Penerimaan Part Kurang via Scan QR Member</small>
@@ -132,4 +130,6 @@
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.main', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\iseki_marshalling\resources\views/auth/login.blade.php ENDPATH**/ ?>
