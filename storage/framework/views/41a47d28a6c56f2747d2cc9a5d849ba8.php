@@ -4,34 +4,118 @@
     #carouselModal .modal-body {
         display: flex;
         flex-direction: column;
-        padding: 10px 20px;
+        padding: 5px 15px;
+        height: calc(100vh - 60px);
+        overflow: hidden;
     }
     .carousel-box {
         border: 1px solid #dee2e6;
         border-radius: 8px;
-        padding: 10px;
+        padding: 6px;
         background: #fff;
         flex-grow: 1;
-        min-height: 65vh;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
     }
     #carouselInner, #carouselInner .carousel-inner, #carouselInner .carousel-item {
         height: 100%;
     }
-    .carousel-box .carousel-item { padding: 5px; }
-    .slide-label {
-        font-size: 1rem;
-        color: #6c757d;
-        font-weight: 600;
+    .carousel-box .carousel-item { padding: 2px; }
+    .slide-info-card {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 4px 8px;
+        line-height: 1.15;
     }
-    .slide-value { font-size: 1.05rem; }
+    .slide-info-card .info-title {
+        font-size: 0.72rem;
+        color: #6c757d;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 2px;
+    }
+    .slide-info-card .info-text {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #212529;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .photo-wrapper {
+        position: relative;
+        width: 100%;
+        flex-grow: 1;
+        display: flex;
+    }
     .member-photo {
         width: 100%;
-        height: 55vh;
+        flex-grow: 1;
+        max-height: calc(100vh - 180px);
         object-fit: cover;
+        border-radius: 6px;
     }
     .member-photo-placeholder {
         width: 100%;
-        height: 55vh;
+        flex-grow: 1;
+        max-height: calc(100vh - 180px);
+        border-radius: 6px;
+    }
+    .audio-indicator-icon {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: rgba(0, 0, 0, 0.65);
+        color: #fff;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        z-index: 3;
+    }
+    .audio-indicator-icon.enabled {
+        color: #28a745;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+    }
+    .audio-indicator-icon.disabled {
+        color: #dc3545;
+        background: rgba(255, 255, 255, 0.8);
+    }
+    .member-name-heading {
+        font-size: 2.2rem;
+        line-height: 1.15;
+        font-weight: 800;
+        color: #111;
+        word-break: break-word;
+    }
+    .comment-big-box {
+        background: #fff3cd;
+        border: 2px solid #ffeeba;
+        border-left: 8px solid #ffc107;
+        border-radius: 8px;
+        padding: 12px 20px;
+        font-size: 8vw;
+        line-height: 1.15;
+        color: #111;
+        font-weight: 900;
+        word-break: break-word;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex-grow: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
     }
     #carouselCounter {
         position: absolute;
@@ -335,83 +419,170 @@
         } catch(e) {}
     }
 
+    var emptyPollInterval = null;
+
+    function stopEmptyPolling() {
+        if (emptyPollInterval) {
+            clearInterval(emptyPollInterval);
+            emptyPollInterval = null;
+        }
+    }
+
+    function startEmptyPolling() {
+        stopEmptyPolling();
+        // Jalankan polling setiap 5 detik
+        emptyPollInterval = setInterval(function() {
+            checkPendingData();
+        }, 5000);
+    }
+
+    function checkPendingData() {
+        // Cek jika modal sedang terbuka
+        var modalEl = $('#carouselModal');
+        if (!modalEl.is(':visible') && !modalEl.hasClass('show')) {
+            stopEmptyPolling();
+            return;
+        }
+
+        // Gunakan parameter timestamp untuk mencegah caching browser
+        $.ajax({
+            url: '<?php echo e(route("admin.part-kurang.carousel")); ?>',
+            type: 'GET',
+            dataType: 'json',
+            cache: false,
+            data: { _t: new Date().getTime() },
+            success: function(data) {
+                if (data && data.length > 0) {
+                    stopEmptyPolling();
+                    carouselData = data;
+                    carouselActiveIndex = 0;
+                    buildCarousel();
+                    goToSlide(0);
+                }
+            },
+            error: function(err) {
+                console.warn('Gagal cek pending data:', err);
+            }
+        });
+    }
+
     function showCarousel() {
         stopCarousel();
         stopAudioPlayback();
 
-        $.getJSON('<?php echo e(route("admin.part-kurang.carousel")); ?>', function(data) {
-            carouselData = data;
-            carouselActiveIndex = 0;
-            buildCarousel();
-            $('#carouselModal').modal('show');
-            playCurrentSlideAudio();
+        // Tampilkan modal terlebih dahulu
+        $('#carouselModal').modal('show');
+
+        // Render state loading sementara di modal
+        carouselData = [];
+        buildCarousel(true);
+
+        $.ajax({
+            url: '<?php echo e(route("admin.part-kurang.carousel")); ?>',
+            type: 'GET',
+            dataType: 'json',
+            cache: false,
+            data: { _t: new Date().getTime() },
+            success: function(data) {
+                carouselData = data || [];
+                carouselActiveIndex = 0;
+                buildCarousel();
+                if (carouselData.length > 0) {
+                    goToSlide(0);
+                } else {
+                    startEmptyPolling();
+                }
+            },
+            error: function() {
+                carouselData = [];
+                buildCarousel();
+                startEmptyPolling();
+            }
         });
     }
 
-    function buildCarousel() {
+    function buildCarousel(isLoading) {
         var inner = $('#carouselInnerContent');
         inner.empty();
+
+        if (isLoading) {
+            inner.html('<div class="carousel-item active"><div class="py-5 text-muted"><div class="spinner-border text-primary mb-3" role="status"></div><p class="mb-0">Memuat data part kurang...</p></div></div>');
+            $('#carouselCounter').text('- / -');
+            $('#audioRepetitionCounter').text('Panggilan: 0 / 0');
+            return;
+        }
+
         if (carouselData.length === 0) {
-            inner.html('<div class="carousel-item active"><div class="py-5 text-muted"><i class="fas fa-inbox fa-3x mb-3"></i><p>Tidak ada laporan part kurang yang pending.</p></div></div>');
+            inner.html('<div class="carousel-item active"><div class="py-5 text-muted"><i class="fas fa-inbox fa-3x mb-3 text-secondary"></i><p class="fs-5 fw-bold mb-1">Tidak ada laporan part kurang yang pending.</p><small class="text-primary"><i class="fas fa-sync-alt fa-spin me-1"></i>Mengecek data baru otomatis tiap 5 detik...</small></div></div>');
             $('#carouselCounter').text('0 / 0');
             $('#audioRepetitionCounter').text('Panggilan: 0 / 0');
             return;
         }
+
+        stopEmptyPolling();
         $.each(carouselData, function(i, item) {
             var active = i === carouselActiveIndex ? ' active' : '';
             var html = '<div class="carousel-item' + active + '" id="carousel_slide_' + i + '">';
-            html += '<div class="row h-100">';
+            html += '<div class="row h-100 g-2 align-items-stretch">';
 
-            // Left: Member Marshalling photo + name
-            html += '<div class="col-md-3 d-flex flex-column align-items-center justify-content-center text-center border-end">';
+            // Left: Member Marshalling (Label di atas foto, Foto dimaksimalkan, NIK dihilangkan, Nama diperbesar, Audio icon di pojok kiri bawah)
+            html += '<div class="col-md-3 d-flex flex-column text-center border-end pe-2 h-100">';
+            html += '  <div class="mb-1">';
+            html += '    <span class="badge bg-primary px-3 py-1 fs-6 fw-bold text-uppercase w-100">Marshalling</span>';
+            html += '  </div>';
+            html += '  <div class="photo-wrapper">';
             if (item.member_photo) {
-                html += '<img src="' + item.member_photo + '" class="member-photo border" onerror="this.style.display=\'none\'">';
+                html += '    <img src="' + item.member_photo + '" class="member-photo border" onerror="this.style.display=\'none\'">';
             } else {
-                html += '<div class="member-photo member-photo-placeholder bg-light d-flex align-items-center justify-content-center border"><i class="fas fa-user fa-8x text-secondary"></i></div>';
+                html += '    <div class="member-photo member-photo-placeholder bg-light d-flex align-items-center justify-content-center border"><i class="fas fa-user fa-8x text-secondary"></i></div>';
             }
-            html += '<div class="mt-3">';
-            html += '  <span class="badge bg-primary mb-1">Marshalling</span>';
-            html += '  <strong class="d-block text-dark" style="font-size:2rem;">' + escHtml(item.member_name) + '</strong>';
-            html += '  <small class="text-muted d-block">NIK: ' + escHtml(item.member_nik || '-') + '</small>';
             if (item.member_audio) {
-                html += '  <span class="badge bg-light text-success border mt-1"><i class="fas fa-check-circle me-1"></i>Audio Terdaftar</span>';
+                html += '    <div class="audio-indicator-icon enabled" title="Audio Aktif / Terdaftar"><i class="fas fa-volume-up"></i></div>';
             } else {
-                html += '  <span class="badge bg-light text-muted border mt-1"><i class="fas fa-volume-mute me-1"></i>Audio Belum Diupload</span>';
+                html += '    <div class="audio-indicator-icon disabled" title="Audio Nonaktif / Belum Ada"><i class="fas fa-volume-mute"></i></div>';
             }
-            html += '</div>';
-            html += '</div>';
-
-            // Middle: Kanban Details & Catatan Part Kurang
-            html += '<div class="col-md-6 border-start border-end d-flex flex-column justify-content-start py-2 h-100">';
-            html += '<div class="text-start w-100 px-4 pt-1 d-flex flex-column h-100">';
-            html += '  <div class="row mb-2"><div class="col-5 slide-label">Seq Record</div><div class="col-7 slide-value fw-bold text-primary" style="font-size:1.2rem;">' + escHtml(item.sequence) + '</div></div>';
-            html += '  <div class="row mb-2"><div class="col-5 slide-label">Prod Date</div><div class="col-7 slide-value">' + escHtml(item.production_date) + '</div></div>';
-            html += '  <div class="row mb-2"><div class="col-5 slide-label">Type Traktor</div><div class="col-7 slide-value fw-bold">' + escHtml(item.type) + '</div></div>';
-            html += '  <div class="row mb-2"><div class="col-5 slide-label">Area</div><div class="col-7 slide-value"><span class="badge bg-primary fs-6">' + escHtml(item.area) + '</span></div></div>';
-            html += '  <div class="row mb-2"><div class="col-5 slide-label">Waktu Marshalling</div><div class="col-7 slide-value">' + escHtml(item.time_record) + '</div></div>';
-            html += '  <div class="row mb-2"><div class="col-5 slide-label">Waktu Komentar</div><div class="col-7 slide-value">' + escHtml(item.perakitan_comment_time) + '</div></div>';
-            html += '  <hr class="my-2">';
-            html += '  <div class="d-flex flex-column flex-grow-1 mb-2">';
-            html += '    <div class="slide-label text-danger fw-bold mb-1" style="font-size:1.05rem;"><i class="fas fa-clipboard-list me-1"></i>Catatan Part Kurang:</div>';
-            html += '    <div class="w-100 text-dark fw-bold flex-grow-1 overflow-auto" style="background:#fff3cd; border-radius:8px; padding:14px 18px; font-size:4rem; border:1px solid #ffeeba; border-left:6px solid #ffc107; word-break:break-word; min-height:140px;">' + escHtml(item.perakitan_comment) + '</div>';
+            html += '  </div>';
+            html += '  <div class="mt-2 text-center">';
+            html += '    <strong class="d-block member-name-heading" title="' + escHtml(item.member_name) + '">' + escHtml(item.member_name) + '</strong>';
             html += '  </div>';
             html += '</div>';
+
+            // Middle: Kanban Details dibuat mepet 3 kolom & Catatan Part Kurang Diperbesar Maksimal (2 Baris)
+            html += '<div class="col-md-6 border-start border-end px-3 d-flex flex-column justify-content-between h-100">';
+            html += '  <div class="w-100 pt-1">';
+            html += '    <div class="row g-1 mb-2 text-start">';
+            html += '      <div class="col-4"><div class="slide-info-card"><div class="info-title">Seq Record</div><div class="info-text text-primary">' + escHtml(item.sequence) + '</div></div></div>';
+            html += '      <div class="col-4"><div class="slide-info-card"><div class="info-title">Prod Date</div><div class="info-text">' + escHtml(item.production_date) + '</div></div></div>';
+            html += '      <div class="col-4"><div class="slide-info-card"><div class="info-title">Type Traktor</div><div class="info-text">' + escHtml(item.type) + '</div></div></div>';
+            html += '      <div class="col-4"><div class="slide-info-card"><div class="info-title">Area</div><div class="info-text text-primary">' + escHtml(item.area) + '</div></div></div>';
+            html += '      <div class="col-4"><div class="slide-info-card"><div class="info-title">Waktu Marshalling</div><div class="info-text">' + escHtml(item.time_record) + '</div></div></div>';
+            html += '      <div class="col-4"><div class="slide-info-card"><div class="info-title">Waktu Komentar</div><div class="info-text">' + escHtml(item.perakitan_comment_time) + '</div></div></div>';
+            html += '    </div>';
+            html += '  </div>';
+            html += '  <div class="d-flex flex-column flex-grow-1 w-100 mb-1">';
+            html += '    <div class="text-danger fw-bold mb-1 text-start" style="font-size:1.15rem;"><i class="fas fa-clipboard-list me-1"></i>Catatan Part Kurang:</div>';
+            html += '    <div class="comment-big-box">' + escHtml(item.perakitan_comment) + '</div>';
+            html += '  </div>';
             html += '</div>';
 
-            // Right: Member Perakitan (Commenter) photo + name
-            html += '<div class="col-md-3 text-center d-flex flex-column align-items-center justify-content-center border-start py-3">';
+            // Right: Member Perakitan (Label di atas foto, Foto dimaksimalkan, NIK dihilangkan, Label pelapor dihilangkan, Nama diperbesar)
+            html += '<div class="col-md-3 d-flex flex-column text-center border-start ps-2 h-100">';
+            html += '  <div class="mb-1">';
+            html += '    <span class="badge bg-info px-3 py-1 fs-6 fw-bold text-uppercase w-100 text-white">Perakitan</span>';
+            html += '  </div>';
+            html += '  <div class="photo-wrapper">';
             if (item.perakitan_photo) {
-                html += '<img src="' + item.perakitan_photo + '" class="member-photo border" onerror="this.style.display=\'none\'">';
+                html += '    <img src="' + item.perakitan_photo + '" class="member-photo border" onerror="this.style.display=\'none\'">';
             } else {
-                html += '<div class="member-photo member-photo-placeholder bg-light d-flex align-items-center justify-content-center border"><i class="fas fa-user fa-8x text-secondary"></i></div>';
+                html += '    <div class="member-photo member-photo-placeholder bg-light d-flex align-items-center justify-content-center border"><i class="fas fa-user fa-8x text-secondary"></i></div>';
             }
-            html += '<div class="mt-3">';
-            html += '  <span class="badge bg-info mb-1">Perakitan</span>';
-            html += '  <strong class="d-block text-dark" style="font-size:2rem;">' + escHtml(item.perakitan_name) + '</strong>';
-            html += '  <small class="text-muted d-block">NIK: ' + escHtml(item.perakitan_nik || '-') + '</small>';
-            html += '</div>';
+            html += '  </div>';
+            html += '  <div class="mt-2 text-center">';
+            html += '    <strong class="d-block member-name-heading" title="' + escHtml(item.perakitan_name) + '">' + escHtml(item.perakitan_name) + '</strong>';
+            html += '  </div>';
             html += '</div>';
 
+            html += '</div>';
             html += '</div>';
             inner.append(html);
         });
@@ -420,21 +591,29 @@
 
     function stopCarousel() {
         stopAudioPlayback();
+        stopEmptyPolling();
     }
 
     function slideNext() {
         stopAudioPlayback();
 
         // Selalu cek data terbaru ke server setiap kali akan berganti slide (semua pending)
-        $.getJSON('<?php echo e(route("admin.part-kurang.carousel")); ?>', function(data) {
-            var currentId = (carouselData[carouselActiveIndex]) ? carouselData[carouselActiveIndex].Id_Part_Kurang : null;
-            carouselData = data;
+        $.ajax({
+            url: '<?php echo e(route("admin.part-kurang.carousel")); ?>',
+            type: 'GET',
+            dataType: 'json',
+            cache: false,
+            data: { _t: new Date().getTime() },
+            success: function(data) {
+                var currentId = (carouselData[carouselActiveIndex]) ? carouselData[carouselActiveIndex].Id_Part_Kurang : null;
+                carouselData = data || [];
 
-            if (carouselData.length === 0) {
-                carouselActiveIndex = 0;
-                buildCarousel();
-                return;
-            }
+                if (carouselData.length === 0) {
+                    carouselActiveIndex = 0;
+                    buildCarousel();
+                    startEmptyPolling();
+                    return;
+                }
 
             // Cari index dari item berikutnya
             var nextIndex = 0;
@@ -456,6 +635,7 @@
             carouselActiveIndex = nextIndex;
             buildCarousel();
             goToSlide(carouselActiveIndex);
+            }
         }).fail(function() {
             // Fallback jika fetch gagal (misal koneksi terputus sesaat)
             if (carouselData.length > 0) {
@@ -492,6 +672,12 @@
             $('#carouselCounter').text((carouselActiveIndex + 1) + ' / ' + carouselData.length);
         }
     }
+
+    $('#carouselModal').on('shown.bs.modal', function() {
+        if (carouselData.length === 0) {
+            startEmptyPolling();
+        }
+    });
 
     $('#carouselModal').on('hidden.bs.modal', function() {
         stopCarousel();
