@@ -120,6 +120,14 @@
                     </form>
                 </div>
             </div>
+
+            <hr class="my-3 text-muted">
+            <div class="text-center">
+                <a href="{{ route('public.part-kurang.index') }}" class="btn btn-outline-primary w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center">
+                    <i class="fas fa-clipboard-list fa-lg me-2"></i>Menu Part Kurang (Tanpa Login)
+                </a>
+                <small class="text-muted d-block mt-1">Input & Penerimaan Part Kurang via Scan QR Member</small>
+            </div>
         </div>
     </div>
 </div>

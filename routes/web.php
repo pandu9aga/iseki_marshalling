@@ -14,6 +14,7 @@ use App\Http\Controllers\Perakitan\DashboardController as PerakitanDashboardCont
 use App\Http\Controllers\Perakitan\KanbanController as PerakitanKanbanController;
 use App\Http\Controllers\Perakitan\ProsedurController as PerakitanProsedurController;
 use App\Http\Controllers\Perakitan\CommentController as PerakitanCommentController;
+use App\Http\Controllers\PublicPartKurangController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -24,6 +25,17 @@ Route::post('/login/admin', [AuthController::class, 'loginAdmin'])->name('login.
 Route::post('/login/member', [AuthController::class, 'loginMember'])->name('login.member');
 Route::post('/login/perakitan', [AuthController::class, 'loginPerakitan'])->name('login.perakitan');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Menu Part Kurang Publik (Tanpa Login)
+Route::prefix('part-kurang')->name('public.part-kurang.')->group(function () {
+    Route::get('/', [PublicPartKurangController::class, 'index'])->name('index');
+    Route::post('/check-member', [PublicPartKurangController::class, 'checkMember'])->name('check-member');
+    Route::get('/search-kanban', [PublicPartKurangController::class, 'searchKanban'])->name('search-kanban');
+    Route::post('/{id}/store', [PublicPartKurangController::class, 'store'])->name('store');
+    Route::get('/member-reports', [PublicPartKurangController::class, 'memberReports'])->name('member-reports');
+    Route::post('/{id}/receive', [PublicPartKurangController::class, 'markReceived'])->name('receive');
+    Route::get('/recent-list', [PublicPartKurangController::class, 'recentList'])->name('recent-list');
+});
 
 Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

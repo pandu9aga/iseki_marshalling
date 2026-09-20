@@ -236,6 +236,19 @@
                                 <p class="{{ request()->routeIs('perakitan.comment.*') ? 'text-primary' : '' }}">Part Kurang</p>
                             </a>
                         </li>
+                        @if(!Auth::guard('admin')->check() && !Auth::guard('member')->check() && !Auth::guard('perakitan')->check())
+                        <li class="nav-item {{ request()->routeIs('public.part-kurang.*') ? 'active' : '' }}">
+                            <a href="{{ route('public.part-kurang.index') }}">
+                                <i class="fas fa-clipboard-list"></i>
+                                <p class="{{ request()->routeIs('public.part-kurang.*') ? 'text-primary' : '' }}">Part Kurang</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('login') ? 'active' : '' }}">
+                            <a href="{{ route('login') }}">
+                                <i class="fas fa-sign-in-alt"></i>
+                                <p>Halaman Login</p>
+                            </a>
+                        </li>
                         @endif
                     </ul>
                 </div>
@@ -259,12 +272,13 @@
                 <nav class="navbar navbar-header navbar-expand-lg border-bottom" data-background-color="purple">
                     <div class="container-fluid">
                         <ul class="navbar-nav topbar-nav ms-md-auto align-items-center">
+                            @if(Auth::guard('admin')->check() || Auth::guard('member')->check() || Auth::guard('perakitan')->check())
                             <li class="nav-item dropdown hidden-caret">
                                 <a class="dropdown-toggle profile-pic" data-bs-toggle="dropdown" href="#" aria-expanded="false">
                                     <span class="profile-username">
                                         <span class="fw-bold text-white">
                                             @if(Auth::guard('admin')->check())
-                                                {{ Auth::guard('admin')->user()->name }}
+                                                 {{ Auth::guard('admin')->user()->name }}
                                             @elseif(Auth::guard('member')->check())
                                                 {{ Auth::guard('member')->user()->nama }}
                                             @elseif(Auth::guard('perakitan')->check())
@@ -298,6 +312,13 @@
                                     <i class="fas fa-sign-out-alt"></i> Logout
                                 </a>
                             </li>
+                            @else
+                            <li class="nav-item">
+                                <a href="{{ route('login') }}" class="btn btn-light btn-sm text-primary fw-bold px-3">
+                                    <i class="fas fa-sign-in-alt me-1"></i>Login
+                                </a>
+                            </li>
+                            @endif
                         </ul>
                     </div>
                 </nav>
