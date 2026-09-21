@@ -474,7 +474,12 @@ class RecordController extends Controller
             return response()->json(['notifications' => []]);
         }
 
-        $items = \App\Models\PartKurang::where('id_user', $member->id)
+        $items = \App\Models\PartKurang::where(function($q) use ($member) {
+                $q->where('id_user', $member->id);
+                if (!empty($member->nik)) {
+                    $q->orWhere('member_nik', (string)$member->nik);
+                }
+            })
             ->where('status', 'pending')
             ->whereNull('dismissed_at')
             ->orderBy('comment_time', 'desc')
@@ -515,7 +520,12 @@ class RecordController extends Controller
         }
 
         $partKurang = \App\Models\PartKurang::where('id', $id)
-            ->where('id_user', $member->id)
+            ->where(function($q) use ($member) {
+                $q->where('id_user', $member->id);
+                if (!empty($member->nik)) {
+                    $q->orWhere('member_nik', (string)$member->nik);
+                }
+            })
             ->first();
 
         if ($partKurang) {
