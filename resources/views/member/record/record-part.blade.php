@@ -128,7 +128,10 @@
     function getFastAudio(ch) {
         if (!audioCache[ch]) {
             var audio = new Audio('{{ asset("assets/sounds/" . config("app.sound_theme", "a")) }}/' + ch + '.mp3');
-            audio.playbackRate = 1.7; //Speed audio
+            audio.playbackRate = 1.85; // Speed audio
+            audio.preservesPitch = false;
+            if ('mozPreservesPitch' in audio) audio.mozPreservesPitch = false;
+            if ('webkitPreservesPitch' in audio) audio.webkitPreservesPitch = false;
             audio.preload = 'auto'; 
             audioCache[ch] = audio;
         }

@@ -264,6 +264,18 @@
     var panggilanAudio = document.getElementById('panggilanPlayer');
     var namaAudio = document.getElementById('namaPlayer');
 
+    // Tune audio slideshow agar nada lebih tinggi/melengking (tanpa CDN)
+    function setupAudioTuning(el, rate) {
+        if (!el) return;
+        el.playbackRate = rate || 1.18; // ~18% lebih tinggi & melengking
+        el.preservesPitch = false;
+        if ('mozPreservesPitch' in el) el.mozPreservesPitch = false;
+        if ('webkitPreservesPitch' in el) el.webkitPreservesPitch = false;
+    }
+
+    setupAudioTuning(panggilanAudio, 1.18);
+    setupAudioTuning(namaAudio, 1.15);
+
     $(document).ready(function() {
         var table = $('#partKurangTable').DataTable({
             pageLength: 50,
@@ -329,6 +341,7 @@
             var currentItem = carouselData[carouselActiveIndex];
             if (currentItem && currentItem.member_audio) {
                 namaAudio.src = currentItem.member_audio;
+                setupAudioTuning(namaAudio, 1.15);
                 namaAudio.play().catch(function(err) {
                     console.warn('Nama audio play error:', err);
                     onAudioCycleEnd();
@@ -395,6 +408,7 @@
 
     function playPanggilan() {
         if (!shouldContinueAudio) return;
+        setupAudioTuning(panggilanAudio, 1.18);
         panggilanAudio.currentTime = 0;
         panggilanAudio.play().catch(function(err) {
             console.warn('Panggilan audio play blocked/error:', err);
@@ -402,6 +416,7 @@
             var currentItem = carouselData[carouselActiveIndex];
             if (currentItem && currentItem.member_audio) {
                 namaAudio.src = currentItem.member_audio;
+                setupAudioTuning(namaAudio, 1.15);
                 namaAudio.play().catch(function() {
                     setTimeout(onAudioCycleEnd, 3000);
                 });

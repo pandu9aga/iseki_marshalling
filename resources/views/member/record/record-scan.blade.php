@@ -210,31 +210,66 @@
     var currentAudio = null;
     var loopTimeout = null;
 
+    // Web Audio Context untuk manipulasi karakter suara (lebih melengking & anti copyright) murni tanpa CDN
+    var _audioCtx = null;
+    function getAudioContext() {
+        if (!_audioCtx) {
+            var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) {
+                _audioCtx = new AudioContextClass();
+            }
+        }
+        if (_audioCtx && _audioCtx.state === 'suspended') {
+            _audioCtx.resume().catch(function() {});
+        }
+        return _audioCtx;
+    }
+
+    function setupAudioElement(audio, speed, shouldAdjustPitch) {
+        if (!audio) return;
+        audio.playbackRate = speed || 1.0;
+        if (shouldAdjustPitch) {
+            audio.preservesPitch = false;
+            if ('mozPreservesPitch' in audio) audio.mozPreservesPitch = false;
+            if ('webkitPreservesPitch' in audio) audio.webkitPreservesPitch = false;
+        } else {
+            // Normal (folder a tidak perlu di-adjust)
+            audio.preservesPitch = true;
+            if ('mozPreservesPitch' in audio) audio.mozPreservesPitch = true;
+            if ('webkitPreservesPitch' in audio) audio.webkitPreservesPitch = true;
+        }
+    }
+
     function getFastAudio(ch, theme, speed) {
         theme = theme || 'a';
-        speed = speed || ((theme === 'b') ? 1 : 2);
-        var cacheKey = theme + '_' + ch + '_' + speed;
+        var cacheKey = theme + '_' + ch;
         if (!audioCache[cacheKey]) {
             var soundSrc = window.SoundCache ? window.SoundCache.getUrl(theme, ch) : '{{ asset("assets/sounds") }}/' + theme + '/' + ch + '.mp3';
             var audio = new Audio(soundSrc);
-            audio.playbackRate = speed;
             audio.preload = 'auto';
             audioCache[cacheKey] = audio;
         }
-        return audioCache[cacheKey];
+        var a = audioCache[cacheKey];
+        // Jika folder 'a', suara normal tanpa adjust pitch
+        var adjust = (theme !== 'a');
+        setupAudioElement(a, speed || 1.0, adjust);
+        return a;
     }
 
-    function getBoksAudio(speed) {
-        speed = speed || 1.2;
-        var cacheKey = 'a_boks_' + speed;
+    function getBoksAudio(theme, speed) {
+        theme = theme || 'b';
+        speed = speed || 1.0;
+        var cacheKey = theme + '_boks';
         if (!audioCache[cacheKey]) {
-            var boksSrc = window.SoundCache ? window.SoundCache.getUrl('a', 'boks') : '{{ asset("assets/sounds/a/boks.mp3") }}';
+            var boksSrc = window.SoundCache ? window.SoundCache.getUrl(theme, 'boks') : '{{ asset("assets/sounds") }}/' + theme + '/boks.mp3';
             var boksAudio = new Audio(boksSrc);
-            boksAudio.playbackRate = speed;
             boksAudio.preload = 'auto';
             audioCache[cacheKey] = boksAudio;
         }
-        return audioCache[cacheKey];
+        var b = audioCache[cacheKey];
+        var adjust = (theme !== 'a');
+        setupAudioElement(b, speed, adjust);
+        return b;
     }
 
     var isAutoplayBlocked = false;
@@ -258,15 +293,15 @@
     function playCharSounds(chars, index, theme, speed, onComplete) {
         if (typeof speed === 'function') {
             onComplete = speed;
-            speed = (theme === 'b') ? 1 : 2;
+            speed = 1.0;
         }
         if (typeof theme === 'function') {
             onComplete = theme;
             theme = 'a';
-            speed = 2;
+            speed = 1.0;
         }
         theme = theme || 'a';
-        speed = speed || ((theme === 'b') ? 1 : 2);
+        speed = speed || 1.0;
 
         if (currentTimeout) { clearTimeout(currentTimeout); currentTimeout = null; }
         if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
@@ -422,51 +457,50 @@
     var qtyValue = '{{ $recordList->Qty }}';
 
     function playSequence() {
-        // 1. Bunyikan Location Rack dengan kaidah bahasa Indonesia (suara folder b, speed 1)
+        // 1. Bunyikan Location Rack (sound b, speed 1.08 melengking halus)
         var locationTokens = parseLocationToTokens(locationValue);
-        playCharSounds(locationTokens, 0, 'b', 1, function() {
+        playCharSounds(locationTokens, 0, 'b', 1.3, function() {
             loopTimeout = setTimeout(function() {
-                function afterBoks() {
+                // 2. Bunyikan Qty (sound a, normal tanpa adjust)
+                var qtyTokens = parseQtyToTokens(qtyValue);
+                playCharSounds(qtyTokens, 0, 'a', 1.0, function() {
                     loopTimeout = setTimeout(function() {
-                        // 3. Bunyikan Data Box (suara folder a, speed 1.1)
-                        playCharSounds(boxValue.toLowerCase().split(''), 0, 'a', 1.1, function() {
+                        // 3. Bunyikan Box (sound b): diawali 'boks' lalu kode box
+                        function afterBoks() {
                             loopTimeout = setTimeout(function() {
-                                // 4. Bunyikan Qty dengan kaidah bahasa Indonesia (suara folder b, speed 1)
-                                var qtyTokens = parseQtyToTokens(qtyValue);
-                                playCharSounds(qtyTokens, 0, 'b', 1, function() {
+                                playCharSounds(boxValue.toLowerCase().split(''), 0, 'b', 1.08, function() {
                                     // Repeat loop pemutaran suara kembali ke awal setelah jeda 500ms
                                     loopTimeout = setTimeout(function() {
                                         playSequence();
                                     }, 500);
                                 });
-                            }, 300);
-                        });
-                    }, 0);
-                }
-
-                // 2. Bunyikan kata 'boks' (suara folder a, speed 1)
-                var boksAudio = getBoksAudio(1);
-                if (boksAudio) {
-                    boksAudio.currentTime = 0;
-                    boksAudio.play().then(function() {
-                        var duration = boksAudio.duration;
-                        if (!duration || duration === Infinity || isNaN(duration)) {
-                            boksAudio.onended = afterBoks;
-                        } else {
-                            boksAudio.onended = null;
-                            currentTimeout = setTimeout(function() {
-                                boksAudio.pause();
-                                currentTimeout = null;
-                                afterBoks();
-                            }, ((duration * 0.9) / boksAudio.playbackRate) * 1000);
+                            }, 100);
                         }
-                    }).catch(function(error) {
-                        console.log("Playback boks dicegah:", error);
-                        handleAutoplayBlocked();
-                    });
-                } else {
-                    afterBoks();
-                }
+
+                        var boksAudio = getBoksAudio('b', 1.08);
+                        if (boksAudio) {
+                            boksAudio.currentTime = 0;
+                            boksAudio.play().then(function() {
+                                var duration = boksAudio.duration;
+                                if (!duration || duration === Infinity || isNaN(duration)) {
+                                    boksAudio.onended = afterBoks;
+                                } else {
+                                    boksAudio.onended = null;
+                                    currentTimeout = setTimeout(function() {
+                                        boksAudio.pause();
+                                        currentTimeout = null;
+                                        afterBoks();
+                                    }, ((duration * 0.9) / boksAudio.playbackRate) * 1000);
+                                }
+                            }).catch(function(error) {
+                                console.log("Playback boks dicegah:", error);
+                                handleAutoplayBlocked();
+                            });
+                        } else {
+                            afterBoks();
+                        }
+                    }, 200);
+                });
             }, 200);
         });
     }
