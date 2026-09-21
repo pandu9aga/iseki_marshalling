@@ -1,6 +1,4 @@
-@extends('layouts.main')
-
-@section('style')
+<?php $__env->startSection('style'); ?>
 <style>
     .member-card-photo {
         width: 90px;
@@ -110,9 +108,9 @@
         border-color: #F36494 !important;
     }
 </style>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="container">
     <div class="page-inner">
         <!-- Header Page -->
@@ -122,7 +120,7 @@
                 <small class="text-muted">Input & Penerimaan Part Kurang via Scan QR Member (Tanpa Login)</small>
             </div>
             <div>
-                <a href="{{ route('login') }}" class="btn btn-outline-secondary btn-sm">
+                <a href="<?php echo e(route('login')); ?>" class="btn btn-outline-secondary btn-sm">
                     <i class="fas fa-arrow-left me-1"></i>Kembali ke Login
                 </a>
             </div>
@@ -384,10 +382,10 @@
     </div>
 </div>
 
-@endsection
+<?php $__env->stopSection(); ?>
 
-@section('script')
-<script src="{{ asset('assets/js/plugin/html5-qrcode.min.js') }}"></script>
+<?php $__env->startSection('script'); ?>
+<script src="<?php echo e(asset('assets/js/plugin/html5-qrcode.min.js')); ?>"></script>
 <script>
     // State Global Pelapor
     var activeMember = null; // { nik, nama, photo, team }
@@ -595,10 +593,10 @@
         }
 
         $.ajax({
-            url: '{{ route("public.part-kurang.check-member") }}',
+            url: '<?php echo e(route("public.part-kurang.check-member")); ?>',
             type: 'POST',
             data: {
-                _token: '{{ csrf_token() }}',
+                _token: '<?php echo e(csrf_token()); ?>',
                 qr: raw
             },
             success: function(res) {
@@ -670,12 +668,6 @@
             '  <small>Silakan scan QR Member untuk memulai (NIK akan diambil dari bagian depan QR).</small>' +
             '</div>'
         );
-        stopKanbanCamera();
-        $('#kanbanCameraBox').hide();
-        $('#kanbanUsbBox').show();
-        $('#btnKanbanUsb').addClass('active');
-        $('#btnKanbanCamera').removeClass('active');
-
         $('#kanbanScanCard').slideUp(200);
         $('#resultArea').slideUp(200).empty();
         $('#memberScannerInput').val('').focus();
@@ -693,14 +685,6 @@
             $('#production_date').val(parts[1]);
             $('#type').val(parts[2]);
             $('#kanbanScannerInput').val('');
-
-            // Otomatis tutup kamera kanban jika sedang aktif dan kembalikan ke mode default
-            stopKanbanCamera();
-            $('#kanbanCameraBox').hide();
-            $('#kanbanUsbBox').show();
-            $('#btnKanbanUsb').addClass('active');
-            $('#btnKanbanCamera').removeClass('active');
-
             searchKanbanRecords(parts[0], parts[1]);
         } else {
             Swal.fire({
@@ -719,7 +703,7 @@
         ).fadeIn(200);
 
         $.ajax({
-            url: '{{ route("public.part-kurang.search-kanban") }}',
+            url: '<?php echo e(route("public.part-kurang.search-kanban")); ?>',
             type: 'GET',
             data: {
                 sequence_no: seq,
@@ -881,10 +865,10 @@
         btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...');
 
         $.ajax({
-            url: '{{ url("part-kurang") }}/' + recordId + '/store',
+            url: '<?php echo e(url("part-kurang")); ?>/' + recordId + '/store',
             type: 'POST',
             data: {
-                _token: '{{ csrf_token() }}',
+                _token: '<?php echo e(csrf_token()); ?>',
                 comment: comment,
                 perakitan_nik: activeMember.nik
             },
@@ -960,7 +944,7 @@
         });
 
         $.ajax({
-            url: '{{ route("public.part-kurang.member-reports") }}',
+            url: '<?php echo e(route("public.part-kurang.member-reports")); ?>',
             type: 'GET',
             data: {
                 nik: nik,
@@ -1097,10 +1081,10 @@
         }).then(function(res) {
             if (res.isConfirmed) {
                 $.ajax({
-                    url: '{{ url("part-kurang") }}/' + id + '/receive',
+                    url: '<?php echo e(url("part-kurang")); ?>/' + id + '/receive',
                     type: 'POST',
                     data: {
-                        _token: '{{ csrf_token() }}'
+                        _token: '<?php echo e(csrf_token()); ?>'
                     },
                     success: function(resp) {
                         if (resp.success) {
@@ -1164,7 +1148,7 @@
         var search = $('#filterSearch').val();
 
         $.ajax({
-            url: '{{ route("public.part-kurang.recent-list") }}',
+            url: '<?php echo e(route("public.part-kurang.recent-list")); ?>',
             type: 'GET',
             data: {
                 page: page,
@@ -1364,4 +1348,6 @@
             .replace(/'/g, '&#039;');
     }
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.main', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\iseki_marshalling\resources\views/public/part-kurang/index.blade.php ENDPATH**/ ?>

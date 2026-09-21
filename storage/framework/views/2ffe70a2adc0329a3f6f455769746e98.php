@@ -117,10 +117,10 @@
             }
         }
 
-        /* Floating Toast Alert Part Kurang (ala Facebook) */
+        /* Floating Toast Alert Part Kurang */
         #partKurangToastContainer {
             position: fixed;
-            bottom: 24px;
+            top: 80px;
             right: 24px;
             z-index: 99999;
             width: 360px;
@@ -138,13 +138,13 @@
             border: 1px solid #ffeeba;
             border-left: 6px solid #ffc107;
             overflow: hidden;
-            animation: slideInUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: slideInDown 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             transition: opacity 0.3s ease, transform 0.3s ease;
         }
-        @keyframes slideInUp {
+        @keyframes slideInDown {
             from {
                 opacity: 0;
-                transform: translateY(30px) scale(0.95);
+                transform: translateY(-30px) scale(0.95);
             }
             to {
                 opacity: 1;
@@ -461,20 +461,6 @@
 
     <script>
         (function() {
-            var dismissedToastIds = {};
-            try {
-                var stored = localStorage.getItem('dismissed_pk_ids');
-                if (stored) {
-                    dismissedToastIds = JSON.parse(stored) || {};
-                }
-            } catch(e) {}
-
-            function saveDismissedIds() {
-                try {
-                    localStorage.setItem('dismissed_pk_ids', JSON.stringify(dismissedToastIds));
-                } catch(e) {}
-            }
-
             function escapeHtml(str) {
                 if (!str) return '';
                 return String(str)
@@ -499,9 +485,6 @@
 
                         res.notifications.forEach(function(item) {
                             activeIdsOnServer[item.id] = true;
-
-                            // Jika sudah di-dismiss oleh member, jangan tampilkan
-                            if (dismissedToastIds[item.id]) return;
 
                             var toastElId = 'pk_toast_' + item.id;
                             if ($('#' + toastElId).length === 0) {
@@ -530,7 +513,7 @@
                             }
                         });
 
-                        // Hapus toast di DOM jika sudah tidak pending lagi di server
+                        // Hapus toast di DOM jika sudah tidak pending atau sudah di-dismiss di database
                         $('.part-kurang-toast').each(function() {
                             var tid = $(this).attr('id').replace('pk_toast_', '');
                             if (!activeIdsOnServer[tid]) {
@@ -544,25 +527,40 @@
                 });
             }
 
-            // Event handler klik tombol tutup pada toast
+            // Event handler klik tombol tutup pada toast (disimpan langsung ke database)
             $(document).on('click', '#partKurangToastContainer .btn-close', function(e) {
                 e.preventDefault();
                 var id = $(this).data('id');
-                dismissedToastIds[id] = true;
-                saveDismissedIds();
 
                 var toast = $('#pk_toast_' + id);
                 toast.css({
                     opacity: 0,
-                    transform: 'translateY(20px) scale(0.95)'
+                    transform: 'translateY(-20px) scale(0.95)'
                 });
                 setTimeout(function() {
                     toast.remove();
                 }, 300);
+
+                // Simpan status penutupan ke database
+                var dismissUrl = "<?php echo e(route('member.part-kurang.dismiss', ':id')); ?>".replace(':id', id);
+                $.ajax({
+                    url: dismissUrl,
+                    type: "POST",
+                    dataType: "json",
+                    data: {
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    error: function(err) {
+                        console.warn('Gagal menyimpan penutupan notifikasi ke database:', err);
+                    }
+                });
             });
 
             // Jalankan polling pertama kali dan ulangi setiap 5 detik
             $(document).ready(function() {
+                // Bersihkan cache lama localStorage jika ada
+                try { localStorage.removeItem('dismissed_pk_ids'); } catch(e) {}
+
                 pollPartKurangNotifications();
                 setInterval(pollPartKurangNotifications, 5000);
             });
