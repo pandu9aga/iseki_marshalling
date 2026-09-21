@@ -21,11 +21,13 @@ class PartKurang extends Model
         'comment_time',
         'status',
         'received_time',
+        'dismissed_at',
     ];
 
     protected $casts = [
         'comment_time'  => 'datetime',
         'received_time' => 'datetime',
+        'dismissed_at'  => 'datetime',
     ];
 
     public function record()

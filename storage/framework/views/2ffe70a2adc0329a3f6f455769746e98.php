@@ -116,6 +116,64 @@
                 color: #FFFFFF;
             }
         }
+
+        /* Floating Toast Alert Part Kurang (ala Facebook) */
+        #partKurangToastContainer {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 99999;
+            width: 360px;
+            max-width: calc(100vw - 36px);
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .part-kurang-toast {
+            pointer-events: auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08);
+            border: 1px solid #ffeeba;
+            border-left: 6px solid #ffc107;
+            overflow: hidden;
+            animation: slideInUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .part-kurang-toast-header {
+            padding: 10px 14px;
+            background: #fff8e1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #fff2b2;
+        }
+        .part-kurang-toast-body {
+            padding: 12px 14px;
+        }
+        .part-kurang-toast .comment-text {
+            background: #fff9e6;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-weight: 700;
+            color: #212529;
+            font-size: 0.95rem;
+            word-break: break-word;
+            border: 1px dashed #ffd54f;
+            margin-top: 6px;
+            margin-bottom: 6px;
+        }
     </style>
     <?php echo $__env->yieldContent('style'); ?>
 </head>
@@ -396,6 +454,122 @@
             window.SoundCache.init("<?php echo e(asset('')); ?>");
         }
     </script>
+
+    <?php if(Auth::guard('member')->check()): ?>
+    <!-- Container Toast Notifikasi Part Kurang Realtime -->
+    <div id="partKurangToastContainer"></div>
+
+    <script>
+        (function() {
+            var dismissedToastIds = {};
+            try {
+                var stored = localStorage.getItem('dismissed_pk_ids');
+                if (stored) {
+                    dismissedToastIds = JSON.parse(stored) || {};
+                }
+            } catch(e) {}
+
+            function saveDismissedIds() {
+                try {
+                    localStorage.setItem('dismissed_pk_ids', JSON.stringify(dismissedToastIds));
+                } catch(e) {}
+            }
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            function pollPartKurangNotifications() {
+                $.ajax({
+                    url: "<?php echo e(route('member.part-kurang.active-notifications')); ?>",
+                    type: "GET",
+                    dataType: "json",
+                    cache: false,
+                    data: { _t: new Date().getTime() },
+                    success: function(res) {
+                        if (!res || !res.notifications) return;
+                        var container = $('#partKurangToastContainer');
+                        var activeIdsOnServer = {};
+
+                        res.notifications.forEach(function(item) {
+                            activeIdsOnServer[item.id] = true;
+
+                            // Jika sudah di-dismiss oleh member, jangan tampilkan
+                            if (dismissedToastIds[item.id]) return;
+
+                            var toastElId = 'pk_toast_' + item.id;
+                            if ($('#' + toastElId).length === 0) {
+                                var html = '' +
+                                    '<div class="part-kurang-toast shadow" id="' + toastElId + '">' +
+                                    '  <div class="part-kurang-toast-header">' +
+                                    '    <div class="d-flex align-items-center gap-2">' +
+                                    '      <span class="badge bg-danger text-white"><i class="fas fa-exclamation-triangle me-1"></i>Part Kurang</span>' +
+                                    '      <small class="text-muted fw-bold">' + escapeHtml(item.sequence_no) + ' (' + escapeHtml(item.area) + ')</small>' +
+                                    '    </div>' +
+                                    '    <button type="button" class="btn-close btn-sm ms-2" title="Tutup Notifikasi" data-id="' + item.id + '" style="font-size: 0.75rem;"></button>' +
+                                    '  </div>' +
+                                    '  <div class="part-kurang-toast-body">' +
+                                    '    <div class="d-flex align-items-center mb-1 text-dark">' +
+                                    '      <i class="fas fa-user-circle text-secondary me-2 fs-5"></i>' +
+                                    '      <div>' +
+                                    '        <strong class="d-block text-dark" style="font-size: 0.95rem;">' + escapeHtml(item.reporter_name) + '</strong>' +
+                                    '        <small class="text-muted"><i class="far fa-clock me-1"></i>' + escapeHtml(item.comment_time) + '</small>' +
+                                    '      </div>' +
+                                    '    </div>' +
+                                    '    <div class="comment-text">' + escapeHtml(item.comment) + '</div>' +
+                                    '  </div>' +
+                                    '</div>';
+
+                                container.append(html);
+                            }
+                        });
+
+                        // Hapus toast di DOM jika sudah tidak pending lagi di server
+                        $('.part-kurang-toast').each(function() {
+                            var tid = $(this).attr('id').replace('pk_toast_', '');
+                            if (!activeIdsOnServer[tid]) {
+                                $(this).fadeOut(300, function() { $(this).remove(); });
+                            }
+                        });
+                    },
+                    error: function(err) {
+                        console.warn('Gagal memuat notifikasi part kurang:', err);
+                    }
+                });
+            }
+
+            // Event handler klik tombol tutup pada toast
+            $(document).on('click', '#partKurangToastContainer .btn-close', function(e) {
+                e.preventDefault();
+                var id = $(this).data('id');
+                dismissedToastIds[id] = true;
+                saveDismissedIds();
+
+                var toast = $('#pk_toast_' + id);
+                toast.css({
+                    opacity: 0,
+                    transform: 'translateY(20px) scale(0.95)'
+                });
+                setTimeout(function() {
+                    toast.remove();
+                }, 300);
+            });
+
+            // Jalankan polling pertama kali dan ulangi setiap 5 detik
+            $(document).ready(function() {
+                pollPartKurangNotifications();
+                setInterval(pollPartKurangNotifications, 5000);
+            });
+        })();
+    </script>
+    <?php endif; ?>
+
     <?php echo $__env->yieldContent('script'); ?>
 </body>
 </html>

@@ -466,4 +466,64 @@ class RecordController extends Controller
         return redirect()->route('member.record.create')
             ->with('success', 'Record completed successfully!');
     }
+
+    public function activePartKurangNotifications(Request $request)
+    {
+        $member = Auth::guard('member')->user();
+        if (!$member) {
+            return response()->json(['notifications' => []]);
+        }
+
+        $items = \App\Models\PartKurang::where('id_user', $member->id)
+            ->where('status', 'pending')
+            ->whereNull('dismissed_at')
+            ->orderBy('comment_time', 'desc')
+            ->get();
+
+        $reporterNiks = $items->pluck('perakitan_nik')->filter()->unique();
+        $employees = DB::connection('rifa')->table('employees')
+            ->whereIn('nik', $reporterNiks)
+            ->pluck('nama', 'nik');
+
+        $notifications = $items->map(function ($item) use ($employees) {
+            $reporterName = '-';
+            if ($item->perakitan_nik) {
+                $reporterName = $employees[$item->perakitan_nik] ?? $item->perakitan_nik;
+            }
+
+            return [
+                'id'            => $item->id,
+                'reporter_name' => $reporterName,
+                'comment'       => $item->comment,
+                'comment_time'  => $item->comment_time ? $item->comment_time->format('d/m/Y H:i') : '-',
+                'sequence_no'   => $item->sequence_no ?? '-',
+                'area'          => ucwords(str_replace('_', ' ', $item->area ?? '-')),
+            ];
+        });
+
+        return response()->json([
+            'count'         => $notifications->count(),
+            'notifications' => $notifications,
+        ]);
+    }
+
+    public function dismissPartKurangNotification($id)
+    {
+        $member = Auth::guard('member')->user();
+        if (!$member) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $partKurang = \App\Models\PartKurang::where('id', $id)
+            ->where('id_user', $member->id)
+            ->first();
+
+        if ($partKurang) {
+            $partKurang->update([
+                'dismissed_at' => now(),
+            ]);
+        }
+
+        return response()->json(['success' => true]);
+    }
 }

@@ -237,6 +237,24 @@
         return audioCache[cacheKey];
     }
 
+    var isAutoplayBlocked = false;
+
+    function handleAutoplayBlocked() {
+        if (isAutoplayBlocked) return;
+        isAutoplayBlocked = true;
+        console.warn("Autoplay audio diblokir browser, menunggu interaksi pengguna...");
+        
+        // Pasang handler global sekali di document (klik, ketik, tap) untuk membuka audio
+        var unlockAudio = function() {
+            $(document).off('click.audioUnlock keydown.audioUnlock touchstart.audioUnlock');
+            isAutoplayBlocked = false;
+            stopAllSounds();
+            playSequence();
+        };
+
+        $(document).on('click.audioUnlock keydown.audioUnlock touchstart.audioUnlock', unlockAudio);
+    }
+
     function playCharSounds(chars, index, theme, speed, onComplete) {
         if (typeof speed === 'function') {
             onComplete = speed;
@@ -263,23 +281,41 @@
         currentAudio = audio;
         function handleNext() { playCharSounds(chars, index + 1, theme, speed, onComplete); }
         function startPlayback() {
-            var duration = audio.duration;
-            if (!duration || duration === Infinity || isNaN(duration)) {
-                audio.onended = handleNext;
-            } else {
-                audio.onended = null;
-                // Cutoff di 72% durasi agar pelafalan utuh/tidak terputus, namun jeda hening tetap terpotong
-                var factor = (theme === 'b') ? 0.72 : 0.70;
-                var stopTimeMs = ((duration * factor) / audio.playbackRate) * 1000;
-                currentTimeout = setTimeout(function() {
-                    audio.pause();
-                    currentTimeout = null;
-                    handleNext();
-                }, stopTimeMs);
-            }
             var playPromise = audio.play();
             if (playPromise !== undefined) {
-                playPromise.catch(function(error) { console.log("Playback dicegah:", error); handleNext(); });
+                playPromise.then(function() {
+                    isAutoplayBlocked = false;
+                    var duration = audio.duration;
+                    if (!duration || duration === Infinity || isNaN(duration)) {
+                        audio.onended = handleNext;
+                    } else {
+                        audio.onended = null;
+                        var factor = (theme === 'b') ? 0.72 : 0.70;
+                        var stopTimeMs = ((duration * factor) / audio.playbackRate) * 1000;
+                        currentTimeout = setTimeout(function() {
+                            audio.pause();
+                            currentTimeout = null;
+                            handleNext();
+                        }, stopTimeMs);
+                    }
+                }).catch(function(error) {
+                    console.log("Playback dicegah:", error);
+                    handleAutoplayBlocked();
+                });
+            } else {
+                var duration = audio.duration;
+                if (!duration || duration === Infinity || isNaN(duration)) {
+                    audio.onended = handleNext;
+                } else {
+                    audio.onended = null;
+                    var factor = (theme === 'b') ? 0.72 : 0.70;
+                    var stopTimeMs = ((duration * factor) / audio.playbackRate) * 1000;
+                    currentTimeout = setTimeout(function() {
+                        audio.pause();
+                        currentTimeout = null;
+                        handleNext();
+                    }, stopTimeMs);
+                }
             }
         }
         if (audio.duration && audio.duration !== Infinity) { startPlayback(); }
@@ -424,7 +460,10 @@
                                 afterBoks();
                             }, ((duration * 0.9) / boksAudio.playbackRate) * 1000);
                         }
-                    }).catch(function(error) { console.log("Playback dicegah:", error); afterBoks(); });
+                    }).catch(function(error) {
+                        console.log("Playback boks dicegah:", error);
+                        handleAutoplayBlocked();
+                    });
                 } else {
                     afterBoks();
                 }

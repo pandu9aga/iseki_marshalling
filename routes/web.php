@@ -80,7 +80,8 @@ Route::middleware('auth:member')->prefix('member')->name('member.')->group(funct
     Route::get('record/{record}/record-part', [RecordController::class, 'recordPart'])->name('record.record-part');
     Route::get('record/{record}/scan-part/{recordList}', [RecordController::class, 'scanPart'])->name('record.scan-part');
     Route::post('record/{recordList}/update-part', [RecordController::class, 'updatePart'])->name('record.update-part');
-    Route::post('record/{record}/save-remark', [RecordController::class, 'saveRemark'])->name('record.save-remark');
+    Route::get('part-kurang/active-notifications', [RecordController::class, 'activePartKurangNotifications'])->name('part-kurang.active-notifications');
+    Route::post('part-kurang/{id}/dismiss', [RecordController::class, 'dismissPartKurangNotification'])->name('part-kurang.dismiss');
 });
 
 Route::middleware('auth:perakitan')->prefix('perakitan')->name('perakitan.')->group(function () {
