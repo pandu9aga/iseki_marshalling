@@ -147,11 +147,11 @@
                 <div class="card-body p-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="step-indicator bg-warning text-white">
-                            Langkah 1: Scan QR Member
+                            Langkah 1: Input NIK
                         </span>
                         <div class="btn-group btn-group-sm" role="group">
                             <button type="button" class="btn btn-outline-primary scan-mode-btn active" id="btnMemberUsb">
-                                <i class="fas fa-barcode me-1"></i>Scanner
+                                <i class="fas fa-keyboard me-1"></i>Scanner
                             </button>
                             <button type="button" class="btn btn-outline-primary scan-mode-btn" id="btnMemberCamera">
                                 <i class="fas fa-camera me-1"></i>Kamera
@@ -159,19 +159,22 @@
                         </div>
                     </div>
 
-                    <!-- Input Scanner USB Member -->
+                    <!-- Input Scanner / Manual NIK Member -->
                     <div id="memberUsbBox">
                         <div class="row align-items-center g-2">
                             <div class="col-12 col-md-6">
                                 <div class="input-group">
                                     <span class="input-group-text bg-primary text-white"><i class="fas fa-id-card"></i></span>
-                                    <input type="text" id="memberScannerInput" class="form-control" placeholder="Scan QR Member disini..." autofocus>
+                                    <input type="text" id="memberScannerInput" class="form-control" placeholder="Scan QR atau ketik NIK lalu Enter / Klik Cari..." autofocus>
+                                    <button class="btn btn-primary" type="button" id="btnCheckMemberManual">
+                                        <i class="fas fa-search me-1"></i>Cari
+                                    </button>
                                 </div>
                             </div>
                             <div class="col-12 col-md-6" id="activeMemberBadgeArea">
                                 <div class="p-2 border rounded bg-light text-muted d-flex align-items-center">
                                     <i class="fas fa-info-circle text-primary me-2"></i>
-                                    <small>Silakan scan QR Member untuk memulai (NIK akan diambil dari bagian depan QR).</small>
+                                    <small>Silakan scan QR Member atau ketik NIK secara manual.</small>
                                 </div>
                             </div>
                         </div>
@@ -483,12 +486,17 @@
             resetAndLoadRecentList();
         });
 
-        // Scanner USB Member Input
+        // Scanner / Manual NIK Member Input
         $('#memberScannerInput').on('keypress', function(e) {
             if (e.which === 13) {
                 e.preventDefault();
                 processMemberScan($(this).val());
             }
+        });
+
+        // Tombol Cari Manual NIK
+        $('#btnCheckMemberManual').on('click', function() {
+            processMemberScan($('#memberScannerInput').val());
         });
 
         // Scanner USB Kanban Input
@@ -576,18 +584,27 @@
     // 1. SCAN MEMBER INPUT (Langkah 1)
     // =========================================================================
     function processMemberScan(raw) {
-        if (!raw) return;
+        if (!raw) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Perhatian',
+                text: 'Silakan scan QR Member atau ketik NIK terlebih dahulu.',
+                confirmButtonColor: '#F36494'
+            });
+            $('#memberScannerInput').focus();
+            return;
+        }
         raw = raw.trim();
 
-        // Split by ';' ambil index 0
+        // Split by ';' ambil index 0 (bisa berupa QR string atau NIK langsung)
         var parts = raw.split(';');
         var nik = parts[0].trim();
 
         if (!nik) {
             Swal.fire({
                 icon: 'warning',
-                title: 'QR Tidak Valid',
-                text: 'NIK member tidak ditemukan di dalam QR.',
+                title: 'Tidak Valid',
+                text: 'NIK member tidak ditemukan.',
                 confirmButtonColor: '#F36494'
             });
             $('#memberScannerInput').val('').focus();
@@ -667,7 +684,7 @@
         $('#activeMemberBadgeArea').html(
             '<div class="p-2 border rounded bg-light text-muted d-flex align-items-center">' +
             '  <i class="fas fa-info-circle text-primary me-2"></i>' +
-            '  <small>Silakan scan QR Member untuk memulai (NIK akan diambil dari bagian depan QR).</small>' +
+            '  <small>Silakan scan QR Member atau ketik NIK secara manual.</small>' +
             '</div>'
         );
         stopKanbanCamera();

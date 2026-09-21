@@ -28,18 +28,18 @@ class PublicPartKurangController extends Controller
         if (!$rawQr) {
             return response()->json([
                 'valid'   => false,
-                'message' => 'QR Member kosong.',
+                'message' => 'NIK atau QR Member wajib diisi.',
             ], 422);
         }
 
-        // Split by ';' dan ambil index 0 sebagai NIK
+        // Split by ';' dan ambil index 0 sebagai NIK (bisa berupa scan QR ataupun input NIK langsung)
         $parts = explode(';', $rawQr);
         $nik = trim($parts[0]);
 
         if (!$nik) {
             return response()->json([
                 'valid'   => false,
-                'message' => 'Format QR tidak valid. NIK tidak ditemukan.',
+                'message' => 'Format tidak valid. NIK tidak ditemukan.',
             ], 422);
         }
 

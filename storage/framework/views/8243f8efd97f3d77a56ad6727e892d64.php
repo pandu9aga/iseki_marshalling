@@ -117,7 +117,7 @@
         <div class="page-header d-flex flex-wrap justify-content-between align-items-center mb-3 g-2">
             <div>
                 <h4 class="page-title text-primary mb-0"><i class="fas fa-clipboard-list me-2"></i>Part Kurang</h4>
-                <small class="text-muted">Input & Penerimaan Part Kurang via Scan QR Member (Tanpa Login)</small>
+                <small class="text-muted">Input & Konfirmasi Part Kurang (Tanpa Login)</small>
             </div>
             <div>
                 <a href="<?php echo e(route('login')); ?>" class="btn btn-outline-secondary btn-sm">
@@ -126,8 +126,8 @@
             </div>
         </div>
 
-        <!-- Tab Pilihan Mode: 1) Input Part Kurang, 2) Penerimaan Part Kurang -->
-        <div class="card shadow-sm border-0 mb-3">
+        <!-- Tab Pilihan Mode di-hide sesuai permintaan -->
+        <div class="card shadow-sm border-0 mb-3" style="display: none !important;">
             <div class="card-body p-2 d-flex justify-content-center gap-2">
                 <button type="button" class="btn btn-outline-primary action-tab-btn active" id="tabModeInput">
                     <i class="fas fa-plus-circle me-1"></i>Input Part Kurang
@@ -145,11 +145,11 @@
                 <div class="card-body p-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="step-indicator bg-warning text-white">
-                            Langkah 1: Scan QR Member
+                            Langkah 1: Input NIK
                         </span>
                         <div class="btn-group btn-group-sm" role="group">
                             <button type="button" class="btn btn-outline-primary scan-mode-btn active" id="btnMemberUsb">
-                                <i class="fas fa-barcode me-1"></i>Scanner
+                                <i class="fas fa-keyboard me-1"></i>Scanner
                             </button>
                             <button type="button" class="btn btn-outline-primary scan-mode-btn" id="btnMemberCamera">
                                 <i class="fas fa-camera me-1"></i>Kamera
@@ -157,19 +157,22 @@
                         </div>
                     </div>
 
-                    <!-- Input Scanner USB Member -->
+                    <!-- Input Scanner / Manual NIK Member -->
                     <div id="memberUsbBox">
                         <div class="row align-items-center g-2">
                             <div class="col-12 col-md-6">
                                 <div class="input-group">
                                     <span class="input-group-text bg-primary text-white"><i class="fas fa-id-card"></i></span>
-                                    <input type="text" id="memberScannerInput" class="form-control" placeholder="Scan QR Member disini..." autofocus>
+                                    <input type="text" id="memberScannerInput" class="form-control" placeholder="Scan QR atau ketik NIK lalu Enter / Klik Cari..." autofocus>
+                                    <button class="btn btn-primary" type="button" id="btnCheckMemberManual">
+                                        <i class="fas fa-search me-1"></i>Cari
+                                    </button>
                                 </div>
                             </div>
                             <div class="col-12 col-md-6" id="activeMemberBadgeArea">
                                 <div class="p-2 border rounded bg-light text-muted d-flex align-items-center">
                                     <i class="fas fa-info-circle text-primary me-2"></i>
-                                    <small>Silakan scan QR Member untuk memulai (NIK akan diambil dari bagian depan QR).</small>
+                                    <small>Silakan scan QR Member atau ketik NIK secara manual.</small>
                                 </div>
                             </div>
                         </div>
@@ -481,12 +484,17 @@
             resetAndLoadRecentList();
         });
 
-        // Scanner USB Member Input
+        // Scanner / Manual NIK Member Input
         $('#memberScannerInput').on('keypress', function(e) {
             if (e.which === 13) {
                 e.preventDefault();
                 processMemberScan($(this).val());
             }
+        });
+
+        // Tombol Cari Manual NIK
+        $('#btnCheckMemberManual').on('click', function() {
+            processMemberScan($('#memberScannerInput').val());
         });
 
         // Scanner USB Kanban Input
@@ -574,18 +582,27 @@
     // 1. SCAN MEMBER INPUT (Langkah 1)
     // =========================================================================
     function processMemberScan(raw) {
-        if (!raw) return;
+        if (!raw) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Perhatian',
+                text: 'Silakan scan QR Member atau ketik NIK terlebih dahulu.',
+                confirmButtonColor: '#F36494'
+            });
+            $('#memberScannerInput').focus();
+            return;
+        }
         raw = raw.trim();
 
-        // Split by ';' ambil index 0
+        // Split by ';' ambil index 0 (bisa berupa QR string atau NIK langsung)
         var parts = raw.split(';');
         var nik = parts[0].trim();
 
         if (!nik) {
             Swal.fire({
                 icon: 'warning',
-                title: 'QR Tidak Valid',
-                text: 'NIK member tidak ditemukan di dalam QR.',
+                title: 'Tidak Valid',
+                text: 'NIK member tidak ditemukan.',
                 confirmButtonColor: '#F36494'
             });
             $('#memberScannerInput').val('').focus();
@@ -665,7 +682,7 @@
         $('#activeMemberBadgeArea').html(
             '<div class="p-2 border rounded bg-light text-muted d-flex align-items-center">' +
             '  <i class="fas fa-info-circle text-primary me-2"></i>' +
-            '  <small>Silakan scan QR Member untuk memulai (NIK akan diambil dari bagian depan QR).</small>' +
+            '  <small>Silakan scan QR Member atau ketik NIK secara manual.</small>' +
             '</div>'
         );
         stopKanbanCamera();
@@ -1214,7 +1231,12 @@
             var isOke = item.Status === 'oke';
             var statusBadge = isOke ?
                 '<span class="status-badge-oke"><i class="fas fa-check-circle me-1"></i>Sudah Diterima</span>' :
-                '<span class="status-badge-pending"><i class="fas fa-clock me-1"></i>Pending</span>';
+                '<div class="d-flex align-items-center gap-2">' +
+                '  <span class="status-badge-pending"><i class="fas fa-clock me-1"></i>Pending</span>' +
+                '  <button type="button" class="btn btn-success btn-sm fw-bold px-2 py-1" onclick="confirmReceiveDirect(' + item.Id_Part_Kurang + ')" title="Klik untuk konfirmasi penerimaan part">' +
+                '    <i class="fas fa-check-circle me-1"></i>Diterima' +
+                '  </button>' +
+                '</div>';
 
             var cardHtml = '<div class="card part-kurang-card mb-3 p-3 shadow-sm">';
             cardHtml += '  <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 pb-2 border-bottom">';
@@ -1244,6 +1266,49 @@
 
             cardHtml += '</div>';
             container.append(cardHtml);
+        });
+    }
+
+    function confirmReceiveDirect(id) {
+        Swal.fire({
+            title: 'Konfirmasi Penerimaan',
+            text: 'Apakah part kurang ini sudah benar-benar Anda terima?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-check-circle me-1"></i>Ya, Diterima',
+            cancelButtonText: 'Batal'
+        }).then(function(res) {
+            if (res.isConfirmed) {
+                $.ajax({
+                    url: '<?php echo e(url("part-kurang")); ?>/' + id + '/receive',
+                    type: 'POST',
+                    data: {
+                        _token: '<?php echo e(csrf_token()); ?>'
+                    },
+                    success: function(resp) {
+                        if (resp.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil Diterima',
+                                text: 'Status part kurang telah diubah menjadi Sudah Diterima.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                            resetAndLoadRecentList();
+                        }
+                    },
+                    error: function() {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: 'Gagal memperbarui status part kurang.',
+                            confirmButtonColor: '#F36494'
+                        });
+                    }
+                });
+            }
         });
     }
 
