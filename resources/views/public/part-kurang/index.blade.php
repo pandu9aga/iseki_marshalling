@@ -655,7 +655,11 @@
                     );
 
                     $('#memberScannerInput').val('');
-                    stopMemberCamera();
+                    // Sembunyikan kamera jika belum tersembunyi (dari mode USB)
+                    if (isCameraMember) {
+                        isCameraMember = false;
+                        if (html5QrMember) { html5QrMember.stop().catch(function() {}); }
+                    }
                     $('#memberCameraBox').hide();
                     $('#btnMemberUsb').addClass('active');
                     $('#btnMemberCamera').removeClass('active');
@@ -725,12 +729,15 @@
             $('#type').val(parts[2]);
             $('#kanbanScannerInput').val('');
 
-            // Otomatis tutup kamera kanban jika sedang aktif dan kembalikan ke mode default
-            stopKanbanCamera();
-            $('#kanbanCameraBox').hide();
-            $('#kanbanUsbBox').show();
-            $('#btnKanbanUsb').addClass('active');
-            $('#btnKanbanCamera').removeClass('active');
+            // Sembunyikan kamera jika sedang aktif (jika dari input USB, hentikan kamera jika ada)
+            if (isCameraKanban) {
+                $('#kanbanCameraBox').hide();
+                $('#kanbanUsbBox').show();
+                $('#btnKanbanUsb').addClass('active');
+                $('#btnKanbanCamera').removeClass('active');
+                isCameraKanban = false;
+                if (html5QrKanban) { html5QrKanban.stop().catch(function() {}); }
+            }
 
             searchKanbanRecords(parts[0], parts[1]);
         } else {
@@ -747,7 +754,12 @@
     function searchKanbanRecords(seq, prodDate) {
         $('#resultArea').html(
             '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Mencari data marshalling...</p></div>'
-        ).fadeIn(200);
+        ).show();
+
+        // Scroll ke resultArea agar tampil di layar
+        $('html, body').animate({
+            scrollTop: $('#resultArea').offset().top - 80
+        }, 300);
 
         $.ajax({
             url: '{{ route("public.part-kurang.search-kanban") }}',
@@ -760,7 +772,7 @@
                 if (!res.found) {
                     $('#resultArea').html(
                         '<div class="alert alert-warning text-center"><i class="fas fa-exclamation-triangle fa-2x mb-2"></i><p class="mb-0">' + escHtml(res.message) + '</p></div>'
-                    ).fadeIn(200);
+                    ).show();
                     return;
                 }
 
@@ -843,7 +855,12 @@
                 html += '  </div>';
                 html += '</div>';
 
-                $('#resultArea').html(html).fadeIn(200);
+                $('#resultArea').html(html).show();
+
+                // Scroll ke resultArea agar user langsung melihat hasilnya
+                $('html, body').animate({
+                    scrollTop: $('#resultArea').offset().top - 80
+                }, 400);
 
                 if (isMultiple) {
                     $('#areaCarousel').on('slid.bs.carousel', function() {
@@ -1338,7 +1355,13 @@
             { facingMode: "environment" },
             { fps: 10, qrbox: { width: 250, height: 250 } },
             function(decodedText) {
-                stopMemberCamera();
+                // Langsung sembunyikan kamera, stop async di background
+                $('#memberCameraBox').hide();
+                $('#memberUsbBox').show();
+                $('#btnMemberUsb').addClass('active');
+                $('#btnMemberCamera').removeClass('active');
+                isCameraMember = false;
+                html5QrMember.stop().catch(function() {});
                 processMemberScan(decodedText);
             },
             function(err) {}
@@ -1372,7 +1395,13 @@
             { facingMode: "environment" },
             { fps: 10, qrbox: { width: 250, height: 250 } },
             function(decodedText) {
-                stopKanbanCamera();
+                // Langsung sembunyikan kamera dan proses scan, stop async di background
+                $('#kanbanCameraBox').hide();
+                $('#kanbanUsbBox').show();
+                $('#btnKanbanUsb').addClass('active');
+                $('#btnKanbanCamera').removeClass('active');
+                isCameraKanban = false;
+                html5QrKanban.stop().catch(function() {});
                 processKanbanScan(decodedText);
             },
             function(err) {}
