@@ -19,15 +19,29 @@
         background-color: #ffc107;
         color: #212529;
         font-weight: 600;
-        padding: 0.35em 0.7em;
+        font-size: 0.8rem;
+        padding: 0.25em 0.6em;
         border-radius: 6px;
     }
     .status-badge-oke {
         background-color: #198754;
         color: #fff;
         font-weight: 600;
-        padding: 0.35em 0.7em;
+        font-size: 0.85rem;
+        padding: 0.35em 0.75em;
         border-radius: 6px;
+    }
+    .btn-receive-direct {
+        font-size: 0.95rem;
+        font-weight: 700;
+        padding: 0.45rem 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(25, 135, 84, 0.3);
+        transition: all 0.15s ease-in-out;
+    }
+    .btn-receive-direct:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(25, 135, 84, 0.45);
     }
     .part-kurang-card {
         border: 1px solid #e9ecef;
@@ -1235,7 +1249,7 @@
                 '<span class="status-badge-oke"><i class="fas fa-check-circle me-1"></i>Sudah Diterima</span>' :
                 '<div class="d-flex align-items-center gap-2">' +
                 '  <span class="status-badge-pending"><i class="fas fa-clock me-1"></i>Pending</span>' +
-                '  <button type="button" class="btn btn-success btn-sm fw-bold px-2 py-1" onclick="confirmReceiveDirect(' + item.Id_Part_Kurang + ')" title="Klik untuk konfirmasi penerimaan part">' +
+                '  <button type="button" class="btn btn-success btn-receive-direct" onclick="confirmReceiveDirect(' + item.Id_Part_Kurang + ')" title="Klik untuk konfirmasi penerimaan part">' +
                 '    <i class="fas fa-check-circle me-1"></i>Diterima' +
                 '  </button>' +
                 '</div>';
