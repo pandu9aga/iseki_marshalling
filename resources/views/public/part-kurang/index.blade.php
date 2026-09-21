@@ -119,7 +119,7 @@
         <div class="page-header d-flex flex-wrap justify-content-between align-items-center mb-3 g-2">
             <div>
                 <h4 class="page-title text-primary mb-0"><i class="fas fa-clipboard-list me-2"></i>Part Kurang</h4>
-                <small class="text-muted">Input & Penerimaan Part Kurang via Scan QR Member (Tanpa Login)</small>
+                <small class="text-muted">Input & Konfirmasi Part Kurang (Tanpa Login)</small>
             </div>
             <div>
                 <a href="{{ route('login') }}" class="btn btn-outline-secondary btn-sm">
@@ -128,8 +128,8 @@
             </div>
         </div>
 
-        <!-- Tab Pilihan Mode: 1) Input Part Kurang, 2) Penerimaan Part Kurang -->
-        <div class="card shadow-sm border-0 mb-3">
+        <!-- Tab Pilihan Mode di-hide sesuai permintaan -->
+        <div class="card shadow-sm border-0 mb-3" style="display: none !important;">
             <div class="card-body p-2 d-flex justify-content-center gap-2">
                 <button type="button" class="btn btn-outline-primary action-tab-btn active" id="tabModeInput">
                     <i class="fas fa-plus-circle me-1"></i>Input Part Kurang
@@ -1216,7 +1216,12 @@
             var isOke = item.Status === 'oke';
             var statusBadge = isOke ?
                 '<span class="status-badge-oke"><i class="fas fa-check-circle me-1"></i>Sudah Diterima</span>' :
-                '<span class="status-badge-pending"><i class="fas fa-clock me-1"></i>Pending</span>';
+                '<div class="d-flex align-items-center gap-2">' +
+                '  <span class="status-badge-pending"><i class="fas fa-clock me-1"></i>Pending</span>' +
+                '  <button type="button" class="btn btn-success btn-sm fw-bold px-2 py-1" onclick="confirmReceiveDirect(' + item.Id_Part_Kurang + ')" title="Klik untuk konfirmasi penerimaan part">' +
+                '    <i class="fas fa-check-circle me-1"></i>Diterima' +
+                '  </button>' +
+                '</div>';
 
             var cardHtml = '<div class="card part-kurang-card mb-3 p-3 shadow-sm">';
             cardHtml += '  <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 pb-2 border-bottom">';
@@ -1246,6 +1251,49 @@
 
             cardHtml += '</div>';
             container.append(cardHtml);
+        });
+    }
+
+    function confirmReceiveDirect(id) {
+        Swal.fire({
+            title: 'Konfirmasi Penerimaan',
+            text: 'Apakah part kurang ini sudah benar-benar Anda terima?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-check-circle me-1"></i>Ya, Diterima',
+            cancelButtonText: 'Batal'
+        }).then(function(res) {
+            if (res.isConfirmed) {
+                $.ajax({
+                    url: '{{ url("part-kurang") }}/' + id + '/receive',
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(resp) {
+                        if (resp.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil Diterima',
+                                text: 'Status part kurang telah diubah menjadi Sudah Diterima.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                            resetAndLoadRecentList();
+                        }
+                    },
+                    error: function() {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: 'Gagal memperbarui status part kurang.',
+                            confirmButtonColor: '#F36494'
+                        });
+                    }
+                });
+            }
         });
     }
 

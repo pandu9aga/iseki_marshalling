@@ -668,6 +668,12 @@
             '  <small>Silakan scan QR Member untuk memulai (NIK akan diambil dari bagian depan QR).</small>' +
             '</div>'
         );
+        stopKanbanCamera();
+        $('#kanbanCameraBox').hide();
+        $('#kanbanUsbBox').show();
+        $('#btnKanbanUsb').addClass('active');
+        $('#btnKanbanCamera').removeClass('active');
+
         $('#kanbanScanCard').slideUp(200);
         $('#resultArea').slideUp(200).empty();
         $('#memberScannerInput').val('').focus();
@@ -685,6 +691,14 @@
             $('#production_date').val(parts[1]);
             $('#type').val(parts[2]);
             $('#kanbanScannerInput').val('');
+
+            // Otomatis tutup kamera kanban jika sedang aktif dan kembalikan ke mode default
+            stopKanbanCamera();
+            $('#kanbanCameraBox').hide();
+            $('#kanbanUsbBox').show();
+            $('#btnKanbanUsb').addClass('active');
+            $('#btnKanbanCamera').removeClass('active');
+
             searchKanbanRecords(parts[0], parts[1]);
         } else {
             Swal.fire({
