@@ -32,9 +32,17 @@ class AuthController extends Controller
 
     public function loginAdmin(Request $request)
     {
+        $request->merge([
+            'name' => trim($request->name ?? ''),
+            'password' => trim($request->password ?? ''),
+        ]);
+
         $request->validate([
             'name' => 'required',
             'password' => 'required',
+        ], [
+            'name.required' => 'Nama admin wajib diisi.',
+            'password.required' => 'Password wajib diisi.',
         ]);
 
         $admin = \App\Models\User::where('name', $request->name)->first();
@@ -46,16 +54,25 @@ class AuthController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
-        return back()->withErrors([
-            'name' => 'Invalid credentials.',
-        ])->onlyInput('name');
+        return back()
+            ->withErrors(['auth_error' => 'Nama admin atau password tidak sesuai.'])
+            ->with('active_tab', 'admin')
+            ->withInput($request->only('name'));
     }
 
     public function loginMember(Request $request)
     {
+        $request->merge([
+            'nik' => trim($request->nik ?? ''),
+            'password' => trim($request->password ?? ''),
+        ]);
+
         $request->validate([
             'nik' => 'required',
             'password' => 'required',
+        ], [
+            'nik.required' => 'NIK member wajib diisi.',
+            'password.required' => 'Password wajib diisi.',
         ]);
 
         $member = \App\Models\Member::where('nik', $request->nik)->first();
@@ -67,16 +84,25 @@ class AuthController extends Controller
             return redirect()->route('member.records.index');
         }
 
-        return back()->withErrors([
-            'nik' => 'Invalid credentials.',
-        ])->onlyInput('nik');
+        return back()
+            ->withErrors(['auth_error' => 'NIK atau password Marshalling tidak sesuai.'])
+            ->with('active_tab', 'member')
+            ->withInput($request->only('nik'));
     }
 
     public function loginPerakitan(Request $request)
     {
+        $request->merge([
+            'nik' => trim($request->nik ?? ''),
+            'password' => trim($request->password ?? ''),
+        ]);
+
         $request->validate([
             'nik' => 'required',
             'password' => 'required',
+        ], [
+            'nik.required' => 'NIK perakitan wajib diisi.',
+            'password.required' => 'Password wajib diisi.',
         ]);
 
         $perakitan = \App\Models\Perakitan::where('nik', $request->nik)->first();
@@ -88,9 +114,10 @@ class AuthController extends Controller
             return redirect()->route('perakitan.dashboard');
         }
 
-        return back()->withErrors([
-            'nik' => 'Invalid credentials.',
-        ])->onlyInput('nik');
+        return back()
+            ->withErrors(['auth_error' => 'NIK atau password Perakitan tidak sesuai.'])
+            ->with('active_tab', 'perakitan')
+            ->withInput($request->only('nik'));
     }
 
     public function logout(Request $request)

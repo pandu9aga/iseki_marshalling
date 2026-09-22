@@ -56,31 +56,43 @@
 @endphp
 <div class="sakura" style="left:{{ $left }}%;width:{{ $size }}px;height:{{ $size }}px;background:{{ $color }};animation-duration:{{ $duration }}s;animation-delay:{{ $delay }}s;"></div>
 @endfor
+@php
+    $activeTab = session('active_tab', 'member');
+@endphp
 <div class="login-container">
     <div class="card shadow-sm">
         <div class="card-header text-center pt-4">
             <h3 class="fw-bold text-primary">Login Marshalling</h3>
         </div>
         <div class="card-body">
+            @if ($errors->any())
+            <div class="alert alert-danger py-2 px-3 mb-3 d-flex align-items-center" role="alert">
+                <i class="fas fa-exclamation-triangle me-2 fs-5"></i>
+                <div class="small fw-bold">
+                    {{ $errors->first() }}
+                </div>
+            </div>
+            @endif
+
             <ul class="nav nav-pills nav-justified mb-4" id="loginTabs" role="tablist">
                 <li class="nav-item">
-                    <a class="nav-link active" id="member-tab" data-bs-toggle="pill" href="#member" role="tab">Marshalling</a>
+                    <a class="nav-link {{ $activeTab === 'member' ? 'active' : '' }}" id="member-tab" data-bs-toggle="pill" href="#member" role="tab">Marshalling</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" id="perakitan-tab" data-bs-toggle="pill" href="#perakitan" role="tab">Perakitan</a>
+                    <a class="nav-link {{ $activeTab === 'perakitan' ? 'active' : '' }}" id="perakitan-tab" data-bs-toggle="pill" href="#perakitan" role="tab">Perakitan</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" id="admin-tab" data-bs-toggle="pill" href="#admin" role="tab">Admin</a>
+                    <a class="nav-link {{ $activeTab === 'admin' ? 'active' : '' }}" id="admin-tab" data-bs-toggle="pill" href="#admin" role="tab">Admin</a>
                 </li>
             </ul>
 
             <div class="tab-content">
-                <div class="tab-pane fade show active" id="member" role="tabpanel">
+                <div class="tab-pane fade {{ $activeTab === 'member' ? 'show active' : '' }}" id="member" role="tabpanel">
                     <form action="{{ route('login.member') }}" method="POST">
                         @csrf
                         <div class="mb-3">
                             <label class="form-label text-primary">NIK</label>
-                            <input type="text" name="nik" class="form-control" placeholder="Input NIK" required>
+                            <input type="text" name="nik" class="form-control" placeholder="Input NIK" value="{{ $activeTab === 'member' ? old('nik') : '' }}" required autofocus>
                         </div>
                         <div class="mb-3">
                             <label class="form-label text-primary">Password</label>
@@ -90,12 +102,12 @@
                     </form>
                 </div>
 
-                <div class="tab-pane fade" id="perakitan" role="tabpanel">
+                <div class="tab-pane fade {{ $activeTab === 'perakitan' ? 'show active' : '' }}" id="perakitan" role="tabpanel">
                     <form action="{{ route('login.perakitan') }}" method="POST">
                         @csrf
                         <div class="mb-3">
                             <label class="form-label text-primary">NIK</label>
-                            <input type="text" name="nik" class="form-control" placeholder="Input NIK" required>
+                            <input type="text" name="nik" class="form-control" placeholder="Input NIK" value="{{ $activeTab === 'perakitan' ? old('nik') : '' }}" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label text-primary">Password</label>
@@ -105,12 +117,12 @@
                     </form>
                 </div>
 
-                <div class="tab-pane fade" id="admin" role="tabpanel">
+                <div class="tab-pane fade {{ $activeTab === 'admin' ? 'show active' : '' }}" id="admin" role="tabpanel">
                     <form action="{{ route('login.admin') }}" method="POST">
                         @csrf
                         <div class="mb-3">
                             <label class="form-label text-primary">Name</label>
-                            <input type="text" name="name" class="form-control" placeholder="Input Name" required>
+                            <input type="text" name="name" class="form-control" placeholder="Input Name" value="{{ old('name') }}" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label text-primary">Password</label>
