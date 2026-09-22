@@ -99,6 +99,22 @@
     #areaCarousel {
         touch-action: pan-y pinch-zoom;
     }
+    .btn-outline-purple {
+        color: #6f42c1;
+        border-color: #6f42c1;
+        background-color: transparent;
+    }
+    .btn-outline-purple:hover {
+        color: #fff;
+        background-color: #6f42c1;
+        border-color: #6f42c1;
+    }
+    .btn-check:checked + .btn-outline-purple {
+        color: #fff !important;
+        background-color: #6f42c1 !important;
+        border-color: #6f42c1 !important;
+        box-shadow: 0 0 0 0.25rem rgba(111, 66, 193, 0.5);
+    }
 </style>
 @endsection
 
@@ -454,9 +470,32 @@
 
                 // Comment form (setiap submit input catatan baru)
                 html += '        <form onsubmit="submitComment(event, ' + r.Id_Record + ')">';
+                html += '          <div class="mb-3">';
+                html += '            <label class="form-label fw-bold mb-1"><i class="fas fa-tags me-1 text-primary"></i>Kategori Kendala <span class="text-danger">*</span>:</label>';
+                html += '            <div class="row g-1 text-center">';
+                html += '              <div class="col-4">';
+                html += '                <input class="btn-check" type="radio" name="perakitan_category_' + r.Id_Record + '" id="perakitan_cat_kosong_' + r.Id_Record + '" value="kosong" required>';
+                html += '                <label class="btn btn-outline-danger w-100 fw-bold btn-sm py-2 px-1 text-nowrap" for="perakitan_cat_kosong_' + r.Id_Record + '">';
+                html += '                  <i class="fas fa-times-circle me-1"></i>Kosong';
+                html += '                </label>';
+                html += '              </div>';
+                html += '              <div class="col-4">';
+                html += '                <input class="btn-check" type="radio" name="perakitan_category_' + r.Id_Record + '" id="perakitan_cat_kurang_' + r.Id_Record + '" value="kurang" checked required>';
+                html += '                <label class="btn btn-outline-warning text-dark w-100 fw-bold btn-sm py-2 px-1 text-nowrap" for="perakitan_cat_kurang_' + r.Id_Record + '">';
+                html += '                  <i class="fas fa-minus-circle me-1"></i>Kurang';
+                html += '                </label>';
+                html += '              </div>';
+                html += '              <div class="col-4">';
+                html += '                <input class="btn-check" type="radio" name="perakitan_category_' + r.Id_Record + '" id="perakitan_cat_salah_' + r.Id_Record + '" value="salah" required>';
+                html += '                <label class="btn btn-outline-purple w-100 fw-bold btn-sm py-2 px-1 text-nowrap" for="perakitan_cat_salah_' + r.Id_Record + '">';
+                html += '                  <i class="fas fa-exclamation-triangle me-1"></i>Salah';
+                html += '                </label>';
+                html += '              </div>';
+                html += '            </div>';
+                html += '          </div>';
                 html += '          <div class="mb-2">';
                 html += '            <label class="form-label fw-bold"><i class="fas fa-pen me-1"></i>Input Catatan Part Kurang (' + escHtml(r.Area_Label) + ') <span class="text-danger">*</span>:</label>';
-                html += '            <textarea id="commentInput_' + r.Id_Record + '" class="form-control" rows="2" placeholder="Tuliskan part apa yang kurang di area ' + escHtml(r.Area_Label) + '..." required></textarea>';
+                html += '            <textarea id="commentInput_' + r.Id_Record + '" class="form-control" rows="2" placeholder="Tuliskan part apa yang kosong/kurang/salah di area ' + escHtml(r.Area_Label) + '..." required></textarea>';
                 html += '            <div class="invalid-feedback">Catatan part kurang wajib diisi.</div>';
                 html += '          </div>';
                 html += '          <div class="d-flex justify-content-between align-items-center">';
@@ -484,38 +523,46 @@
 
             $('#resultArea').html(html).fadeIn(200);
 
+            // Jika slider aktif, bind swipe gesture & counter listener
             if (isMultiple) {
-                var carouselEl = document.getElementById('areaCarousel');
-
-                // Update counter teks saat slide berganti
-                $('#areaCarousel').on('slid.bs.carousel', function () {
-                    var total = records.length;
-                    var activeIndex = $(this).find('.carousel-item.active').index() + 1;
-                    $('#areaSliderCounter').text('Area ' + activeIndex + ' dari ' + total);
+                $('#areaCarousel').on('slid.bs.carousel', function() {
+                    var currentIndex = $('#areaCarousel .carousel-item.active').index() + 1;
+                    var totalItems = $('#areaCarousel .carousel-item').length;
+                    $('#areaSliderCounter').text('Area ' + currentIndex + ' dari ' + totalItems);
                 });
 
-                // Dukungan Touch Swipe untuk Mobile/Tablet
+                // Swipe handler touchscreen
                 var touchStartX = 0;
                 var touchEndX = 0;
-
-                carouselEl.addEventListener('touchstart', function(e) {
+                var carouselElem = document.getElementById('areaCarousel');
+                carouselElem.addEventListener('touchstart', function(e) {
                     touchStartX = e.changedTouches[0].screenX;
                 }, { passive: true });
 
-                carouselEl.addEventListener('touchend', function(e) {
+                carouselElem.addEventListener('touchend', function(e) {
                     touchEndX = e.changedTouches[0].screenX;
-                    var diffX = touchEndX - touchStartX;
-                    if (Math.abs(diffX) > 40) {
-                        if (diffX < 0) {
-                            // Swipe ke kiri -> Next area
-                            $('#areaCarousel').carousel('next');
-                        } else {
-                            // Swipe ke kanan -> Prev area
-                            $('#areaCarousel').carousel('prev');
-                        }
-                    }
+                    handleSwipe();
                 }, { passive: true });
+
+                function handleSwipe() {
+                    if (touchEndX < touchStartX - 40) {
+                        $('#areaCarousel').carousel('next');
+                    }
+                    if (touchEndX > touchStartX + 40) {
+                        $('#areaCarousel').carousel('prev');
+                    }
+                }
             }
+
+            // Scroll halus ke result area
+            $('html, body').animate({
+                scrollTop: $('#resultArea').offset().top - 70
+            }, 300);
+
+            // Fokus ke input textarea pertama
+            setTimeout(function() {
+                $('#commentInput_' + records[0].Id_Record).focus();
+            }, 350);
         }).fail(function() {
             $('#resultArea').html(
                 '<div class="alert alert-danger text-center"><i class="fas fa-times-circle fa-2x mb-2"></i><p class="mb-0">Terjadi kesalahan saat mencari data.</p></div>'
@@ -527,7 +574,18 @@
         e.preventDefault();
         var textarea = $('#commentInput_' + recordId);
         var comment = textarea.val();
+        var category = $('input[name="perakitan_category_' + recordId + '"]:checked').val();
         var btn = $('#submitBtn_' + recordId);
+
+        if (!category) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Kategori Wajib Dipilih',
+                text: 'Silakan pilih kategori kendala (Kosong, Kurang, atau Salah).',
+                confirmButtonColor: '#F36494'
+            });
+            return;
+        }
 
         if (!comment || !comment.trim()) {
             textarea.addClass('is-invalid').focus();
@@ -548,7 +606,8 @@
             type: 'POST',
             data: {
                 _token: '{{ csrf_token() }}',
-                comment: comment
+                comment: comment,
+                category: category
             },
             success: function(res) {
                 btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i>Simpan');
@@ -648,14 +707,25 @@
                     ? '<span class="status-badge-oke"><i class="fas fa-check-circle me-1"></i>Sudah Diterima</span>'
                     : '<span class="status-badge-pending"><i class="fas fa-clock me-1"></i>Pending</span>';
 
+                var cat = (item.Category || 'kurang').toLowerCase();
+                var catBadge = '';
+                if (cat === 'kosong') {
+                    catBadge = '<span class="badge bg-danger"><i class="fas fa-times-circle me-1"></i>KOSONG</span>';
+                } else if (cat === 'salah') {
+                    catBadge = '<span class="badge text-white" style="background-color:#6f42c1;"><i class="fas fa-exclamation-triangle me-1"></i>SALAH</span>';
+                } else {
+                    catBadge = '<span class="badge bg-warning text-dark"><i class="fas fa-minus-circle me-1"></i>KURANG</span>';
+                }
+
                 html += '<div class="part-kurang-card p-3 shadow-sm" id="partCard_' + item.Id_Part_Kurang + '">';
                 
-                // Header baris card: Seq, Type, Area & Status
+                // Header baris card: Seq, Type, Area, Category & Status
                 html += '  <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-2 mb-2 gap-2">';
                 html += '    <div class="d-flex align-items-center gap-2">';
                 html += '      <span class="badge bg-dark fs-6">Seq ' + escHtml(item.Sequence_No) + '</span>';
                 html += '      <span class="badge bg-info text-dark">' + escHtml(item.Type) + '</span>';
                 html += '      <span class="badge bg-primary">' + escHtml(item.Area_Label) + '</span>';
+                html += '      ' + catBadge;
                 html += '    </div>';
                 html += '    <div id="statusBadgeContainer_' + item.Id_Part_Kurang + '">' + badgeHtml + '</div>';
                 html += '  </div>';

@@ -129,11 +129,13 @@ class PublicPartKurangController extends Controller
     {
         $request->validate([
             'comment'       => 'required|string|max:1000',
+            'category'      => 'required|in:kosong,kurang,salah',
             'perakitan_nik' => 'required|string',
         ]);
 
         $record = Record::with('member')->findOrFail($id);
         $comment = trim($request->input('comment'));
+        $category = trim($request->input('category'));
         $perakitanNik = trim($request->input('perakitan_nik'));
 
         // Ambil nama pelapor dari rifa jika ada
@@ -152,6 +154,7 @@ class PublicPartKurangController extends Controller
             'member_nik'      => $record->member->nik ?? null,
             'perakitan_nik'   => $perakitanNik,
             'comment'         => $comment,
+            'category'        => $category,
             'comment_time'    => now(),
             'status'          => 'pending',
             'received_time'   => null,
@@ -162,6 +165,7 @@ class PublicPartKurangController extends Controller
             'message'                => 'Catatan part kurang berhasil disimpan.',
             'Id_Part_Kurang'         => $partKurang->id,
             'Perakitan_Comment'      => $comment,
+            'Category'               => $category,
             'Perakitan_Nik'          => $perakitanNik,
             'Perakitan_Name'         => $reporterName,
             'Perakitan_Comment_Time' => now()->format('d/m/Y H:i'),
@@ -215,6 +219,7 @@ class PublicPartKurangController extends Controller
                 'Member_Photo'           => $marshallingPhoto,
                 'Time_Record'            => ($pk->record && $pk->record->Time_Record) ? Carbon::parse($pk->record->Time_Record)->format('d/m/Y H:i') : '-',
                 'Perakitan_Comment'      => $pk->comment,
+                'Category'               => $pk->category ?? 'kurang',
                 'Perakitan_Nik'          => $pk->perakitan_nik,
                 'Perakitan_Comment_Time' => $pk->comment_time ? $pk->comment_time->format('d/m/Y H:i') : null,
                 'Status'                 => $pk->status ?? 'pending',
@@ -265,6 +270,10 @@ class PublicPartKurangController extends Controller
             $query->where('status', $request->status);
         }
 
+        if ($request->filled('category') && $request->category !== 'all') {
+            $query->where('category', $request->category);
+        }
+
         if ($request->filled('search')) {
             $term = trim($request->search);
             $query->where(function($q) use ($term) {
@@ -272,6 +281,7 @@ class PublicPartKurangController extends Controller
                   ->orWhere('type', 'like', "%{$term}%")
                   ->orWhere('area', 'like', "%{$term}%")
                   ->orWhere('comment', 'like', "%{$term}%")
+                  ->orWhere('category', 'like', "%{$term}%")
                   ->orWhere('perakitan_nik', 'like', "%{$term}%");
             });
         }
@@ -312,6 +322,7 @@ class PublicPartKurangController extends Controller
                 'Member_Photo'           => $memberPhoto,
                 'Time_Record'            => ($pk->record && $pk->record->Time_Record) ? Carbon::parse($pk->record->Time_Record)->format('d/m/Y H:i') : '-',
                 'Perakitan_Comment'      => $pk->comment,
+                'Category'               => $pk->category ?? 'kurang',
                 'Perakitan_Nik'          => $pk->perakitan_nik,
                 'Perakitan_Name'         => $reporterName ?? ($pk->perakitan_nik ?? '-'),
                 'Perakitan_Comment_Time' => $pk->comment_time ? $pk->comment_time->format('d/m/Y H:i') : null,

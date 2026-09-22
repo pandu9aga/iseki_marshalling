@@ -500,6 +500,7 @@ class RecordController extends Controller
                 'id'            => $item->id,
                 'reporter_name' => $reporterName,
                 'comment'       => $item->comment,
+                'category'      => $item->category ?? 'kurang',
                 'comment_time'  => $item->comment_time ? $item->comment_time->format('d/m/Y H:i') : '-',
                 'sequence_no'   => $item->sequence_no ?? '-',
                 'area'          => ucwords(str_replace('_', ' ', $item->area ?? '-')),

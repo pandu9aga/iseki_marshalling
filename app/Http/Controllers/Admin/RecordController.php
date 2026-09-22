@@ -372,6 +372,10 @@ class RecordController extends Controller
                 }
             }
 
+            if ($request->filled('filter_category')) {
+                $data->where('category', $request->filter_category);
+            }
+
             return datatables($data)
                 ->addIndexColumn()
                 ->addColumn('member_name', function ($row) {
@@ -399,6 +403,15 @@ class RecordController extends Controller
                     if (!$row->perakitan_nik) return '-';
                     return DB::connection('rifa')->table('employees')->where('nik', $row->perakitan_nik)->value('nama') ?? $row->perakitan_nik;
                 })
+                ->addColumn('category_badge', function ($row) {
+                    $cat = strtolower($row->category ?? 'kurang');
+                    if ($cat === 'kosong') {
+                        return '<span class="badge bg-danger">Kosong</span>';
+                    } elseif ($cat === 'salah') {
+                        return '<span class="badge bg-purple text-white" style="background-color:#6f42c1;">Salah</span>';
+                    }
+                    return '<span class="badge bg-warning text-dark">Kurang</span>';
+                })
                 ->addColumn('comment', function ($row) {
                     return e($row->comment);
                 })
@@ -408,19 +421,19 @@ class RecordController extends Controller
                     }
                     return '<span class="badge bg-warning text-dark">Pending</span>';
                 })
-                ->rawColumns(['status_badge'])
+                ->rawColumns(['category_badge', 'status_badge'])
                 ->make(true);
         }
 
         // Ambil daftar member marshalling yang ada di part_kurangs
         $memberUserIds = \App\Models\PartKurang::whereNotNull('id_user')->distinct()->pluck('id_user');
-        $marshallingMembers = \App\Models\Member::whereIn('id', $memberUserIds)->orderBy('nama', 'asc')->get(['id', 'nama', 'nik']);
+        $marshallingMembers = \App\Models\Member::whereIn('id', $memberUserIds)->get(['id', 'nama', 'nik']);
 
-        // Ambil daftar pelapor (perakitan) yang ada di part_kurangs
+        // Ambil daftar perakitan yang ada di part_kurangs dari rifa
         $reporterNiks = \App\Models\PartKurang::whereNotNull('perakitan_nik')->distinct()->pluck('perakitan_nik');
-        $reporters = DB::connection('rifa')->table('employees')
+        $reporters = DB::connection('rifa')
+            ->table('employees')
             ->whereIn('nik', $reporterNiks)
-            ->orderBy('nama', 'asc')
             ->get(['nik', 'nama']);
 
         return view('admin.records.part-kurang', compact('marshallingMembers', 'reporters'));
@@ -452,6 +465,10 @@ class RecordController extends Controller
             }
         }
 
+        if ($request->filled('filter_category')) {
+            $query->where('category', $request->filter_category);
+        }
+
         $items = $query->get();
 
         $spreadsheet = new Spreadsheet();
@@ -469,7 +486,7 @@ class RecordController extends Controller
         $sheet->mergeCells('A2:E2');
         $sheet->getStyle('A2')->getFont()->setSize(11);
 
-        // Header Table
+        // Header Table (Kolom Kategori di K, Catatan di L, Status di M, Waktu Diterima di N)
         $headers = [
             'A4' => 'No',
             'B4' => 'Member Marshalling',
@@ -481,9 +498,10 @@ class RecordController extends Controller
             'H4' => 'Waktu Komentar',
             'I4' => 'Reporter NIK',
             'J4' => 'Reporter Nama',
-            'K4' => 'Catatan Part Kurang',
-            'L4' => 'Status',
-            'M4' => 'Waktu Diterima',
+            'K4' => 'Kategori',
+            'L4' => 'Catatan Part Kurang',
+            'M4' => 'Status',
+            'N4' => 'Waktu Diterima',
         ];
 
         foreach ($headers as $cell => $text) {
@@ -491,7 +509,7 @@ class RecordController extends Controller
         }
 
         // Header style
-        $sheet->getStyle('A4:M4')->applyFromArray([
+        $sheet->getStyle('A4:N4')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => [
                 'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
@@ -523,6 +541,7 @@ class RecordController extends Controller
             $commentTime = $item->comment_time ? $item->comment_time->format('d/m/Y H:i') : '-';
             $receivedTime = $item->received_time ? $item->received_time->format('d/m/Y H:i') : '-';
             $statusLabel = ($item->status === 'oke') ? 'Sudah Diterima' : 'Pending';
+            $categoryLabel = strtoupper($item->category ?? 'KURANG');
 
             $sheet->setCellValue('A' . $row, $no);
             $sheet->setCellValue('B' . $row, $item->member ? $item->member->nama : '-');
@@ -534,23 +553,37 @@ class RecordController extends Controller
             $sheet->setCellValue('H' . $row, $commentTime);
             $sheet->setCellValue('I' . $row, $item->perakitan_nik ?? '-');
             $sheet->setCellValue('J' . $row, $reporterName);
-            $sheet->setCellValue('K' . $row, $item->comment ?? '-');
-            $sheet->setCellValue('L' . $row, $statusLabel);
-            $sheet->setCellValue('M' . $row, $receivedTime);
+            $sheet->setCellValue('K' . $row, $categoryLabel);
+            $sheet->setCellValue('L' . $row, $item->comment ?? '-');
+            $sheet->setCellValue('M' . $row, $statusLabel);
+            $sheet->setCellValue('N' . $row, $receivedTime);
 
             // Center alignment for some columns
             $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle("C{$row}:E{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle("G{$row}:I{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("L{$row}:M{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("K{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("M{$row}:N{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+            // Category color
+            if ($categoryLabel === 'KOSONG') {
+                $sheet->getStyle("K{$row}")->getFont()->getColor()->setRGB('DC3545');
+                $sheet->getStyle("K{$row}")->getFont()->setBold(true);
+            } elseif ($categoryLabel === 'SALAH') {
+                $sheet->getStyle("K{$row}")->getFont()->getColor()->setRGB('6F42C1');
+                $sheet->getStyle("K{$row}")->getFont()->setBold(true);
+            } else {
+                $sheet->getStyle("K{$row}")->getFont()->getColor()->setRGB('D39E00');
+                $sheet->getStyle("K{$row}")->getFont()->setBold(true);
+            }
 
             // Status background
             if ($item->status === 'oke') {
-                $sheet->getStyle("L{$row}")->getFont()->getColor()->setRGB('198754');
-                $sheet->getStyle("L{$row}")->getFont()->setBold(true);
+                $sheet->getStyle("M{$row}")->getFont()->getColor()->setRGB('198754');
+                $sheet->getStyle("M{$row}")->getFont()->setBold(true);
             } else {
-                $sheet->getStyle("L{$row}")->getFont()->getColor()->setRGB('D39E00');
-                $sheet->getStyle("L{$row}")->getFont()->setBold(true);
+                $sheet->getStyle("M{$row}")->getFont()->getColor()->setRGB('D39E00');
+                $sheet->getStyle("M{$row}")->getFont()->setBold(true);
             }
 
             $row++;
@@ -559,26 +592,43 @@ class RecordController extends Controller
 
         $lastRow = max(5, $row - 1);
 
-        // Borders
-        $sheet->getStyle("A4:M{$lastRow}")->getBorders()->applyFromArray([
-            'allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CCCCCC']],
-        ]);
-
-        // Auto-fit column widths (kecuali kolom A diberi width pas untuk nomor)
-        $sheet->getColumnDimension('A')->setAutoSize(false)->setWidth(8);
-        foreach (range('B', 'M') as $col) {
+        // Auto-fit column widths
+        foreach (range('A', 'N') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        // Aktifkan Filter di header tabel
-        $sheet->setAutoFilter("A4:M{$lastRow}");
+        // Table Borders
+        $borderStyle = [
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color' => ['rgb' => 'D3D3D3'],
+                ],
+            ],
+        ];
+        $sheet->getStyle("A4:N{$lastRow}")->applyFromArray($borderStyle);
+
+        // Outer Border Table Header
+        $sheet->getStyle("A4:N4")->applyFromArray([
+            'borders' => [
+                'outline' => [
+                    'borderStyle' => Border::BORDER_MEDIUM,
+                    'color' => ['rgb' => 'C2185B'],
+                ],
+            ],
+        ]);
+
+        // Aktifkan Filter (AutoFilter) pada setiap header kolom
+        $sheet->setAutoFilter("A4:N{$lastRow}");
+
+        $filename = 'Laporan_Part_Kurang_' . ($date ?: 'Semua') . '.xlsx';
 
         $writer = new Xlsx($spreadsheet);
-        $fileName = !empty($date) ? ('Laporan_Part_Kurang_' . $date . '.xlsx') : ('Laporan_Part_Kurang_Semua_' . now()->format('Ymd_His') . '.xlsx');
 
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="' . $fileName . '"');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
+
         $writer->save('php://output');
         exit;
     }
@@ -636,6 +686,7 @@ class RecordController extends Controller
                     'member_photo'           => $memberPhoto,
                     'member_audio'           => $memberAudio,
                     'perakitan_comment'      => $pk->comment,
+                    'category'               => $pk->category ?? 'kurang',
                     'perakitan_nik'          => $pk->perakitan_nik ?? '-',
                     'perakitan_name'         => $perakitanName ?? ($pk->perakitan_nik ?? '-'),
                     'perakitan_photo'        => $perakitanPhoto,

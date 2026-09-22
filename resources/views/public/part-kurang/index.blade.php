@@ -827,9 +827,32 @@
 
                     // Form Input Part Kurang
                     html += '        <form onsubmit="submitComment(event, ' + r.Id_Record + ')">';
+                    html += '          <div class="mb-3">';
+                    html += '            <label class="form-label fw-bold mb-1"><i class="fas fa-tags me-1 text-primary"></i>Kategori Kendala <span class="text-danger">*</span>:</label>';
+                    html += '            <div class="row g-1 text-center">';
+                    html += '              <div class="col-4">';
+                    html += '                <input class="btn-check" type="radio" name="category_' + r.Id_Record + '" id="cat_kosong_' + r.Id_Record + '" value="kosong" required>';
+                    html += '                <label class="btn btn-outline-danger w-100 fw-bold btn-sm py-2 px-1 text-nowrap" for="cat_kosong_' + r.Id_Record + '">';
+                    html += '                  <i class="fas fa-times-circle me-1"></i>Kosong';
+                    html += '                </label>';
+                    html += '              </div>';
+                    html += '              <div class="col-4">';
+                    html += '                <input class="btn-check" type="radio" name="category_' + r.Id_Record + '" id="cat_kurang_' + r.Id_Record + '" value="kurang" checked required>';
+                    html += '                <label class="btn btn-outline-warning text-dark w-100 fw-bold btn-sm py-2 px-1 text-nowrap" for="cat_kurang_' + r.Id_Record + '">';
+                    html += '                  <i class="fas fa-minus-circle me-1"></i>Kurang';
+                    html += '                </label>';
+                    html += '              </div>';
+                    html += '              <div class="col-4">';
+                    html += '                <input class="btn-check" type="radio" name="category_' + r.Id_Record + '" id="cat_salah_' + r.Id_Record + '" value="salah" required>';
+                    html += '                <label class="btn btn-outline-purple w-100 fw-bold btn-sm py-2 px-1 text-nowrap" for="cat_salah_' + r.Id_Record + '">';
+                    html += '                  <i class="fas fa-exclamation-triangle me-1"></i>Salah';
+                    html += '                </label>';
+                    html += '              </div>';
+                    html += '            </div>';
+                    html += '          </div>';
                     html += '          <div class="mb-2">';
                     html += '            <label class="form-label fw-bold"><i class="fas fa-pen me-1"></i>Input Catatan Part Kurang (' + escHtml(r.Area_Label) + ') <span class="text-danger">*</span>:</label>';
-                    html += '            <textarea id="commentInput_' + r.Id_Record + '" class="form-control" rows="2" placeholder="Tuliskan part apa yang kurang di area ' + escHtml(r.Area_Label) + '..." required></textarea>';
+                    html += '            <textarea id="commentInput_' + r.Id_Record + '" class="form-control" rows="2" placeholder="Tuliskan detail part apa yang kosong/kurang/salah di area ' + escHtml(r.Area_Label) + '..." required></textarea>';
                     html += '            <div class="invalid-feedback">Catatan part kurang wajib diisi.</div>';
                     html += '          </div>';
                     html += '          <div class="d-flex justify-content-between align-items-center">';
@@ -902,6 +925,7 @@
         e.preventDefault();
         var textarea = $('#commentInput_' + recordId);
         var comment = textarea.val();
+        var category = $('input[name="category_' + recordId + '"]:checked').val();
         var btn = $('#submitBtn_' + recordId);
 
         if (!activeMember || !activeMember.nik) {
@@ -909,6 +933,16 @@
                 icon: 'warning',
                 title: 'Pelapor Belum Di-scan',
                 text: 'Silakan scan QR Member terlebih dahulu di Langkah 1.',
+                confirmButtonColor: '#F36494'
+            });
+            return;
+        }
+
+        if (!category) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Kategori Wajib Dipilih',
+                text: 'Silakan pilih kategori kendala (Kosong, Kurang, atau Salah).',
                 confirmButtonColor: '#F36494'
             });
             return;
@@ -934,6 +968,7 @@
             data: {
                 _token: '{{ csrf_token() }}',
                 comment: comment,
+                category: category,
                 perakitan_nik: activeMember.nik
             },
             success: function(res) {
@@ -1086,13 +1121,24 @@
                 '<span class="status-badge-oke"><i class="fas fa-check-circle me-1"></i>Sudah Diterima</span>' :
                 '<span class="status-badge-pending"><i class="fas fa-clock me-1"></i>Pending</span>';
 
+            var cat = (item.Category || 'kurang').toLowerCase();
+            var categoryBadge = '';
+            if (cat === 'kosong') {
+                categoryBadge = '<span class="badge bg-danger me-1"><i class="fas fa-times-circle me-1"></i>KOSONG</span>';
+            } else if (cat === 'salah') {
+                categoryBadge = '<span class="badge text-white me-1" style="background-color:#6f42c1;"><i class="fas fa-exclamation-triangle me-1"></i>SALAH</span>';
+            } else {
+                categoryBadge = '<span class="badge bg-warning text-dark me-1"><i class="fas fa-minus-circle me-1"></i>KURANG</span>';
+            }
+
             var cardHtml = '<div class="card mb-3 shadow-sm border" id="modalCard_' + item.Id_Part_Kurang + '">';
             cardHtml += '  <div class="card-body p-3">';
             cardHtml += '    <div class="d-flex justify-content-between align-items-center mb-2">';
             cardHtml += '      <div>';
             cardHtml += '        <span class="badge bg-primary me-1 fs-6">Seq: ' + escHtml(item.Sequence_No) + '</span>';
             cardHtml += '        <span class="badge bg-secondary me-1">' + escHtml(item.Production_Date) + '</span>';
-            cardHtml += '        <span class="badge bg-info">' + escHtml(item.Type) + '</span>';
+            cardHtml += '        <span class="badge bg-info me-1">' + escHtml(item.Type) + '</span>';
+            cardHtml += '        ' + categoryBadge;
             cardHtml += '      </div>';
             cardHtml += '      <div id="modalStatusBadge_' + item.Id_Part_Kurang + '">' + statusBadge + '</div>';
             cardHtml += '    </div>';
@@ -1150,28 +1196,28 @@
                     data: {
                         _token: '{{ csrf_token() }}'
                     },
-                    success: function(resp) {
-                        if (resp.success) {
-                            // Tutup modal penerimaan secara otomatis agar member harus scan ulang lagi
-                            var modalEl = document.getElementById('memberReceiveModal');
-                            var modalInstance = bootstrap.Modal.getInstance(modalEl);
-                            if (modalInstance) {
-                                modalInstance.hide();
-                            }
-
+                    success: function(r) {
+                        if (r.success) {
                             Swal.fire({
                                 icon: 'success',
-                                title: 'Berhasil Diterima',
-                                text: 'Part kurang berhasil dikonfirmasi diterima. Silakan scan QR Member kembali jika ingin menerima part lainnya.',
-                                timer: 2000,
+                                title: 'Berhasil',
+                                text: 'Part kurang berhasil dikonfirmasi diterima.',
+                                timer: 1200,
                                 showConfirmButton: false
                             });
 
-                            // Bersihkan input dan fokuskan kembali ke scan member receive
-                            $('#receiveMemberScannerInput').val('').focus();
+                            // Update cached item
+                            var found = cachedModalReports.find(function(it) {
+                                return it.Id_Part_Kurang == id;
+                            });
+                            if (found) {
+                                found.Status = 'oke';
+                                found.Received_Time = 'Baru Saja';
+                            }
 
-                            // Update riwayat umum di background
-                            resetAndLoadRecentList();
+                            // Re-render
+                            renderModalReports();
+                            fetchRecentList(1, true);
                         }
                     },
                     error: function() {
@@ -1271,12 +1317,23 @@
                 '  </button>' +
                 '</div>';
 
+            var cat = (item.Category || 'kurang').toLowerCase();
+            var categoryBadge = '';
+            if (cat === 'kosong') {
+                categoryBadge = '<span class="badge bg-danger me-1"><i class="fas fa-times-circle me-1"></i>KOSONG</span>';
+            } else if (cat === 'salah') {
+                categoryBadge = '<span class="badge text-white me-1" style="background-color:#6f42c1;"><i class="fas fa-exclamation-triangle me-1"></i>SALAH</span>';
+            } else {
+                categoryBadge = '<span class="badge bg-warning text-dark me-1"><i class="fas fa-minus-circle me-1"></i>KURANG</span>';
+            }
+
             var cardHtml = '<div class="card part-kurang-card mb-3 p-3 shadow-sm">';
             cardHtml += '  <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 pb-2 border-bottom">';
             cardHtml += '    <div>';
             cardHtml += '      <span class="badge bg-primary me-1 fs-6">Seq: ' + escHtml(item.Sequence_No) + '</span>';
             cardHtml += '      <span class="badge bg-secondary me-1">' + escHtml(item.Production_Date) + '</span>';
-            cardHtml += '      <span class="badge bg-info">' + escHtml(item.Type) + '</span>';
+            cardHtml += '      <span class="badge bg-info me-1">' + escHtml(item.Type) + '</span>';
+            cardHtml += '      ' + categoryBadge;
             cardHtml += '    </div>';
             cardHtml += '    <div class="mt-1 mt-md-0">' + statusBadge + '</div>';
             cardHtml += '  </div>';

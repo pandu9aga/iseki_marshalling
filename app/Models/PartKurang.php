@@ -18,6 +18,7 @@ class PartKurang extends Model
         'member_nik',
         'perakitan_nik',
         'comment',
+        'category',
         'comment_time',
         'status',
         'received_time',

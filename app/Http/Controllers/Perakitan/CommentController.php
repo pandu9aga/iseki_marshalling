@@ -69,6 +69,7 @@ class CommentController extends Controller
                 'Member_Photo'           => $memberPhoto,
                 'Time_Record'            => ($pk->record && $pk->record->Time_Record) ? \Carbon\Carbon::parse($pk->record->Time_Record)->format('d/m/Y H:i') : '-',
                 'Perakitan_Comment'      => $pk->comment,
+                'Category'               => $pk->category ?? 'kurang',
                 'Perakitan_Nik'          => $pk->perakitan_nik,
                 'Perakitan_Comment_Time' => $pk->comment_time ? $pk->comment_time->format('d/m/Y H:i') : null,
                 'Status'                 => $pk->status ?? 'pending',
@@ -86,11 +87,10 @@ class CommentController extends Controller
         ]);
     }
 
-    public function markReceived($id)
+    public function markReceived(Request $request, $id)
     {
-        $user = Auth::guard('perakitan')->user();
         $partKurang = PartKurang::where('id', $id)
-            ->where('perakitan_nik', $user->nik)
+            ->where('status', 'pending')
             ->firstOrFail();
 
         $partKurang->update([
@@ -100,85 +100,82 @@ class CommentController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Status berhasil diubah menjadi Sudah Diterima (Oke).',
-            'status'  => 'oke',
+            'message' => 'Catatan part kurang telah ditandai sebagai diterima.',
         ]);
     }
 
     public function search(Request $request)
     {
-        $request->validate([
-            'sequence_no'     => 'required',
-            'production_date' => 'required',
-        ]);
+        $sequenceNo = $request->query('sequence_no');
+        $productionDate = $request->query('production_date');
+
+        if (!$sequenceNo || !$productionDate) {
+            return response()->json([
+                'found'   => false,
+                'message' => 'Parameter sequence_no dan production_date wajib diisi.',
+                'records' => [],
+            ]);
+        }
 
         $records = Record::with(['member', 'partKurangs'])
-            ->where('Sequence_No_Record', $request->sequence_no)
-            ->where('Production_Date_Record', $request->production_date)
+            ->where('Sequence_No_Record', $sequenceNo)
+            ->where('Production_Date_Record', $productionDate)
             ->get();
 
         if ($records->isEmpty()) {
             return response()->json([
                 'found'   => false,
-                'message' => 'Member marshalling belum melakukan marshalling nomor instruksi tersebut.',
+                'message' => 'Data tidak ditemukan untuk Sequence ' . $sequenceNo . ' & Prod. Date ' . $productionDate,
+                'records' => [],
             ]);
         }
 
         $photoBase = '/iseki_rifa/public/photo_employee';
 
-        $results = $records->map(function ($r) use ($photoBase) {
+        $data = $records->map(function ($r) use ($photoBase) {
             $memberPhoto = null;
             if ($r->member && $r->member->photo_employee) {
                 $memberPhoto = $photoBase . '/' . $r->member->photo_employee;
             }
 
-            // Ambil part kurang terbaru untuk record ini dari tabel part_kurangs
             $pk = PartKurang::where('id_record', $r->Id_Record)->latest('id')->first();
-
-            $commenterName = null;
-            $perakitanNik = $pk ? $pk->perakitan_nik : null;
-            if ($perakitanNik) {
-                $commenterName = DB::connection('rifa')
-                    ->table('employees')
-                    ->where('nik', $perakitanNik)
-                    ->value('nama');
-            }
 
             return [
                 'Id_Record'              => $r->Id_Record,
-                'Id_Part_Kurang'         => $pk ? $pk->id : null,
                 'Sequence_No'            => $r->Sequence_No_Record,
                 'Production_Date'        => $r->Production_Date_Record,
                 'Type'                   => $r->Type,
                 'Area'                   => $r->Area,
                 'Area_Label'             => ucwords(str_replace('_', ' ', $r->Area)),
-                'Member_Name'            => $r->member->nama ?? 'Unknown',
-                'Member_Nik'             => $r->member->nik ?? '-',
+                'Member_Name'            => $r->member ? $r->member->nama : 'Unknown',
+                'Member_Nik'             => $r->member ? $r->member->nik : '-',
                 'Member_Photo'           => $memberPhoto,
                 'Time_Record'            => $r->Time_Record ? \Carbon\Carbon::parse($r->Time_Record)->format('d/m/Y H:i') : '-',
+                'Id_Part_Kurang'         => $pk ? $pk->id : null,
                 'Perakitan_Comment'      => $pk ? $pk->comment : null,
-                'Perakitan_Nik'          => $perakitanNik,
-                'Perakitan_Name'         => $commenterName ?? ($perakitanNik ?? '-'),
-                'Perakitan_Comment_Time' => ($pk && $pk->comment_time) ? $pk->comment_time->format('d/m/Y H:i') : null,
-                'Status'                 => $pk ? $pk->status : 'pending',
+                'Category'               => $pk ? $pk->category : null,
+                'Perakitan_Comment_Time' => $pk && $pk->comment_time ? $pk->comment_time->format('d/m/Y H:i') : null,
+                'Perakitan_Comment_Status' => $pk ? $pk->status : null,
             ];
         });
 
         return response()->json([
             'found'   => true,
-            'records' => $results,
+            'records' => $data,
         ]);
     }
 
     public function store(Request $request, $id)
     {
         $request->validate([
-            'comment' => 'required|string|max:1000',
+            'comment'  => 'required|string|max:1000',
+            'category' => 'required|in:kosong,kurang,salah',
         ]);
 
         $record = Record::with('member')->findOrFail($id);
         $user = Auth::guard('perakitan')->user();
         $comment = trim($request->input('comment'));
+        $category = trim($request->input('category'));
 
         // Simpan sebagai catatan part kurang baru di tabel part_kurangs (setiap submit menambah row baru)
         $partKurang = PartKurang::create([
@@ -191,6 +188,7 @@ class CommentController extends Controller
             'member_nik'      => $record->member->nik ?? null,
             'perakitan_nik'   => $user ? $user->nik : null,
             'comment'         => $comment,
+            'category'        => $category,
             'comment_time'    => now(),
             'status'          => 'pending',
             'received_time'   => null,
@@ -201,6 +199,7 @@ class CommentController extends Controller
             'message'                => 'Catatan part kurang berhasil disimpan ke tabel part_kurangs.',
             'Id_Part_Kurang'         => $partKurang->id,
             'Perakitan_Comment'      => $comment,
+            'Category'               => $category,
             'Perakitan_Nik'          => $user ? $user->nik : null,
             'Perakitan_Name'         => $user ? $user->nama : null,
             'Perakitan_Comment_Time' => now()->format('d/m/Y H:i'),

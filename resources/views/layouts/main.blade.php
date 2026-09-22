@@ -174,6 +174,27 @@
             margin-top: 6px;
             margin-bottom: 6px;
         }
+
+        /* Custom Purple Outline Button (for kategori salah) */
+        .btn-outline-purple {
+            color: #6f42c1 !important;
+            border-color: #6f42c1 !important;
+            background-color: transparent !important;
+        }
+        .btn-outline-purple:hover {
+            color: #ffffff !important;
+            background-color: #6f42c1 !important;
+            border-color: #6f42c1 !important;
+        }
+        .btn-check:checked + .btn-outline-purple,
+        .btn-check:active + .btn-outline-purple,
+        .btn-outline-purple.active,
+        .btn-outline-purple:active {
+            color: #ffffff !important;
+            background-color: #6f42c1 !important;
+            border-color: #6f42c1 !important;
+            box-shadow: 0 0 0 0.25rem rgba(111, 66, 193, 0.4) !important;
+        }
     </style>
     @yield('style')
 </head>
@@ -480,11 +501,21 @@
 
                             var toastElId = 'pk_toast_' + item.id;
                             if ($('#' + toastElId).length === 0) {
+                                var catBadge = '';
+                                var cat = (item.category || 'kurang').toLowerCase();
+                                if (cat === 'kosong') {
+                                    catBadge = '<span class="badge bg-danger text-white"><i class="fas fa-times-circle me-1"></i>Kosong</span>';
+                                } else if (cat === 'salah') {
+                                    catBadge = '<span class="badge text-white" style="background-color: #6f42c1;"><i class="fas fa-exclamation-circle me-1"></i>Salah</span>';
+                                } else {
+                                    catBadge = '<span class="badge bg-warning text-dark"><i class="fas fa-exclamation-triangle me-1"></i>Kurang</span>';
+                                }
+
                                 var html = '' +
                                     '<div class="part-kurang-toast shadow" id="' + toastElId + '">' +
                                     '  <div class="part-kurang-toast-header">' +
                                     '    <div class="d-flex align-items-center gap-2">' +
-                                    '      <span class="badge bg-danger text-white"><i class="fas fa-exclamation-triangle me-1"></i>Part Kurang</span>' +
+                                    '      ' + catBadge +
                                     '      <small class="text-muted fw-bold">' + escapeHtml(item.sequence_no) + ' (' + escapeHtml(item.area) + ')</small>' +
                                     '    </div>' +
                                     '    <button type="button" class="btn-close btn-sm ms-2" title="Tutup Notifikasi" data-id="' + item.id + '" style="font-size: 0.75rem;"></button>' +

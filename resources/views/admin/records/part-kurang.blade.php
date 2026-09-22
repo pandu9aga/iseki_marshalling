@@ -161,7 +161,16 @@
                             <option value="diterima">Diterima / Oke</option>
                         </select>
                     </div>
-                    <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+                    <div class="col-12 col-sm-6 col-md-3 col-lg-2">
+                        <label class="form-label fw-bold mb-1">Kategori</label>
+                        <select id="filter_category" class="form-select form-select-sm">
+                            <option value="">Semua Kategori</option>
+                            <option value="kosong">Kosong</option>
+                            <option value="kurang">Kurang</option>
+                            <option value="salah">Salah</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3 col-lg-2">
                         <label class="form-label fw-bold mb-1">Member Marshalling</label>
                         <select id="filter_member" class="form-select form-select-sm">
                             <option value="">Semua Member Marshalling</option>
@@ -179,7 +188,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-12 col-sm-12 col-md-12 col-lg-3 d-flex flex-wrap gap-2 justify-content-lg-end mt-2 mt-lg-0">
+                    <div class="col-12 col-sm-12 col-md-12 col-lg-2 d-flex flex-wrap gap-2 justify-content-lg-end mt-2 mt-lg-0">
                         <button type="button" class="btn btn-info btn-sm fw-bold" onclick="showCarousel()">
                             <i class="fas fa-play-circle me-1"></i> Show Slideshow
                         </button>
@@ -201,6 +210,7 @@
                                 <th>Waktu Komentar</th>
                                 <th>Reporter NIK</th>
                                 <th>Reporter Nama</th>
+                                <th>Kategori</th>
                                 <th>Catatan Part Kurang</th>
                                 <th>Status</th>
                             </tr>
@@ -287,6 +297,7 @@
                 data: function(d) {
                     d.filter_date = $('#filter_date').val();
                     d.filter_status = $('#filter_status').val();
+                    d.filter_category = $('#filter_category').val();
                     d.member_id = $('#filter_member').val();
                     d.reporter_nik = $('#filter_reporter').val();
                 }
@@ -301,12 +312,13 @@
                 { data: 'comment_time', name: 'comment_time' },
                 { data: 'reporter_nik', name: 'reporter_nik' },
                 { data: 'reporter_name', name: 'reporter_name' },
+                { data: 'category_badge', name: 'category' },
                 { data: 'comment', name: 'comment' },
                 { data: 'status_badge', name: 'status_badge', orderable: false, searchable: false }
             ]
         });
 
-        $('#filter_date, #filter_status, #filter_member, #filter_reporter').on('change', function() {
+        $('#filter_date, #filter_status, #filter_category, #filter_member, #filter_reporter').on('change', function() {
             table.ajax.reload();
         });
 
@@ -565,6 +577,16 @@
             html += '</div>';
 
             // Middle: Kanban Details dibuat mepet 3 kolom & Catatan Part Kurang Diperbesar Maksimal (2 Baris)
+            var categoryBadge = '';
+            var cat = (item.category || 'kurang').toLowerCase();
+            if (cat === 'kosong') {
+                categoryBadge = '<span class="badge bg-danger text-white fs-6 px-3 py-1 text-uppercase fw-bold"><i class="fas fa-times-circle me-1"></i>Kosong</span>';
+            } else if (cat === 'salah') {
+                categoryBadge = '<span class="badge text-white fs-6 px-3 py-1 text-uppercase fw-bold" style="background-color: #6f42c1;"><i class="fas fa-exclamation-circle me-1"></i>Salah</span>';
+            } else {
+                categoryBadge = '<span class="badge bg-warning text-dark fs-6 px-3 py-1 text-uppercase fw-bold"><i class="fas fa-exclamation-triangle me-1"></i>Kurang</span>';
+            }
+
             html += '<div class="col-md-6 border-start border-end px-3 d-flex flex-column justify-content-between h-100">';
             html += '  <div class="w-100 pt-1">';
             html += '    <div class="row g-1 mb-2 text-start">';
@@ -577,7 +599,10 @@
             html += '    </div>';
             html += '  </div>';
             html += '  <div class="d-flex flex-column flex-grow-1 w-100 mb-1">';
-            html += '    <div class="text-danger fw-bold mb-1 text-start" style="font-size:1.15rem;"><i class="fas fa-clipboard-list me-1"></i>Catatan Part Kurang:</div>';
+            html += '    <div class="d-flex justify-content-between align-items-center mb-1">';
+            html += '      <div class="text-danger fw-bold text-start" style="font-size:1.15rem;"><i class="fas fa-clipboard-list me-1"></i>Catatan Part Kurang:</div>';
+            html += '      <div>' + categoryBadge + '</div>';
+            html += '    </div>';
             html += '    <div class="comment-big-box">' + escHtml(item.perakitan_comment) + '</div>';
             html += '  </div>';
             html += '</div>';
@@ -703,12 +728,14 @@
     function exportPartKurangExcel() {
         var date = $('#filter_date').val() || '';
         var status = $('#filter_status').val() || '';
+        var category = $('#filter_category').val() || '';
         var memberId = $('#filter_member').val() || '';
         var reporterNik = $('#filter_reporter').val() || '';
 
         var params = new URLSearchParams();
         if (date) params.append('filter_date', date);
         if (status) params.append('filter_status', status);
+        if (category) params.append('filter_category', category);
         if (memberId) params.append('member_id', memberId);
         if (reporterNik) params.append('reporter_nik', reporterNik);
 
