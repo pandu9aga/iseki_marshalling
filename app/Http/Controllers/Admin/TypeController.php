@@ -13,9 +13,22 @@ class TypeController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $data = Type::withCount('marshallings');
+            $data = Type::withCount('marshallings')->with(['marshallings' => function ($q) {
+                $q->select('Id_Type', 'Area')->distinct();
+            }]);
             return datatables($data)
                 ->addIndexColumn()
+                ->addColumn('location_areas', function ($row) {
+                    $areas = $row->marshallings->pluck('Area')->unique()->filter()->values();
+                    if ($areas->isEmpty()) {
+                        return '<span class="text-muted">-</span>';
+                    }
+                    return $areas->map(function ($area) use ($row) {
+                        $label = ucwords(str_replace('_', ' ', $area));
+                        $url = route('admin.marshallings.index', ['type_id' => $row->Id_Type, 'area' => $area]);
+                        return '<a href="' . $url . '" class="badge bg-light text-dark border me-1 mb-1 text-decoration-none" title="Lihat part di ' . $label . '">' . $label . '</a>';
+                    })->implode(' ');
+                })
                 ->addColumn('list_marshalling', function ($row) {
                     return $row->marshallings_count;
                 })
@@ -26,7 +39,7 @@ class TypeController extends Controller
                     $btn .= '<button type="button" class="btn btn-danger btn-sm delete-btn" data-id="' . $row->Id_Type . '"><i class="fas fa-trash"></i></button>';
                     return $btn;
                 })
-                ->rawColumns(['action'])
+                ->rawColumns(['location_areas', 'action'])
                 ->make(true);
         }
         return view('admin.types.index');

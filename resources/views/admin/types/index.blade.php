@@ -19,6 +19,7 @@
                             <tr>
                                 <th>No</th>
                                 <th>Type</th>
+                                <th>Location (Area)</th>
                                 <th>List Marshalling</th>
                                 <th>Action</th>
                             </tr>
@@ -68,6 +69,7 @@
             columns: [
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                 { data: 'Type', name: 'Type' },
+                { data: 'location_areas', name: 'location_areas', orderable: false, searchable: false },
                 { data: 'list_marshalling', name: 'marshallings_count', searchable: false },
                 { data: 'action', name: 'action', orderable: false, searchable: false }
             ]

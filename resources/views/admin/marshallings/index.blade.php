@@ -37,6 +37,7 @@
                             <th>Name Part</th>
                             <th>Code Rack</th>
                             <th>Difference</th>
+                            <th>Location</th>
                             <th>Box</th>
                             <th>Qty</th>
                             <th>Mode</th>
@@ -102,6 +103,7 @@
                 { data: 'Name_Part', name: 'Name_Part' },
                 { data: 'Code_Rack', name: 'Code_Rack' },
                 { data: 'Difference', name: 'Difference' },
+                { data: 'Location_Rack', name: 'Location_Rack' },
                 { data: 'Box', name: 'Box' },
                 { data: 'Qty', name: 'Qty' },
                 { data: 'Mode', name: 'Mode' },
