@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Carbon\Carbon;
 
 class RecordController extends Controller
 {
@@ -319,14 +320,26 @@ class RecordController extends Controller
         if ($isEmpty) {
             $recordList->update($updateData);
 
-            try {
-                Http::timeout(10)->post('http://192.168.173.201/iseki_scan/api/marshalling-empty', [
-                    'code_rack' => $recordList->Code_Rack,
-                    'id_member' => $member->id,
-                    'sequence_no_record' => $record->Sequence_No_Record,
-                ]);
-            } catch (\Exception $e) {
-                // fire-and-forget, ignore errors
+            // Cek apakah part atau rak ini sudah pernah dilaporkan kosong hari ini oleh member marshalling mana pun
+            $alreadyReportedToday = Record_List::where('Id_Record_List', '!=', $recordList->Id_Record_List)
+                ->where('Is_Empty', 1)
+                ->whereDate('Time_Record', Carbon::today())
+                ->where(function ($q) use ($recordList) {
+                    $q->where('Code_Part', $recordList->Code_Part)
+                      ->orWhere('Code_Rack', $recordList->Code_Rack);
+                })
+                ->exists();
+
+            if (!$alreadyReportedToday) {
+                try {
+                    Http::timeout(10)->post('http://192.168.173.201/iseki_scan/api/marshalling-empty', [
+                        'code_rack' => $recordList->Code_Rack,
+                        'id_member' => $member->id,
+                        'sequence_no_record' => $record->Sequence_No_Record,
+                    ]);
+                } catch (\Exception $e) {
+                    // fire-and-forget, ignore errors
+                }
             }
 
             $next = Record_List::where('Id_Record', $record->Id_Record)
