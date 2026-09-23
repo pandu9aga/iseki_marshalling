@@ -64,8 +64,8 @@
                         </div>
                         <div class="card-body">
                             <div class="mb-3">
-                                <label class="form-label">Scan Code Rack <span id="scanTimer" class="badge bg-light text-dark ms-1">3</span></label>
-                                <input type="text" id="scannerRackInput" class="form-control" placeholder="Scan Code Rack dengan USB scanner..." disabled style="text-transform: uppercase;">
+                                <label class="form-label">Scan Code Rack <span id="scanTimer" class="badge bg-success text-white ms-1">Ready</span></label>
+                                <input type="text" id="scannerRackInput" class="form-control" placeholder="Scan Code Rack dengan USB scanner..." style="text-transform: uppercase;">
                             </div>
                             <div class="mb-0">
                                 <label class="form-label">Scanned Code Rack</label>
@@ -508,17 +508,9 @@
     function startScanCountdown() {
         playSequence();
 
-        var scanDelay = 3;
         var timerEl = $('#scanTimer');
-        var interval = setInterval(function() {
-            scanDelay--;
-            timerEl.text(scanDelay);
-            if (scanDelay <= 0) {
-                clearInterval(interval);
-                timerEl.text('Ready').removeClass('bg-light text-dark').addClass('bg-success text-white');
-                $('#scannerRackInput').prop('disabled', false).focus();
-            }
-        }, 1000);
+        timerEl.text('Ready').removeClass('bg-light text-dark').addClass('bg-success text-white');
+        $('#scannerRackInput').prop('disabled', false).focus();
     }
 
     $(document).ready(function() {
