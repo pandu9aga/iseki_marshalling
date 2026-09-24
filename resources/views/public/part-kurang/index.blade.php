@@ -1472,13 +1472,34 @@
         });
     }
 
+    // Fungsi pembersihan & pelepasan hardware kamera secara tuntas
+    function forceReleaseCamera(containerSelector) {
+        var $video = $(containerSelector).find('video');
+        if ($video.length) {
+            $video.each(function() {
+                if (this.srcObject) {
+                    var stream = this.srcObject;
+                    var tracks = stream.getTracks();
+                    tracks.forEach(function(track) {
+                        try { track.stop(); } catch(e) {}
+                    });
+                    this.srcObject = null;
+                }
+            });
+        }
+    }
+
     function stopMemberCamera() {
         if (html5QrMember && isCameraMember) {
             html5QrMember.stop().then(function() {
                 isCameraMember = false;
+                forceReleaseCamera('#cameraMemberReader');
             }).catch(function() {
                 isCameraMember = false;
+                forceReleaseCamera('#cameraMemberReader');
             });
+        } else {
+            forceReleaseCamera('#cameraMemberReader');
         }
     }
 
@@ -1496,6 +1517,7 @@
                 $('#btnKanbanCamera').removeClass('active');
                 isCameraKanban = false;
                 html5QrKanban.stop().catch(function() {});
+                forceReleaseCamera('#cameraKanbanReader');
                 processKanbanScan(decodedText);
             },
             function(err) {}
@@ -1516,9 +1538,13 @@
         if (html5QrKanban && isCameraKanban) {
             html5QrKanban.stop().then(function() {
                 isCameraKanban = false;
+                forceReleaseCamera('#cameraKanbanReader');
             }).catch(function() {
                 isCameraKanban = false;
+                forceReleaseCamera('#cameraKanbanReader');
             });
+        } else {
+            forceReleaseCamera('#cameraKanbanReader');
         }
     }
 
@@ -1550,11 +1576,52 @@
         if (html5QrReceive && isCameraReceive) {
             html5QrReceive.stop().then(function() {
                 isCameraReceive = false;
+                forceReleaseCamera('#cameraReceiveReader');
             }).catch(function() {
                 isCameraReceive = false;
+                forceReleaseCamera('#cameraReceiveReader');
             });
+        } else {
+            forceReleaseCamera('#cameraReceiveReader');
         }
     }
+
+    // Tutup seluruh kamera scanner yang sedang aktif dan kembalikan UI ke mode USB
+    function closeAllCamerasToUsbMode() {
+        if (isCameraMember) {
+            stopMemberCamera();
+            $('#memberCameraBox').hide();
+            $('#memberUsbBox').show();
+            $('#btnMemberUsb').addClass('active');
+            $('#btnMemberCamera').removeClass('active');
+        }
+        if (isCameraKanban) {
+            stopKanbanCamera();
+            $('#kanbanCameraBox').hide();
+            $('#kanbanUsbBox').show();
+            $('#btnKanbanUsb').addClass('active');
+            $('#btnKanbanCamera').removeClass('active');
+        }
+        if (isCameraReceive) {
+            stopReceiveCamera();
+            $('#receiveCameraBox').hide();
+        }
+    }
+
+    // Auto close kamera saat pindah tab, minimize browser, atau keluar browser
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') {
+            closeAllCamerasToUsbMode();
+        }
+    });
+
+    window.addEventListener('pagehide', function() {
+        closeAllCamerasToUsbMode();
+    });
+
+    window.addEventListener('beforeunload', function() {
+        closeAllCamerasToUsbMode();
+    });
 
     // Trigger Auto Focus saat preview kamera diklik / disentuh
     function triggerCameraAutoFocus(containerSelector, event) {

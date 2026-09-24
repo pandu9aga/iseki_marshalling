@@ -478,16 +478,63 @@
         triggerCameraAutoFocus(this, e);
     });
 
+    // Fungsi pembersihan & pelepasan hardware kamera secara tuntas
+    function forceReleaseCamera(containerSelector) {
+        var $video = $(containerSelector).find('video');
+        if ($video.length) {
+            $video.each(function() {
+                if (this.srcObject) {
+                    var stream = this.srcObject;
+                    var tracks = stream.getTracks();
+                    tracks.forEach(function(track) {
+                        try { track.stop(); } catch(e) {}
+                    });
+                    this.srcObject = null;
+                }
+            });
+        }
+    }
+
     function stopCameraScanner() {
         if (html5QrCode && isCameraScanning) {
             html5QrCode.stop().then(function() {
                 isCameraScanning = false;
+                forceReleaseCamera('#cameraReader');
             }).catch(function(err) {
                 console.warn("Gagal menghentikan kamera: ", err);
                 isCameraScanning = false;
+                forceReleaseCamera('#cameraReader');
             });
+        } else {
+            forceReleaseCamera('#cameraReader');
         }
     }
+
+    // Tutup kamera scanner aktif dan kembalikan UI ke mode USB
+    function closeCameraToUsbMode() {
+        if (isCameraScanning) {
+            stopCameraScanner();
+            $('.scan-mode-btn').removeClass('active');
+            $('#btnModeUsb').addClass('active');
+            $('#cameraScannerBox').hide();
+            $('#usbScannerBox').show();
+        }
+    }
+
+    // Auto close kamera saat pindah tab, minimize browser, atau keluar browser
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') {
+            closeCameraToUsbMode();
+        }
+    });
+
+    window.addEventListener('pagehide', function() {
+        closeCameraToUsbMode();
+    });
+
+    window.addEventListener('beforeunload', function() {
+        closeCameraToUsbMode();
+    });
 
     function processScan(text) {
         if (!text) return;
