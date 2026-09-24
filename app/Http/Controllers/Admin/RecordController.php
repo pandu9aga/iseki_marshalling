@@ -349,7 +349,7 @@ class RecordController extends Controller
     public function partKurangList(Request $request)
     {
         if ($request->ajax()) {
-            $data = \App\Models\PartKurang::with('member')
+            $data = \App\Models\PartKurang::with(['member', 'record'])
                 ->orderBy('comment_time', 'desc');
 
             if ($request->filled('filter_date')) {
@@ -384,8 +384,10 @@ class RecordController extends Controller
                 ->addColumn('sequence_record', function ($row) {
                     return $row->sequence_no ?? '-';
                 })
-                ->addColumn('production_date', function ($row) {
-                    return $row->production_date ?? '-';
+                ->addColumn('time_record', function ($row) {
+                    return ($row->record && $row->record->Time_Record)
+                        ? \Carbon\Carbon::parse($row->record->Time_Record)->format('d/m/Y H:i')
+                        : '-';
                 })
                 ->addColumn('type_record', function ($row) {
                     return $row->type ?? '-';

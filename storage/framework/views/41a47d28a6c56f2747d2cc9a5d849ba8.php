@@ -202,7 +202,7 @@
                                 <th>No</th>
                                 <th>Member Marshalling</th>
                                 <th>Seq Record</th>
-                                <th>Prod Date</th>
+                                <th>Time Record</th>
                                 <th>Type</th>
                                 <th>Area</th>
                                 <th>Waktu Komentar</th>
@@ -304,7 +304,7 @@
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                 { data: 'member_name', name: 'member_name' },
                 { data: 'sequence_record', name: 'sequence_record' },
-                { data: 'production_date', name: 'production_date' },
+                { data: 'time_record', name: 'time_record' },
                 { data: 'type_record', name: 'type_record' },
                 { data: 'area_record', name: 'area_record' },
                 { data: 'comment_time', name: 'comment_time' },
