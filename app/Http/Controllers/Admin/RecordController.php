@@ -436,7 +436,8 @@ class RecordController extends Controller
             ->whereIn('nik', $reporterNiks)
             ->get(['nik', 'nama']);
 
-        return view('admin.records.part-kurang', compact('marshallingMembers', 'reporters'));
+        $today = now()->format('Y-m-d');
+        return view('admin.records.part-kurang', compact('marshallingMembers', 'reporters', 'today'));
     }
 
     public function exportPartKurang(Request $request)

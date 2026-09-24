@@ -144,7 +144,7 @@
                             <button type="button" class="btn btn-outline-primary" id="btnDatePrev" title="Mundur 1 Hari">
                                 <i class="fas fa-chevron-left"></i>
                             </button>
-                            <input type="date" id="filter_date" class="form-control form-control-sm text-center fw-bold" value="">
+                            <input type="date" id="filter_date" class="form-control form-control-sm text-center fw-bold" value="{{ $today }}">
                             <button type="button" class="btn btn-outline-primary" id="btnDateNext" title="Maju 1 Hari">
                                 <i class="fas fa-chevron-right"></i>
                             </button>
