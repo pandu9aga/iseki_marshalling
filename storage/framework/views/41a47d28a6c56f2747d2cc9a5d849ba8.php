@@ -100,22 +100,24 @@
         border: 2px solid #ffeeba;
         border-left: 8px solid #ffc107;
         border-radius: 8px;
-        padding: 12px 20px;
-        font-size: 8vw;
-        line-height: 1.15;
+        padding: 10px 16px;
         color: #111;
         font-weight: 900;
         word-break: break-word;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        text-overflow: ellipsis;
         flex-grow: 1;
         display: flex;
         align-items: center;
         justify-content: center;
         text-align: center;
+        overflow: hidden;
+        position: relative;
+    }
+    .comment-text-inner {
+        width: 100%;
+        line-height: 1.15;
+        display: inline-block;
+        word-break: break-word;
+        transition: font-size 0.05s ease;
     }
     #carouselCounter {
         position: absolute;
@@ -123,6 +125,48 @@
         right: 15px;
         font-size: 0.85rem;
         z-index: 5;
+    }
+    /* Member Area Profile Cards */
+    .member-area-card {
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+        background: #ffffff;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .member-area-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    }
+    .member-profile-thumb {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #F36494;
+    }
+    .member-profile-thumb-placeholder {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8bbd0;
+        color: #F36494;
+        font-weight: bold;
+        font-size: 1.1rem;
+        border: 2px solid #F36494;
+    }
+    .area-badge-title {
+        background-color: #fdf2f4;
+        color: #F36494;
+        font-weight: 700;
+        font-size: 0.82rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+        display: inline-block;
+        border: 1px solid #f8bbd0;
     }
 </style>
 <?php $__env->stopSection(); ?>
@@ -133,6 +177,59 @@
         <div class="page-header d-flex justify-content-between align-items-center">
             <h4 class="page-title text-primary mb-0"><i class="fas fa-clipboard-list me-2"></i>Laporan Part Kurang</h4>
         </div>
+
+        <?php if(!empty($membersByArea) && count($membersByArea) > 0): ?>
+        <!-- Card Profil Member Marshalling Berdasarkan Area -->
+        <div class="card mb-3 shadow-sm border-0">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-dark" style="font-size: 0.95rem;">
+                    <i class="fas fa-users text-primary me-2"></i>Profil Member Marshalling Berdasarkan Area
+                </span>
+                <span class="badge bg-light text-muted border"><?php echo e(count($membersByArea)); ?> Area Terdaftar</span>
+            </div>
+            <div class="card-body p-3">
+                <div class="row g-3">
+                    <?php $__currentLoopData = $membersByArea; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $areaKey => $membersList): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="member-area-card p-3 h-100">
+                            <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-2">
+                                <span class="area-badge-title">
+                                    <i class="fas fa-map-marker-alt me-1"></i><?php echo e(ucwords(str_replace('_', ' ', $areaKey))); ?>
+
+                                </span>
+                                <span class="badge bg-secondary rounded-pill" style="font-size: 0.75rem;">
+                                    <?php echo e(count($membersList)); ?> Member
+                                </span>
+                            </div>
+                            <div class="d-flex flex-column gap-2">
+                                <?php $__currentLoopData = $membersList; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $m): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <div class="d-flex align-items-center gap-2 p-1 rounded hover-bg">
+                                    <?php if(!empty($m['photo'])): ?>
+                                        <img src="<?php echo e($m['photo']); ?>" alt="<?php echo e($m['nama']); ?>" class="member-profile-thumb" onerror="this.onerror=null; this.src=''; this.className='member-profile-thumb-placeholder'; this.innerHTML='<?php echo e(strtoupper(substr($m['nama'], 0, 1))); ?>';">
+                                    <?php else: ?>
+                                        <div class="member-profile-thumb-placeholder">
+                                            <?php echo e(strtoupper(substr($m['nama'], 0, 1))); ?>
+
+                                        </div>
+                                    <?php endif; ?>
+                                    <div class="overflow-hidden flex-grow-1">
+                                        <strong class="d-block text-truncate text-dark" style="font-size: 0.9rem;" title="<?php echo e($m['nama']); ?>">
+                                            <?php echo e($m['nama']); ?>
+
+                                        </strong>
+                                        <small class="text-muted"><i class="far fa-id-badge me-1"></i><?php echo e($m['nik']); ?></small>
+                                    </div>
+                                </div>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <div class="card">
             <div class="card-body">
                 <div class="row mb-3 align-items-end g-2">
@@ -601,7 +698,7 @@
             html += '      <div class="text-danger fw-bold text-start" style="font-size:1.15rem;"><i class="fas fa-clipboard-list me-1"></i>Catatan Part Kurang:</div>';
             html += '      <div>' + categoryBadge + '</div>';
             html += '    </div>';
-            html += '    <div class="comment-big-box">' + escHtml(item.perakitan_comment) + '</div>';
+            html += '    <div class="comment-big-box"><span class="comment-text-inner">' + escHtml(item.perakitan_comment) + '</span></div>';
             html += '  </div>';
             html += '</div>';
 
@@ -697,11 +794,58 @@
         goToSlide(carouselActiveIndex);
     }
 
+    function fitCommentText(slideIndex) {
+        var idx = (typeof slideIndex !== 'undefined') ? slideIndex : carouselActiveIndex;
+        var slideEl = document.getElementById('carousel_slide_' + idx);
+        if (!slideEl) return;
+
+        var box = slideEl.querySelector('.comment-big-box');
+        var inner = slideEl.querySelector('.comment-text-inner');
+        if (!box || !inner) return;
+
+        // Hitung batas ruang yang tersedia di dalam box (kurangi padding)
+        var style = window.getComputedStyle(box);
+        var paddingX = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
+        var paddingY = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
+        var maxW = (box.clientWidth - paddingX) || 100;
+        var maxH = (box.clientHeight - paddingY) || 100;
+
+        // Binary search font size dalam satuan px agar pas dan tidak meluap (overflow)
+        // Mulai dari font besar (~8vw hingga 130px) turun sampai teks muat
+        var maxFontSize = Math.min(130, Math.floor(window.innerWidth * 0.08));
+        var minFontSize = 14;
+        var bestFontSize = minFontSize;
+
+        var low = minFontSize;
+        var high = maxFontSize;
+
+        while (low <= high) {
+            var mid = Math.floor((low + high) / 2);
+            inner.style.fontSize = mid + 'px';
+
+            var isOverflowing = (inner.scrollHeight > maxH + 2) || (inner.scrollWidth > maxW + 2);
+            if (!isOverflowing) {
+                bestFontSize = mid;
+                low = mid + 1; // coba ukuran lebih besar
+            } else {
+                high = mid - 1; // terlalu besar, perkecil
+            }
+        }
+
+        inner.style.fontSize = bestFontSize + 'px';
+    }
+
     function goToSlide(index) {
         $('.carousel-item').removeClass('active');
         $('#carousel_slide_' + index).addClass('active');
         carouselActiveIndex = index;
         updateCounter();
+
+        // Sesuaikan ukuran font catatan secara dinamis agar pas di kotak
+        setTimeout(function() {
+            fitCommentText(index);
+        }, 10);
+
         playCurrentSlideAudio();
     }
 
@@ -716,6 +860,15 @@
     $('#carouselModal').on('shown.bs.modal', function() {
         if (carouselData.length === 0) {
             startEmptyPolling();
+        } else {
+            fitCommentText();
+        }
+    });
+
+    // Auto-fit saat ukuran window diubah/resize
+    $(window).on('resize', function() {
+        if ($('#carouselModal').hasClass('show')) {
+            fitCommentText();
         }
     });
 
