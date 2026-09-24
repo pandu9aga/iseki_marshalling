@@ -425,7 +425,7 @@ class RecordController extends Controller
                 ->make(true);
         }
 
-        // Ambil daftar member marshalling yang ada di part_kurangs
+        // Ambil daftar member marshalling yang ada di part_kurangs untuk opsi filter dropdown
         $memberUserIds = \App\Models\PartKurang::whereNotNull('id_user')->distinct()->pluck('id_user');
         $marshallingMembers = \App\Models\Member::whereIn('id', $memberUserIds)->get(['id', 'nama', 'nik']);
 
@@ -436,8 +436,38 @@ class RecordController extends Controller
             ->whereIn('nik', $reporterNiks)
             ->get(['nik', 'nama']);
 
+        // Ambil daftar member marshalling terdaftar per area beserta foto dan nama
+        $photoBase = '/iseki_rifa/public/photo_employee';
+        $memberAreas = \App\Models\MemberArea::orderBy('area')->orderBy('nik')->get();
+        $uniqueNiks = $memberAreas->pluck('nik')->unique();
+        $employeesByNik = DB::connection('rifa')->table('employees')
+            ->whereIn('nik', $uniqueNiks)
+            ->get(['id', 'nik', 'nama', 'photo_employee'])
+            ->keyBy('nik');
+
+        $membersByArea = [];
+        foreach ($memberAreas as $ma) {
+            $emp = $employeesByNik->get($ma->nik);
+            if (!$emp) continue;
+
+            $areaKey = $ma->area;
+            if (!isset($membersByArea[$areaKey])) {
+                $membersByArea[$areaKey] = [];
+            }
+
+            // Cegah duplikasi member dalam area yang sama
+            if (!isset($membersByArea[$areaKey][$emp->nik])) {
+                $membersByArea[$areaKey][$emp->nik] = [
+                    'id'    => $emp->id,
+                    'nik'   => $emp->nik,
+                    'nama'  => $emp->nama,
+                    'photo' => $emp->photo_employee ? $photoBase . '/' . $emp->photo_employee : null,
+                ];
+            }
+        }
+
         $today = now()->format('Y-m-d');
-        return view('admin.records.part-kurang', compact('marshallingMembers', 'reporters', 'today'));
+        return view('admin.records.part-kurang', compact('marshallingMembers', 'reporters', 'today', 'membersByArea'));
     }
 
     public function exportPartKurang(Request $request)
