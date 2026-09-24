@@ -29,6 +29,48 @@
         flex-direction: column; align-items: center; justify-content: center;
         border-radius: 8px; color: #fff;
     }
+    #cameraScannerContainer {
+        border-radius: 10px;
+        overflow: hidden;
+        background: #000;
+        position: relative;
+    }
+    #cameraReader {
+        position: relative;
+        cursor: pointer;
+    }
+    #cameraReader video {
+        width: 100% !important;
+        height: auto !important;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+    .camera-focus-ring {
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        border: 2px solid #20c997;
+        border-radius: 50%;
+        box-shadow: 0 0 10px rgba(32, 201, 151, 0.7);
+        pointer-events: none;
+        transform: translate(-50%, -50%) scale(1.4);
+        opacity: 1;
+        transition: transform 0.25s ease-out, opacity 0.4s ease-out;
+        z-index: 9999;
+    }
+    .camera-focus-ring.active {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.9;
+    }
+    .camera-focus-ring.fade-out {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.85);
+    }
+    .scan-mode-btn.active {
+        background-color: #F36494 !important;
+        color: #fff !important;
+        border-color: #F36494 !important;
+    }
 </style>
 <?php $__env->stopSection(); ?>
 
@@ -46,7 +88,7 @@
             <div class="card-body">
                 <h1 class="text-center text-primary mb-0 rack-big-text"><strong><?php echo e($recordList->Location_Rack); ?></strong></h1>
                 <h5><?php echo e($recordList->Code_Part); ?> - <?php echo e($recordList->Name_Part); ?></h5>
-                <p class="text-muted mb-0">Code Rack: <strong class="text-primary detail-rack"><?php echo e($recordList->Code_Rack); ?></strong> | Box: <strong class="text-primary detail-rack"><?php echo e($recordList->Box); ?></strong> | Qty: <strong class="text-primary detail-rack"><?php echo e($recordList->Qty); ?></strong></p>
+                <p class="text-muted mb-0">Code: <strong class="text-primary detail-rack"><?php echo e($recordList->Code_Rack); ?></strong> | Box: <strong class="text-primary detail-rack"><?php echo e($recordList->Box); ?></strong> | Qty: <strong class="text-primary detail-rack"><?php echo e($recordList->Qty); ?></strong></p>
                 <p class="text-muted mb-0">Mode: <strong class="text-primary"><?php echo e(ucfirst($recordList->Mode)); ?></strong> | Pembeda: <strong class="text-primary"><?php echo e($recordList->Difference); ?></strong></p>
             </div>
         </div>
@@ -57,14 +99,39 @@
             <div class="row">
                 <div class="col-md-6">
                     <div class="card mb-3">
-                        <div class="card-header">
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <h6 class="mb-0">Step 1: Scan Rack QR Code</h6>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary scan-mode-btn active" id="btnModeUsb">
+                                    <i class="fas fa-barcode me-1"></i>Scanner
+                                </button>
+                                <button type="button" class="btn btn-outline-primary scan-mode-btn" id="btnModeCamera">
+                                    <i class="fas fa-camera me-1"></i>Kamera
+                                </button>
+                            </div>
                         </div>
                         <div class="card-body">
-                            <div class="mb-3">
-                                <label class="form-label">Scan Code Rack <span id="scanTimer" class="badge bg-light text-dark ms-1">3</span></label>
-                                <input type="text" id="scannerRackInput" class="form-control" placeholder="Scan Code Rack dengan USB scanner..." disabled style="text-transform: uppercase;">
+                            <!-- Mode Scanner USB / Keyboard -->
+                            <div id="usbScannerBox">
+                                <div class="mb-3">
+                                    <label class="form-label">Scan Code Rack <span id="scanTimer" class="badge bg-success text-white ms-1">Ready</span></label>
+                                    <input type="text" id="scannerRackInput" class="form-control" placeholder="Scan Code Rack dengan USB scanner..." style="text-transform: uppercase;">
+                                </div>
                             </div>
+
+                            <!-- Mode Scanner Kamera HP (html5-qrcode) -->
+                            <div id="cameraScannerBox" style="display: none;" class="mb-3">
+                                <div id="cameraScannerContainer" class="p-2 text-center">
+                                    <div id="cameraReader" style="width: 100%; min-height: 220px;"></div>
+                                    <div class="mt-2 d-flex justify-content-between align-items-center flex-wrap gap-1">
+                                        <small class="text-white"><i class="fas fa-hand-pointer me-1 text-warning"></i>Ketuk preview kamera untuk fokus</small>
+                                        <button type="button" class="btn btn-danger btn-sm" id="btnStopCamera">
+                                            <i class="fas fa-stop me-1"></i>Tutup Kamera
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="mb-0">
                                 <label class="form-label">Scanned Code Rack</label>
                                 <input type="text" name="Code_Rack" id="Code_Rack" class="form-control" readonly required>
@@ -188,6 +255,7 @@
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startSection('script'); ?>
+<script src="<?php echo e(asset('assets/js/plugin/html5-qrcode.min.js')); ?>"></script>
 <?php if($recordList->Mode == 'ai' && $isPunished): ?>
 <script src="<?php echo e(asset('assets/js/plugin/opencv.js')); ?>" async onload="window.onOpenCvReady();"></script>
 <script src="<?php echo e(asset('assets/js/plugin/record-scan-ai.js')); ?>"></script>
@@ -506,17 +574,9 @@
     function startScanCountdown() {
         playSequence();
 
-        var scanDelay = 3;
         var timerEl = $('#scanTimer');
-        var interval = setInterval(function() {
-            scanDelay--;
-            timerEl.text(scanDelay);
-            if (scanDelay <= 0) {
-                clearInterval(interval);
-                timerEl.text('Ready').removeClass('bg-light text-dark').addClass('bg-success text-white');
-                $('#scannerRackInput').prop('disabled', false).focus();
-            }
-        }, 1000);
+        timerEl.text('Ready').removeClass('bg-light text-dark').addClass('bg-success text-white');
+        $('#scannerRackInput').prop('disabled', false).focus();
     }
 
     $(document).ready(function() {
@@ -540,39 +600,207 @@
         }
     });
 
+    function handleRackScan(text) {
+        text = $.trim(text).toUpperCase();
+        if (!text) return;
+
+        $('#Code_Rack').val(text).removeClass('is-valid is-invalid');
+        if (text === expectedCodeRack) {
+            stopAllSounds();
+            stopCameraScanner();
+            $('#Code_Rack').addClass('is-valid');
+            if (window.isPunished) {
+                $('#Qty_Record').prop('disabled', false);
+                $('#step2Card, #step2CardAI').removeClass('scan-locked');
+                $('#startCountCamera, #countFileUpload').prop('disabled', false);
+                $('#Qty_Record').focus();
+            } else {
+                $('#Qty_Record').val(window.expectedQty);
+                setTimeout(function() {
+                    $('#partForm').submit();
+                }, 300);
+            }
+        } else {
+            $('#Code_Rack').addClass('is-invalid');
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        }
+
+        if (window.isPunished) {
+            checkFormReady();
+        }
+    }
+
     $('#scannerRackInput').on('keydown', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            var text = $(this).val().toUpperCase();
-            if (text) {
-                $('#Code_Rack').val(text).removeClass('is-valid is-invalid');
-                $(this).val('');
-                if (text === expectedCodeRack) {
-                    stopAllSounds();
-                    $('#Code_Rack').addClass('is-valid');
-                    if (window.isPunished) {
-                        $('#Qty_Record').prop('disabled', false);
-                        $('#step2Card, #step2CardAI').removeClass('scan-locked');
-                        $('#startCountCamera, #countFileUpload').prop('disabled', false);
-                        $('#Qty_Record').focus();
-                    } else {
-                        $('#Qty_Record').val(window.expectedQty);
-                        setTimeout(function() {
-                            $('#partForm').submit();
-                        }, 300);
-                    }
-                } else {
-                    $('#Code_Rack').addClass('is-invalid');
-                }
-                if (window.isPunished) {
-                    checkFormReady();
-                }
-            }
+            var text = $(this).val();
+            $(this).val('');
+            handleRackScan(text);
         }
+    });
+
+    // Scanner Kamera HP (html5-qrcode) Handler
+    var html5QrCode = null;
+    var isCameraScanning = false;
+
+    function startCameraScanner() {
+        if (isCameraScanning) return;
+
+        if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode("cameraReader");
+        }
+
+        var config = {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+        };
+
+        html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            function(decodedText, decodedResult) {
+                if (decodedText) {
+                    if (navigator.vibrate) navigator.vibrate(100);
+                    handleRackScan(decodedText);
+                }
+            },
+            function(errorMessage) {
+                // scanning frame... abaikan
+            }
+        ).then(function() {
+            isCameraScanning = true;
+        }).catch(function(err) {
+            console.error("Gagal membuka kamera:", err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Kamera Tidak Dapat Dibuka',
+                text: 'Pastikan izin kamera telah diberikan pada browser atau gunakan Scanner USB.',
+                confirmButtonColor: '#F36494'
+            });
+            $('#btnModeUsb').trigger('click');
+        });
+    }
+
+    // Trigger Auto Focus saat preview kamera diklik / disentuh
+    function triggerCameraAutoFocus(containerSelector, event) {
+        var $container = $(containerSelector);
+        if (!$container.length) return;
+
+        // 1. Tampilkan animasi focus ring di titik klik/sentuh
+        var offset = $container.offset();
+        var clickX = (event.pageX || (event.originalEvent && event.originalEvent.touches && event.originalEvent.touches[0].pageX)) - offset.left;
+        var clickY = (event.pageY || (event.originalEvent && event.originalEvent.touches && event.originalEvent.touches[0].pageY)) - offset.top;
+
+        if (isNaN(clickX) || isNaN(clickY) || clickX <= 0 || clickY <= 0) {
+            clickX = $container.width() / 2;
+            clickY = $container.height() / 2;
+        }
+
+        var $ring = $('<div class="camera-focus-ring"></div>');
+        $ring.css({ left: clickX + 'px', top: clickY + 'px' });
+        $container.append($ring);
+
+        setTimeout(function() {
+            $ring.addClass('active');
+        }, 10);
+
+        setTimeout(function() {
+            $ring.addClass('fade-out');
+            setTimeout(function() {
+                $ring.remove();
+            }, 400);
+        }, 600);
+
+        // 2. Dapatkan MediaStreamTrack dari video element
+        var videoEl = $container.find('video')[0];
+        if (!videoEl || !videoEl.srcObject) return;
+
+        var stream = videoEl.srcObject;
+        var tracks = stream.getVideoTracks();
+        if (!tracks || !tracks.length) return;
+
+        var track = tracks[0];
+        if (!track.getCapabilities || !track.applyConstraints) return;
+
+        try {
+            var capabilities = track.getCapabilities();
+            if (capabilities.focusMode) {
+                // Jika browser mendukung focusMode continuous / single-shot
+                track.applyConstraints({
+                    advanced: [{ focusMode: "continuous" }]
+                }).catch(function() {
+                    // Fallback coba focusMode manual lalu continuous
+                    track.applyConstraints({
+                        advanced: [{ focusMode: "manual" }]
+                    }).then(function() {
+                        setTimeout(function() {
+                            track.applyConstraints({
+                                advanced: [{ focusMode: "continuous" }]
+                            }).catch(function() {});
+                        }, 100);
+                    }).catch(function() {});
+                });
+            }
+
+            // Jika browser mendukung pointsOfInterest (tap-to-focus point)
+            if (capabilities.pointsOfInterest) {
+                var normX = Math.min(1, Math.max(0, clickX / $container.width()));
+                var normY = Math.min(1, Math.max(0, clickY / $container.height()));
+                track.applyConstraints({
+                    advanced: [{
+                        pointsOfInterest: [{ x: normX, y: normY }]
+                    }]
+                }).catch(function() {});
+            }
+        } catch (e) {
+            console.log("Autofocus apply constraints info:", e);
+        }
+    }
+
+    // Pasang listener tap/click pada kamera reader
+    $('#cameraReader').on('click', function(e) {
+        triggerCameraAutoFocus(this, e);
+    });
+
+    function stopCameraScanner() {
+        if (html5QrCode && isCameraScanning) {
+            html5QrCode.stop().then(function() {
+                isCameraScanning = false;
+            }).catch(function(err) {
+                console.warn("Gagal stop kamera:", err);
+                isCameraScanning = false;
+            });
+        }
+    }
+
+    // Toggle Mode Scan USB vs Kamera HP
+    $('#btnModeUsb').on('click', function() {
+        $('.scan-mode-btn').removeClass('active');
+        $(this).addClass('active');
+        stopCameraScanner();
+        $('#cameraScannerBox').slideUp(200);
+        $('#usbScannerBox').slideDown(200, function() {
+            $('#scannerRackInput').focus();
+        });
+    });
+
+    $('#btnModeCamera').on('click', function() {
+        $('.scan-mode-btn').removeClass('active');
+        $(this).addClass('active');
+        $('#usbScannerBox').slideUp(200);
+        $('#cameraScannerBox').slideDown(200, function() {
+            startCameraScanner();
+        });
+    });
+
+    $('#btnStopCamera').on('click', function() {
+        $('#btnModeUsb').trigger('click');
     });
 
     $('#btnPartKosong').on('click', function() {
         stopAllSounds();
+        stopCameraScanner();
         $('#is_empty_flag').val('1');
         $('#Qty_Record').val(0);
         $('#partForm').submit();

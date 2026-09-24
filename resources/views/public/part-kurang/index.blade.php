@@ -123,6 +123,43 @@
         color: #fff !important;
         border-color: #F36494 !important;
     }
+    #cameraScannerContainer {
+        border-radius: 10px;
+        overflow: hidden;
+        background: #000;
+        position: relative;
+    }
+    #cameraMemberReader, #cameraKanbanReader, #cameraReceiveReader {
+        position: relative;
+        cursor: pointer;
+    }
+    #cameraMemberReader video, #cameraKanbanReader video, #cameraReceiveReader video {
+        width: 100% !important;
+        height: auto !important;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+    .camera-focus-ring {
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        border: 2px solid #20c997;
+        border-radius: 50%;
+        box-shadow: 0 0 10px rgba(32, 201, 151, 0.7);
+        pointer-events: none;
+        transform: translate(-50%, -50%) scale(1.4);
+        opacity: 1;
+        transition: transform 0.25s ease-out, opacity 0.4s ease-out;
+        z-index: 9999;
+    }
+    .camera-focus-ring.active {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.9;
+    }
+    .camera-focus-ring.fade-out {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.85);
+    }
 </style>
 @endsection
 
@@ -200,8 +237,8 @@
                             <div class="col-12 col-md-8 col-lg-6">
                                 <div id="cameraScannerContainer" class="p-2 border position-relative text-center">
                                     <div id="cameraMemberReader" style="width: 100%; min-height: 220px;"></div>
-                                    <div class="mt-2 d-flex justify-content-between align-items-center">
-                                        <small class="text-white"><i class="fas fa-info-circle me-1"></i>Arahkan kamera ke QR Member</small>
+                                    <div class="mt-2 d-flex justify-content-between align-items-center flex-wrap gap-1">
+                                        <small class="text-white"><i class="fas fa-hand-pointer me-1 text-warning"></i>Ketuk preview kamera untuk fokus</small>
                                         <button type="button" class="btn btn-danger btn-sm" id="btnStopMemberCamera">
                                             <i class="fas fa-stop me-1"></i>Tutup Kamera
                                         </button>
@@ -258,8 +295,8 @@
                             <div class="col-12 col-md-8 col-lg-6">
                                 <div id="cameraScannerContainer" class="p-2 border position-relative text-center">
                                     <div id="cameraKanbanReader" style="width: 100%; min-height: 220px;"></div>
-                                    <div class="mt-2 d-flex justify-content-between align-items-center">
-                                        <small class="text-white"><i class="fas fa-info-circle me-1"></i>Arahkan kamera ke QR Kanban</small>
+                                    <div class="mt-2 d-flex justify-content-between align-items-center flex-wrap gap-1">
+                                        <small class="text-white"><i class="fas fa-hand-pointer me-1 text-warning"></i>Ketuk preview kamera untuk fokus</small>
                                         <button type="button" class="btn btn-danger btn-sm" id="btnStopKanbanCamera">
                                             <i class="fas fa-stop me-1"></i>Tutup Kamera
                                         </button>
@@ -304,8 +341,8 @@
                             <div class="col-12 col-md-8 col-lg-6">
                                 <div id="cameraScannerContainer" class="p-2 border position-relative text-center">
                                     <div id="cameraReceiveReader" style="width: 100%; min-height: 220px;"></div>
-                                    <div class="mt-2 d-flex justify-content-between align-items-center">
-                                        <small class="text-white"><i class="fas fa-info-circle me-1"></i>Arahkan kamera ke QR Member</small>
+                                    <div class="mt-2 d-flex justify-content-between align-items-center flex-wrap gap-1">
+                                        <small class="text-white"><i class="fas fa-hand-pointer me-1 text-warning"></i>Ketuk preview kamera untuk fokus</small>
                                         <button type="button" class="btn btn-danger btn-sm" id="btnStopReceiveCamera">
                                             <i class="fas fa-stop me-1"></i>Tutup Kamera
                                         </button>
@@ -1518,6 +1555,86 @@
             });
         }
     }
+
+    // Trigger Auto Focus saat preview kamera diklik / disentuh
+    function triggerCameraAutoFocus(containerSelector, event) {
+        var $container = $(containerSelector);
+        if (!$container.length) return;
+
+        // 1. Tampilkan animasi focus ring di titik klik/sentuh
+        var offset = $container.offset();
+        var clickX = (event.pageX || (event.originalEvent && event.originalEvent.touches && event.originalEvent.touches[0].pageX)) - offset.left;
+        var clickY = (event.pageY || (event.originalEvent && event.originalEvent.touches && event.originalEvent.touches[0].pageY)) - offset.top;
+
+        if (isNaN(clickX) || isNaN(clickY) || clickX <= 0 || clickY <= 0) {
+            clickX = $container.width() / 2;
+            clickY = $container.height() / 2;
+        }
+
+        var $ring = $('<div class="camera-focus-ring"></div>');
+        $ring.css({ left: clickX + 'px', top: clickY + 'px' });
+        $container.append($ring);
+
+        setTimeout(function() {
+            $ring.addClass('active');
+        }, 10);
+
+        setTimeout(function() {
+            $ring.addClass('fade-out');
+            setTimeout(function() {
+                $ring.remove();
+            }, 400);
+        }, 600);
+
+        // 2. Dapatkan MediaStreamTrack dari video element
+        var videoEl = $container.find('video')[0];
+        if (!videoEl || !videoEl.srcObject) return;
+
+        var stream = videoEl.srcObject;
+        var tracks = stream.getVideoTracks();
+        if (!tracks || !tracks.length) return;
+
+        var track = tracks[0];
+        if (!track.getCapabilities || !track.applyConstraints) return;
+
+        try {
+            var capabilities = track.getCapabilities();
+            if (capabilities.focusMode) {
+                // Jika browser mendukung focusMode continuous / single-shot
+                track.applyConstraints({
+                    advanced: [{ focusMode: "continuous" }]
+                }).catch(function() {
+                    track.applyConstraints({
+                        advanced: [{ focusMode: "manual" }]
+                    }).then(function() {
+                        setTimeout(function() {
+                            track.applyConstraints({
+                                advanced: [{ focusMode: "continuous" }]
+                            }).catch(function() {});
+                        }, 100);
+                    }).catch(function() {});
+                });
+            }
+
+            // Jika browser mendukung pointsOfInterest (tap-to-focus point)
+            if (capabilities.pointsOfInterest) {
+                var normX = Math.min(1, Math.max(0, clickX / $container.width()));
+                var normY = Math.min(1, Math.max(0, clickY / $container.height()));
+                track.applyConstraints({
+                    advanced: [{
+                        pointsOfInterest: [{ x: normX, y: normY }]
+                    }]
+                }).catch(function() {});
+            }
+        } catch (e) {
+            console.log("Autofocus apply constraints info:", e);
+        }
+    }
+
+    // Pasang listener tap/click pada semua kamera scanner reader
+    $('#cameraMemberReader, #cameraKanbanReader, #cameraReceiveReader').on('click', function(e) {
+        triggerCameraAutoFocus(this, e);
+    });
 
     function escHtml(str) {
         if (!str) return '';
