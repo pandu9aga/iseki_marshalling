@@ -31,11 +31,13 @@ class DashboardController extends Controller
         }
 
         $allRecords = $query->get();
-        $records = $allRecords->groupBy('Id_User')->map(function ($userRecords) {
-            return $userRecords->groupBy('Type');
+
+        // Calculate duration for each record
+        $allRecords->each(function ($record) {
+            $record->computed_duration = $record->calculateDurationSeconds();
         });
 
-        $totalMembers = $records->count();
+        $totalMembers = $allRecords->unique('Id_User')->count();
         $totalRecords = $allRecords->count();
         $totalDone = $allRecords->filter(fn($r) => $r->recordLists->every(fn($rl) => $rl->Time_Record !== null))->count();
         $totalProgress = $totalRecords - $totalDone;
@@ -52,23 +54,34 @@ class DashboardController extends Controller
             })
             ->count();
 
-        $chartData = [];
-        $userIds = [];
-        foreach ($records as $userId => $typeGroups) {
-            $userIds[] = $userId;
-        }
+        $userIds = $allRecords->pluck('Id_User')->unique()->toArray();
+        $users = collect();
         if (!empty($userIds)) {
             $users = Member::whereIn('id', $userIds)->get()->keyBy('id');
-        } else {
-            $users = collect();
         }
-        foreach ($records as $userId => $typeGroups) {
-            $memberName = $users->has($userId) ? $users[$userId]->nama : 'Unknown';
-            $doneCount = 0;
-            foreach ($typeGroups as $type => $typeRecords) {
-                $doneCount += $typeRecords->filter(fn($r) => $r->recordLists->every(fn($rl) => $rl->Time_Record !== null))->count();
+
+        // Group by Area -> User -> Type
+        $records = $allRecords->groupBy('Area')->sortKeys()->map(function ($areaRecords) use ($users) {
+            // Group by User, then sort by User Name
+            return $areaRecords->groupBy('Id_User')->sortBy(function ($typeGroups, $userId) use ($users) {
+                return $users->has($userId) ? strtolower($users[$userId]->nama) : 'unknown';
+            })->map(function ($userRecords) {
+                return $userRecords->groupBy('Type');
+            });
+        });
+
+        $chartData = [];
+        foreach ($records as $area => $areaGroups) {
+            foreach ($areaGroups as $userId => $typeGroups) {
+                $memberName = $users->has($userId) ? $users[$userId]->nama : 'Unknown';
+                $doneCount = 0;
+                foreach ($typeGroups as $type => $typeRecords) {
+                    $doneCount += $typeRecords->filter(fn($r) => $r->recordLists->every(fn($rl) => $rl->Time_Record !== null))->count();
+                }
+                
+                $areaLabel = ucwords(str_replace('_', ' ', $area));
+                $chartData[] = ['member' => $areaLabel . ' - ' . $memberName, 'done' => $doneCount];
             }
-            $chartData[] = ['member' => $memberName, 'done' => $doneCount];
         }
 
         return view('admin.dashboard', compact(

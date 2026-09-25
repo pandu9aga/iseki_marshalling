@@ -4,12 +4,14 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\TypeController;
+use App\Http\Controllers\Admin\MainTypeController;
 use App\Http\Controllers\Admin\MarshallingController;
 use App\Http\Controllers\Admin\RecordController as AdminRecordController;
 use App\Http\Controllers\Admin\PunishmentController;
 use App\Http\Controllers\Admin\MemberAreaController;
 use App\Http\Controllers\Member\RecordController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\SummaryController;
 use App\Http\Controllers\Perakitan\DashboardController as PerakitanDashboardController;
 use App\Http\Controllers\Perakitan\KanbanController as PerakitanKanbanController;
 use App\Http\Controllers\Perakitan\ProsedurController as PerakitanProsedurController;
@@ -40,11 +42,15 @@ Route::prefix('part-kurang')->name('public.part-kurang.')->group(function () {
 Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/export', [DashboardController::class, 'export'])->name('dashboard.export');
+    Route::get('/summary', [SummaryController::class, 'index'])->name('summary');
+    Route::get('/summary/export', [SummaryController::class, 'export'])->name('summary.export');
 
     Route::resource('users', UserController::class);
     Route::get('types/export', [TypeController::class, 'export'])->name('types.export');
     Route::post('types/import', [TypeController::class, 'import'])->name('types.import');
     Route::resource('types', TypeController::class);
+    Route::post('main-types/import', [MainTypeController::class, 'import'])->name('main-types.import');
+    Route::resource('main-types', MainTypeController::class);
     Route::get('marshallings/export', [MarshallingController::class, 'export'])->name('marshallings.export');
     Route::post('marshallings/import', [MarshallingController::class, 'import'])->name('marshallings.import');
     Route::resource('marshallings', MarshallingController::class);
