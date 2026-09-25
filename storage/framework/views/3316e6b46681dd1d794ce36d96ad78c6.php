@@ -70,72 +70,90 @@
         </div>
         <?php endif; ?>
 
-        <?php $__empty_1 = true; $__currentLoopData = $records; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $userId => $typeGroups): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-        <?php
-            $memberName = $typeGroups->first()->first()->member->nama ?? 'Unknown';
-            $initial = strtoupper(substr($memberName, 0, 1));
-            $memberTotal = 0; $memberDone = 0;
-            foreach ($typeGroups as $type => $typeRecords) {
-                $memberTotal += $typeRecords->count();
-                $memberDone += $typeRecords->filter(fn($r) => $r->recordLists->every(fn($rl) => $rl->Time_Record !== null))->count();
-            }
-            $memberPct = $memberTotal > 0 ? round($memberDone / $memberTotal * 100) : 0;
-        ?>
-        <div class="card border-0 shadow-sm mb-3">
-            <div class="card-header bg-white py-2 d-flex align-items-center gap-3">
-                <span class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold" style="width:36px;height:36px;background:#F36494;font-size:14px;"><?php echo e($initial); ?></span>
-                <div class="flex-grow-1">
-                    <strong class="d-block" style="font-size:15px;"><?php echo e($memberName); ?></strong>
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="progress progress-xs flex-grow-1" style="max-width:200px;">
-                            <div class="progress-bar <?php echo e($memberPct == 100 ? 'bg-success' : 'bg-warning'); ?>" style="width:<?php echo e($memberPct); ?>%"></div>
+        <?php $__empty_1 = true; $__currentLoopData = $records; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $area => $areaGroups): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+        <div class="mb-4">
+            <h5 class="text-secondary border-bottom pb-2 mb-3"><i class="fas fa-map-marker-alt text-danger me-2"></i> <?php echo e(ucwords(str_replace('_', ' ', $area))); ?></h5>
+            <?php $__currentLoopData = $areaGroups; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $userId => $typeGroups): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <?php
+                $memberName = $typeGroups->first()->first()->member->nama ?? 'Unknown';
+                $initial = strtoupper(substr($memberName, 0, 1));
+                $memberTotal = 0; $memberDone = 0;
+                $memberDurationSeconds = 0;
+                foreach ($typeGroups as $type => $typeRecords) {
+                    $memberTotal += $typeRecords->count();
+                    $memberDone += $typeRecords->filter(fn($r) => $r->recordLists->every(fn($rl) => $rl->Time_Record !== null))->count();
+                    $memberDurationSeconds += $typeRecords->sum('computed_duration');
+                }
+                $memberPct = $memberTotal > 0 ? round($memberDone / $memberTotal * 100) : 0;
+                $memberDurationMinutes = round($memberDurationSeconds / 60);
+                $memberDurationStr = $memberDurationMinutes . ' Menit';
+            ?>
+            <div class="card border-0 shadow-sm mb-3 ms-2">
+                <div class="card-header bg-white py-2 d-flex align-items-center gap-3">
+                    <span class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold" style="width:36px;height:36px;background:#F36494;font-size:14px;"><?php echo e($initial); ?></span>
+                    <div class="flex-grow-1">
+                        <strong class="d-block" style="font-size:15px;"><?php echo e($memberName); ?></strong>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress progress-xs flex-grow-1" style="max-width:200px;">
+                                <div class="progress-bar <?php echo e($memberPct == 100 ? 'bg-success' : 'bg-warning'); ?>" style="width:<?php echo e($memberPct); ?>%"></div>
+                            </div>
+                            <small class="text-muted"><?php echo e($memberDone); ?>/<?php echo e($memberTotal); ?> | <i class="far fa-clock"></i> <?php echo e($memberDurationStr); ?></small>
                         </div>
-                        <small class="text-muted"><?php echo e($memberDone); ?>/<?php echo e($memberTotal); ?></small>
                     </div>
                 </div>
-            </div>
-            <div class="card-body p-2">
-                <?php $__currentLoopData = $typeGroups; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $type => $typeRecords): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                    <?php
-                        $totalRecs = $typeRecords->count();
-                        $doneRecs = $typeRecords->filter(fn($r) => $r->recordLists->every(fn($rl) => $rl->Time_Record !== null))->count();
-                        $isComplete = $totalRecs > 0 && $totalRecs == $doneRecs;
-                        $pct = $totalRecs > 0 ? round($doneRecs / $totalRecs * 100) : 0;
-                        $collapseId = 'collapse-' . $userId . '-' . $loop->index;
-                    ?>
-                    <div class="type-header d-flex align-items-center justify-content-between border-bottom pb-1 mb-1 ps-2" data-bs-toggle="collapse" data-bs-target="#<?php echo e($collapseId); ?>" style="cursor:pointer;">
-                        <div class="d-flex align-items-center gap-2 flex-grow-1 me-3">
-                            <i class="fas fa-chevron-right fa-xs type-chevron"></i>
-                            <span class="fw-medium small" style="min-width:80px;"><?php echo e($type); ?></span>
-                            <div class="progress progress-xs flex-grow-1" style="max-width:150px;">
-                                <div class="progress-bar <?php echo e($isComplete ? 'bg-success' : 'bg-warning'); ?>" style="width:<?php echo e($pct); ?>%"></div>
+                <div class="card-body p-2">
+                    <?php $__currentLoopData = $typeGroups; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $type => $typeRecords): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <?php
+                            $totalRecs = $typeRecords->count();
+                            $doneRecs = $typeRecords->filter(fn($r) => $r->recordLists->every(fn($rl) => $rl->Time_Record !== null))->count();
+                            $isComplete = $totalRecs > 0 && $totalRecs == $doneRecs;
+                            $pct = $totalRecs > 0 ? round($doneRecs / $totalRecs * 100) : 0;
+                            $collapseId = 'collapse-' . $area . '-' . $userId . '-' . $loop->index;
+                            
+                            $typeDurationSeconds = $typeRecords->sum('computed_duration');
+                            $typeDurationMinutes = round($typeDurationSeconds / 60);
+                            $typeDurationStr = $typeDurationMinutes . ' Menit';
+                        ?>
+                        <div class="type-header d-flex align-items-center justify-content-between border-bottom pb-1 mb-1 ps-2" data-bs-toggle="collapse" data-bs-target="#<?php echo e($collapseId); ?>" style="cursor:pointer;">
+                            <div class="d-flex align-items-center gap-2 flex-grow-1 me-3">
+                                <i class="fas fa-chevron-right fa-xs type-chevron"></i>
+                                <span class="fw-medium small" style="min-width:80px;"><?php echo e($type); ?></span>
+                                <div class="progress progress-xs flex-grow-1" style="max-width:150px;">
+                                    <div class="progress-bar <?php echo e($isComplete ? 'bg-success' : 'bg-warning'); ?>" style="width:<?php echo e($pct); ?>%"></div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                <span class="badge bg-light text-dark border"><i class="far fa-clock"></i> <?php echo e($typeDurationStr); ?></span>
+                                <?php if($isComplete): ?>
+                                    <span class="badge bg-success">Full</span>
+                                <?php else: ?>
+                                    <span class="badge bg-warning text-dark">On Progress</span>
+                                <?php endif; ?>
+                                <span class="badge bg-secondary"><?php echo e($doneRecs); ?>/<?php echo e($totalRecs); ?></span>
                             </div>
                         </div>
-                        <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                            <?php if($isComplete): ?>
-                                <span class="badge bg-success">Full</span>
-                            <?php else: ?>
-                                <span class="badge bg-warning text-dark">On Progress</span>
-                            <?php endif; ?>
-                            <span class="badge bg-secondary"><?php echo e($doneRecs); ?>/<?php echo e($totalRecs); ?></span>
+                        <div class="collapse" id="<?php echo e($collapseId); ?>">
+                            <?php $__currentLoopData = $typeRecords; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $record): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <?php
+                                $recDone = $record->recordLists->filter(fn($rl) => $rl->Time_Record !== null)->count();
+                                $recTotal = $record->recordLists->count();
+                                $recComplete = $recTotal > 0 && $recDone == $recTotal;
+                                
+                                $recDurationMinutes = round($record->computed_duration / 60);
+                                $recDurationStr = $recDurationMinutes . ' Menit';
+                            ?>
+                            <div class="record-row d-flex align-items-center border-bottom py-1 ps-4 pe-2" data-id="<?php echo e($record->Id_Record); ?>" style="cursor:pointer;">
+                                <span class="small flex-grow-1"><?php echo e($record->Sequence_No_Record); ?></span>
+                                <span class="small text-muted me-3"><i class="far fa-clock"></i> <?php echo e($recDurationStr); ?></span>
+                                <span class="small text-muted me-3"><?php echo e($record->Production_Date_Record); ?></span>
+                                <span class="badge <?php echo e($recComplete ? 'bg-success' : 'bg-warning text-dark'); ?>"><?php echo e($recDone); ?>/<?php echo e($recTotal); ?></span>
+                            </div>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </div>
-                    </div>
-                    <div class="collapse" id="<?php echo e($collapseId); ?>">
-                        <?php $__currentLoopData = $typeRecords; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $record): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                        <?php
-                            $recDone = $record->recordLists->filter(fn($rl) => $rl->Time_Record !== null)->count();
-                            $recTotal = $record->recordLists->count();
-                            $recComplete = $recTotal > 0 && $recDone == $recTotal;
-                        ?>
-                        <div class="record-row d-flex align-items-center border-bottom py-1 ps-4 pe-2" data-id="<?php echo e($record->Id_Record); ?>" style="cursor:pointer;">
-                            <span class="small flex-grow-1"><?php echo e($record->Sequence_No_Record); ?></span>
-                            <span class="small text-muted me-3"><?php echo e($record->Production_Date_Record); ?></span>
-                            <span class="badge <?php echo e($recComplete ? 'bg-success' : 'bg-warning text-dark'); ?>"><?php echo e($recDone); ?>/<?php echo e($recTotal); ?></span>
-                        </div>
-                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                    </div>
-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                </div>
             </div>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         </div>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
         <div class="card border-0 shadow-sm">

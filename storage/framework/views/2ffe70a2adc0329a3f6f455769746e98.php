@@ -225,6 +225,12 @@
                                 <p class="<?php echo e(request()->routeIs('admin.dashboard') ? 'text-primary' : ''); ?>">Dashboard</p>
                             </a>
                         </li>
+                        <li class="nav-item <?php echo e(request()->routeIs('admin.summary') ? 'active' : ''); ?>">
+                            <a href="<?php echo e(route('admin.summary')); ?>">
+                                <i class="fas fa-chart-line"></i>
+                                <p class="<?php echo e(request()->routeIs('admin.summary') ? 'text-primary' : ''); ?>">Rangkuman Jam</p>
+                            </a>
+                        </li>
                         <li class="nav-item <?php echo e(request()->routeIs('admin.users.*') ? 'active' : ''); ?>">
                             <a href="<?php echo e(route('admin.users.index')); ?>">
                                 <i class="fas fa-users-cog"></i>
@@ -235,6 +241,12 @@
                             <a href="<?php echo e(route('admin.types.index')); ?>">
                                 <i class="fas fa-car"></i>
                                 <p class="<?php echo e(request()->routeIs('admin.types.*') ? 'text-primary' : ''); ?>">Type Traktor</p>
+                            </a>
+                        </li>
+                        <li class="nav-item <?php echo e(request()->routeIs('admin.main-types.*') ? 'active' : ''); ?>">
+                            <a href="<?php echo e(route('admin.main-types.index')); ?>">
+                                <i class="fas fa-layer-group"></i>
+                                <p class="<?php echo e(request()->routeIs('admin.main-types.*') ? 'text-primary' : ''); ?>">Kategori (Main Type)</p>
                             </a>
                         </li>
                         <li class="nav-item <?php echo e(request()->routeIs('admin.records.*') && !request()->routeIs('admin.ng.*') ? 'active' : ''); ?>">

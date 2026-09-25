@@ -72,72 +72,90 @@
         </div>
         @endif
 
-        @forelse($records as $userId => $typeGroups)
-        @php
-            $memberName = $typeGroups->first()->first()->member->nama ?? 'Unknown';
-            $initial = strtoupper(substr($memberName, 0, 1));
-            $memberTotal = 0; $memberDone = 0;
-            foreach ($typeGroups as $type => $typeRecords) {
-                $memberTotal += $typeRecords->count();
-                $memberDone += $typeRecords->filter(fn($r) => $r->recordLists->every(fn($rl) => $rl->Time_Record !== null))->count();
-            }
-            $memberPct = $memberTotal > 0 ? round($memberDone / $memberTotal * 100) : 0;
-        @endphp
-        <div class="card border-0 shadow-sm mb-3">
-            <div class="card-header bg-white py-2 d-flex align-items-center gap-3">
-                <span class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold" style="width:36px;height:36px;background:#F36494;font-size:14px;">{{ $initial }}</span>
-                <div class="flex-grow-1">
-                    <strong class="d-block" style="font-size:15px;">{{ $memberName }}</strong>
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="progress progress-xs flex-grow-1" style="max-width:200px;">
-                            <div class="progress-bar {{ $memberPct == 100 ? 'bg-success' : 'bg-warning' }}" style="width:{{ $memberPct }}%"></div>
+        @forelse($records as $area => $areaGroups)
+        <div class="mb-4">
+            <h5 class="text-secondary border-bottom pb-2 mb-3"><i class="fas fa-map-marker-alt text-danger me-2"></i> {{ ucwords(str_replace('_', ' ', $area)) }}</h5>
+            @foreach($areaGroups as $userId => $typeGroups)
+            @php
+                $memberName = $typeGroups->first()->first()->member->nama ?? 'Unknown';
+                $initial = strtoupper(substr($memberName, 0, 1));
+                $memberTotal = 0; $memberDone = 0;
+                $memberDurationSeconds = 0;
+                foreach ($typeGroups as $type => $typeRecords) {
+                    $memberTotal += $typeRecords->count();
+                    $memberDone += $typeRecords->filter(fn($r) => $r->recordLists->every(fn($rl) => $rl->Time_Record !== null))->count();
+                    $memberDurationSeconds += $typeRecords->sum('computed_duration');
+                }
+                $memberPct = $memberTotal > 0 ? round($memberDone / $memberTotal * 100) : 0;
+                $memberDurationMinutes = round($memberDurationSeconds / 60);
+                $memberDurationStr = $memberDurationMinutes . ' Menit';
+            @endphp
+            <div class="card border-0 shadow-sm mb-3 ms-2">
+                <div class="card-header bg-white py-2 d-flex align-items-center gap-3">
+                    <span class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold" style="width:36px;height:36px;background:#F36494;font-size:14px;">{{ $initial }}</span>
+                    <div class="flex-grow-1">
+                        <strong class="d-block" style="font-size:15px;">{{ $memberName }}</strong>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress progress-xs flex-grow-1" style="max-width:200px;">
+                                <div class="progress-bar {{ $memberPct == 100 ? 'bg-success' : 'bg-warning' }}" style="width:{{ $memberPct }}%"></div>
+                            </div>
+                            <small class="text-muted">{{ $memberDone }}/{{ $memberTotal }} | <i class="far fa-clock"></i> {{ $memberDurationStr }}</small>
                         </div>
-                        <small class="text-muted">{{ $memberDone }}/{{ $memberTotal }}</small>
                     </div>
                 </div>
-            </div>
-            <div class="card-body p-2">
-                @foreach($typeGroups as $type => $typeRecords)
-                    @php
-                        $totalRecs = $typeRecords->count();
-                        $doneRecs = $typeRecords->filter(fn($r) => $r->recordLists->every(fn($rl) => $rl->Time_Record !== null))->count();
-                        $isComplete = $totalRecs > 0 && $totalRecs == $doneRecs;
-                        $pct = $totalRecs > 0 ? round($doneRecs / $totalRecs * 100) : 0;
-                        $collapseId = 'collapse-' . $userId . '-' . $loop->index;
-                    @endphp
-                    <div class="type-header d-flex align-items-center justify-content-between border-bottom pb-1 mb-1 ps-2" data-bs-toggle="collapse" data-bs-target="#{{ $collapseId }}" style="cursor:pointer;">
-                        <div class="d-flex align-items-center gap-2 flex-grow-1 me-3">
-                            <i class="fas fa-chevron-right fa-xs type-chevron"></i>
-                            <span class="fw-medium small" style="min-width:80px;">{{ $type }}</span>
-                            <div class="progress progress-xs flex-grow-1" style="max-width:150px;">
-                                <div class="progress-bar {{ $isComplete ? 'bg-success' : 'bg-warning' }}" style="width:{{ $pct }}%"></div>
+                <div class="card-body p-2">
+                    @foreach($typeGroups as $type => $typeRecords)
+                        @php
+                            $totalRecs = $typeRecords->count();
+                            $doneRecs = $typeRecords->filter(fn($r) => $r->recordLists->every(fn($rl) => $rl->Time_Record !== null))->count();
+                            $isComplete = $totalRecs > 0 && $totalRecs == $doneRecs;
+                            $pct = $totalRecs > 0 ? round($doneRecs / $totalRecs * 100) : 0;
+                            $collapseId = 'collapse-' . $area . '-' . $userId . '-' . $loop->index;
+                            
+                            $typeDurationSeconds = $typeRecords->sum('computed_duration');
+                            $typeDurationMinutes = round($typeDurationSeconds / 60);
+                            $typeDurationStr = $typeDurationMinutes . ' Menit';
+                        @endphp
+                        <div class="type-header d-flex align-items-center justify-content-between border-bottom pb-1 mb-1 ps-2" data-bs-toggle="collapse" data-bs-target="#{{ $collapseId }}" style="cursor:pointer;">
+                            <div class="d-flex align-items-center gap-2 flex-grow-1 me-3">
+                                <i class="fas fa-chevron-right fa-xs type-chevron"></i>
+                                <span class="fw-medium small" style="min-width:80px;">{{ $type }}</span>
+                                <div class="progress progress-xs flex-grow-1" style="max-width:150px;">
+                                    <div class="progress-bar {{ $isComplete ? 'bg-success' : 'bg-warning' }}" style="width:{{ $pct }}%"></div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                <span class="badge bg-light text-dark border"><i class="far fa-clock"></i> {{ $typeDurationStr }}</span>
+                                @if($isComplete)
+                                    <span class="badge bg-success">Full</span>
+                                @else
+                                    <span class="badge bg-warning text-dark">On Progress</span>
+                                @endif
+                                <span class="badge bg-secondary">{{ $doneRecs }}/{{ $totalRecs }}</span>
                             </div>
                         </div>
-                        <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                            @if($isComplete)
-                                <span class="badge bg-success">Full</span>
-                            @else
-                                <span class="badge bg-warning text-dark">On Progress</span>
-                            @endif
-                            <span class="badge bg-secondary">{{ $doneRecs }}/{{ $totalRecs }}</span>
+                        <div class="collapse" id="{{ $collapseId }}">
+                            @foreach($typeRecords as $record)
+                            @php
+                                $recDone = $record->recordLists->filter(fn($rl) => $rl->Time_Record !== null)->count();
+                                $recTotal = $record->recordLists->count();
+                                $recComplete = $recTotal > 0 && $recDone == $recTotal;
+                                
+                                $recDurationMinutes = round($record->computed_duration / 60);
+                                $recDurationStr = $recDurationMinutes . ' Menit';
+                            @endphp
+                            <div class="record-row d-flex align-items-center border-bottom py-1 ps-4 pe-2" data-id="{{ $record->Id_Record }}" style="cursor:pointer;">
+                                <span class="small flex-grow-1">{{ $record->Sequence_No_Record }}</span>
+                                <span class="small text-muted me-3"><i class="far fa-clock"></i> {{ $recDurationStr }}</span>
+                                <span class="small text-muted me-3">{{ $record->Production_Date_Record }}</span>
+                                <span class="badge {{ $recComplete ? 'bg-success' : 'bg-warning text-dark' }}">{{ $recDone }}/{{ $recTotal }}</span>
+                            </div>
+                            @endforeach
                         </div>
-                    </div>
-                    <div class="collapse" id="{{ $collapseId }}">
-                        @foreach($typeRecords as $record)
-                        @php
-                            $recDone = $record->recordLists->filter(fn($rl) => $rl->Time_Record !== null)->count();
-                            $recTotal = $record->recordLists->count();
-                            $recComplete = $recTotal > 0 && $recDone == $recTotal;
-                        @endphp
-                        <div class="record-row d-flex align-items-center border-bottom py-1 ps-4 pe-2" data-id="{{ $record->Id_Record }}" style="cursor:pointer;">
-                            <span class="small flex-grow-1">{{ $record->Sequence_No_Record }}</span>
-                            <span class="small text-muted me-3">{{ $record->Production_Date_Record }}</span>
-                            <span class="badge {{ $recComplete ? 'bg-success' : 'bg-warning text-dark' }}">{{ $recDone }}/{{ $recTotal }}</span>
-                        </div>
-                        @endforeach
-                    </div>
-                @endforeach
+                    @endforeach
+                </div>
             </div>
+            @endforeach
         </div>
         @empty
         <div class="card border-0 shadow-sm">

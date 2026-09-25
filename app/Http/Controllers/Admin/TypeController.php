@@ -13,11 +13,14 @@ class TypeController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $data = Type::withCount('marshallings')->with(['marshallings' => function ($q) {
+            $data = Type::with('mainType')->withCount('marshallings')->with(['marshallings' => function ($q) {
                 $q->select('Id_Type', 'Area')->distinct();
             }]);
             return datatables($data)
                 ->addIndexColumn()
+                ->addColumn('main_type', function ($row) {
+                    return $row->mainType ? $row->mainType->Main_Type : '-';
+                })
                 ->addColumn('location_areas', function ($row) {
                     $areas = $row->marshallings->pluck('Area')->unique()->filter()->values();
                     if ($areas->isEmpty()) {
@@ -47,7 +50,8 @@ class TypeController extends Controller
 
     public function create()
     {
-        return view('admin.types.create');
+        $mainTypes = \App\Models\MainType::all();
+        return view('admin.types.create', compact('mainTypes'));
     }
 
     public function store(Request $request)
@@ -64,7 +68,8 @@ class TypeController extends Controller
     public function edit($id)
     {
         $type = Type::findOrFail($id);
-        return view('admin.types.edit', compact('type'));
+        $mainTypes = \App\Models\MainType::all();
+        return view('admin.types.edit', compact('type', 'mainTypes'));
     }
 
     public function update(Request $request, $id)
