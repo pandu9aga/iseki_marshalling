@@ -469,7 +469,72 @@ class RecordController extends Controller
         }
 
         $today = now()->format('Y-m-d');
-        return view('admin.records.part-kurang', compact('marshallingMembers', 'reporters', 'today', 'membersByArea'));
+
+        // 1. Perolehan unit (record) yang selesai hari ini:
+        // Record hari ini yang seluruh recordLists-nya memiliki Time_Record != null
+        $todayDoneRecords = Record::with('recordLists')
+            ->whereDate('Time_Record', $today)
+            ->get()
+            ->filter(fn($r) => $r->recordLists->isNotEmpty() && $r->recordLists->every(fn($rl) => $rl->Time_Record !== null))
+            ->count();
+
+        // 2. Jumlah keseluruhan record list hari ini (semua item scan part pada record hari ini)
+        $todayRecordListsCount = Record_List::whereHas('record', function ($q) use ($today) {
+            $q->whereDate('Time_Record', $today);
+        })->count();
+
+        // 3. Jumlah part salah hari ini (dari tabel part_kurangs category = 'salah' pada hari ini)
+        $todayPartSalahCount = \App\Models\PartKurang::whereDate('comment_time', $today)
+            ->where('category', 'salah')
+            ->count();
+
+        return view('admin.records.part-kurang', compact(
+            'marshallingMembers',
+            'reporters',
+            'today',
+            'membersByArea',
+            'todayDoneRecords',
+            'todayRecordListsCount',
+            'todayPartSalahCount'
+        ));
+    }
+
+    public function partKurangStats(Request $request)
+    {
+        $date = $request->filter_date;
+
+        // 1. Perolehan unit (record) yang selesai pada tanggal filter (atau semua jika kosong)
+        $recordsQuery = Record::with('recordLists');
+        if (!empty($date)) {
+            $recordsQuery->whereDate('Time_Record', $date);
+        }
+        $doneRecords = $recordsQuery->get()
+            ->filter(fn($r) => $r->recordLists->isNotEmpty() && $r->recordLists->every(fn($rl) => $rl->Time_Record !== null))
+            ->count();
+
+        // 2. Jumlah keseluruhan record list pada tanggal filter
+        $recordListsQuery = Record_List::query();
+        if (!empty($date)) {
+            $recordListsQuery->whereHas('record', function ($q) use ($date) {
+                $q->whereDate('Time_Record', $date);
+            });
+        }
+        $recordListsCount = $recordListsQuery->count();
+
+        // 3. Jumlah part salah pada tanggal filter
+        $partSalahQuery = \App\Models\PartKurang::where('category', 'salah');
+        if (!empty($date)) {
+            $partSalahQuery->whereDate('comment_time', $date);
+        }
+        $partSalahCount = $partSalahQuery->count();
+
+        return response()->json([
+            'success'            => true,
+            'date'               => $date,
+            'done_records'       => number_format($doneRecords),
+            'record_lists_count' => number_format($recordListsCount),
+            'part_salah_count'   => number_format($partSalahCount),
+        ]);
     }
 
     public function exportPartKurang(Request $request)

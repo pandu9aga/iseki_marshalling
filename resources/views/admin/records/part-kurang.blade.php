@@ -176,8 +176,78 @@
 @section('content')
 <div class="container">
     <div class="page-inner">
-        <div class="page-header d-flex justify-content-between align-items-center">
-            <h4 class="page-title text-primary mb-0"><i class="fas fa-clipboard-list me-2"></i>Laporan Part Kurang</h4>
+        <div class="page-header d-flex flex-wrap justify-content-between align-items-center mb-3 g-2">
+            <div>
+                <h4 class="page-title text-primary mb-0"><i class="fas fa-clipboard-list me-2"></i>Laporan Part Kurang</h4>
+                <small class="text-muted">Statistik perolehan dan laporan part kurang berdasarkan tanggal terpilih</small>
+            </div>
+            <!-- Filter Tanggal Bagian Atas -->
+            <div class="d-flex align-items-center gap-2">
+                <span class="fw-bold small text-muted text-nowrap"><i class="fas fa-calendar-alt me-1 text-primary"></i>Filter Tanggal:</span>
+                <div class="input-group input-group-sm" style="width: auto;">
+                    <button type="button" class="btn btn-outline-primary" id="btnDateTopPrev" title="Mundur 1 Hari">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <input type="date" id="filter_date_top" class="form-control form-control-sm text-center fw-bold" value="{{ $today }}" style="max-width: 140px;">
+                    <button type="button" class="btn btn-outline-primary" id="btnDateTopNext" title="Maju 1 Hari">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnDateTopClear" title="Semua Tanggal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Statistik Perolehan -->
+        <div class="row g-3 mb-3">
+            <!-- 1. Perolehan Unit (Record) Selesai -->
+            <div class="col-12 col-md-4">
+                <div class="card shadow-sm border-0 mb-0 h-100" style="border-left: 5px solid #28a745 !important; border-radius: 10px;">
+                    <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                        <div>
+                            <small class="text-muted fw-bold text-uppercase d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Unit Selesai <span class="stat-date-label">Hari Ini</span></small>
+                            <h2 class="mb-0 fw-bold text-success mt-1" id="statTodayDoneRecords">{{ number_format($todayDoneRecords ?? 0) }}</h2>
+                            <small class="text-muted" style="font-size: 0.75rem;">Record Traktor Selesai</small>
+                        </div>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: rgba(40, 167, 69, 0.12); color: #28a745;">
+                            <i class="fas fa-car fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Jumlah Keseluruhan Record List -->
+            <div class="col-12 col-md-4">
+                <div class="card shadow-sm border-0 mb-0 h-100" style="border-left: 5px solid #0d6efd !important; border-radius: 10px;">
+                    <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                        <div>
+                            <small class="text-muted fw-bold text-uppercase d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Total Record List <span class="stat-date-label">Hari Ini</span></small>
+                            <h2 class="mb-0 fw-bold text-primary mt-1" id="statTodayRecordLists">{{ number_format($todayRecordListsCount ?? 0) }}</h2>
+                            <small class="text-muted" style="font-size: 0.75rem;">Total Item Part</small>
+                        </div>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: rgba(13, 110, 253, 0.12); color: #0d6efd;">
+                            <i class="fas fa-boxes fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Jumlah Part Salah -->
+            <div class="col-12 col-md-4">
+                <div class="card shadow-sm border-0 mb-0 h-100" style="border-left: 5px solid #6f42c1 !important; border-radius: 10px;">
+                    <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                        <div>
+                            <small class="text-muted fw-bold text-uppercase d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Part Salah <span class="stat-date-label">Hari Ini</span></small>
+                            <h2 class="mb-0 fw-bold mt-1" id="statTodayPartSalah" style="color: #6f42c1;">{{ number_format($todayPartSalahCount ?? 0) }}</h2>
+                            <small class="text-muted" style="font-size: 0.75rem;">Laporan Kategori Salah</small>
+                        </div>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: rgba(111, 66, 193, 0.12); color: #6f42c1;">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         @if(!empty($membersByArea) && count($membersByArea) > 0)
@@ -213,10 +283,9 @@
                                         </div>
                                     @endif
                                     <div class="overflow-hidden flex-grow-1">
-                                        <strong class="d-block text-truncate text-dark" style="font-size: 0.9rem;" title="{{ $m['nama'] }}">
+                                        <strong class="d-block text-truncate text-dark" style="font-size: 0.92rem;" title="{{ $m['nama'] }}">
                                             {{ $m['nama'] }}
                                         </strong>
-                                        <small class="text-muted"><i class="far fa-id-badge me-1"></i>{{ $m['nik'] }}</small>
                                     </div>
                                 </div>
                                 @endforeach
@@ -412,16 +481,73 @@
             ]
         });
 
-        $('#filter_date, #filter_status, #filter_category, #filter_member, #filter_reporter').on('change', function() {
+        // Fungsi Ajax untuk refresh angka di Card Statistik Perolehan sesuai tanggal terpilih
+        function fetchSummaryStats(selectedDate) {
+            var todayStr = '{{ $today }}';
+            var labelText = 'Hari Ini';
+            if (selectedDate) {
+                if (selectedDate === todayStr) {
+                    labelText = 'Hari Ini';
+                } else {
+                    var parts = selectedDate.split('-');
+                    if (parts.length === 3) {
+                        labelText = '(' + parts[2] + '/' + parts[1] + '/' + parts[0] + ')';
+                    } else {
+                        labelText = '(' + selectedDate + ')';
+                    }
+                }
+            } else {
+                labelText = '(Semua)';
+            }
+            $('.stat-date-label').text(labelText);
+
+            $.ajax({
+                url: "{{ route('admin.part-kurang.stats') }}",
+                type: 'GET',
+                data: { filter_date: selectedDate },
+                dataType: 'json',
+                success: function(res) {
+                    if (res && res.success) {
+                        $('#statTodayDoneRecords').text(res.done_records);
+                        $('#statTodayRecordLists').text(res.record_lists_count);
+                        $('#statTodayPartSalah').text(res.part_salah_count);
+                    }
+                },
+                error: function(err) {
+                    console.warn("Gagal memuat ringkasan statistik:", err);
+                }
+            });
+        }
+
+        // Sinkronisasi Tanggal: Saat input bawah berubah
+        $('#filter_date').on('change', function() {
+            var val = $(this).val();
+            if ($('#filter_date_top').val() !== val) {
+                $('#filter_date_top').val(val);
+            }
+            table.ajax.reload();
+            fetchSummaryStats(val);
+        });
+
+        // Sinkronisasi Tanggal: Saat input atas berubah
+        $('#filter_date_top').on('change', function() {
+            var val = $(this).val();
+            if ($('#filter_date').val() !== val) {
+                $('#filter_date').val(val);
+            }
+            table.ajax.reload();
+            fetchSummaryStats(val);
+        });
+
+        $('#filter_status, #filter_category, #filter_member, #filter_reporter').on('change', function() {
             table.ajax.reload();
         });
 
-        // Tombol Clear Tanggal (Tampilkan Semua)
+        // Tombol Filter Tanggal Bawah
         $('#btnDateClear').on('click', function() {
             $('#filter_date').val('').trigger('change');
         });
 
-        // Tombol Chevron Mundur 1 Hari
         $('#btnDatePrev').on('click', function() {
             var curr = $('#filter_date').val();
             if (!curr) curr = new Date().toISOString().split('T')[0];
@@ -431,7 +557,6 @@
             $('#filter_date').val(prevDate).trigger('change');
         });
 
-        // Tombol Chevron Maju 1 Hari
         $('#btnDateNext').on('click', function() {
             var curr = $('#filter_date').val();
             if (!curr) curr = new Date().toISOString().split('T')[0];
@@ -439,6 +564,29 @@
             d.setDate(d.getDate() + 1);
             var nextDate = d.toISOString().split('T')[0];
             $('#filter_date').val(nextDate).trigger('change');
+        });
+
+        // Tombol Filter Tanggal Atas (Tersambung otomatis)
+        $('#btnDateTopClear').on('click', function() {
+            $('#filter_date_top').val('').trigger('change');
+        });
+
+        $('#btnDateTopPrev').on('click', function() {
+            var curr = $('#filter_date_top').val();
+            if (!curr) curr = new Date().toISOString().split('T')[0];
+            var d = new Date(curr);
+            d.setDate(d.getDate() - 1);
+            var prevDate = d.toISOString().split('T')[0];
+            $('#filter_date_top').val(prevDate).trigger('change');
+        });
+
+        $('#btnDateTopNext').on('click', function() {
+            var curr = $('#filter_date_top').val();
+            if (!curr) curr = new Date().toISOString().split('T')[0];
+            var d = new Date(curr);
+            d.setDate(d.getDate() + 1);
+            var nextDate = d.toISOString().split('T')[0];
+            $('#filter_date_top').val(nextDate).trigger('change');
         });
 
         // Setup audio sequencer listeners
