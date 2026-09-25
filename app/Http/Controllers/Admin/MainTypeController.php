@@ -9,19 +9,16 @@ class MainTypeController extends Controller
 {
     public function index(Request $request)
     {
-        if ($request->ajax()) {
-            $data = \App\Models\MainType::withCount('types');
-            return datatables($data)
-                ->addIndexColumn()
-                ->addColumn('action', function ($row) {
-                    $btn = '<a href="' . route('admin.main-types.edit', $row->Id_Main_Type) . '" class="btn btn-warning btn-sm text-white"><i class="fas fa-edit"></i></a> ';
-                    $btn .= '<button type="button" class="btn btn-danger btn-sm delete-btn" data-id="' . $row->Id_Main_Type . '"><i class="fas fa-trash"></i></button>';
-                    return $btn;
-                })
-                ->rawColumns(['action'])
-                ->make(true);
-        }
-        return view('admin.main_types.index');
+        // Tampilkan tiap Sub Type (Type) sebagai baris sendiri, dengan Main Type
+        // di-rowspan menyesuaikan jumlah Sub Type-nya. Tidak lagi pakai DataTables
+        // server-side karena rowspan butuh seluruh grup dimuat sekaligus.
+        $mainTypes = \App\Models\MainType::with(['types' => function ($q) {
+            $q->orderBy('Type');
+        }])
+            ->orderBy('Main_Type')
+            ->get();
+
+        return view('admin.main_types.index', compact('mainTypes'));
     }
 
     public function create()
@@ -91,7 +88,7 @@ class MainTypeController extends Controller
 
                 // Lewati baris kosong
                 if (empty(array_filter($row))) continue;
-                
+
                 $subTypeName = trim($row[0] ?? '');
                 $mainTypeName = trim($row[1] ?? '');
 
@@ -99,15 +96,15 @@ class MainTypeController extends Controller
 
                 // Create or find Main Type
                 $mainType = \App\Models\MainType::firstOrCreate(['Main_Type' => $mainTypeName]);
-                
+
                 // Create or find Sub Type
                 $type = \App\Models\Type::firstOrNew(['Type' => $subTypeName]);
-                
+
                 if (!$type->exists) {
                     $maxId = \App\Models\Type::max('Id_Type') ?? 0;
                     $type->Id_Type = $maxId + 1;
                 }
-                
+
                 $type->Id_Main_Type = $mainType->Id_Main_Type;
                 $type->save();
 

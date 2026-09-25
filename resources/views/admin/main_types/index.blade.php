@@ -11,24 +11,63 @@
             </div>
         </div>
         <div class="card">
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table id="mainTypesTable" class="table table-bordered table-striped">
-                        <thead>
+                    <table class="table table-bordered table-striped mb-0 align-middle">
+                        <thead class="table-light">
                             <tr>
-                                <th>No</th>
+                                <th style="width:50px;">No</th>
                                 <th>Main Type</th>
-                                <th>Jumlah Sub-Type</th>
-                                <th>Action</th>
+                                <th>Sub Type</th>
+                                <th style="width:140px;">Action</th>
                             </tr>
                         </thead>
+                        <tbody>
+                            @forelse($mainTypes as $index => $mainType)
+                            @php
+                            $subTypes = $mainType->types;
+                            $rowspan = max($subTypes->count(), 1);
+                            @endphp
+                            @forelse($subTypes as $subIndex => $subType)
+                            <tr>
+                                @if($subIndex === 0)
+                                <td rowspan="{{ $rowspan }}">{{ $index + 1 }}</td>
+                                <td rowspan="{{ $rowspan }}" class="fw-bold">{{ $mainType->Main_Type }}</td>
+                                @endif
+                                <td><i class="fas fa-tractor me-2 text-muted"></i>{{ $subType->Type }}</td>
+                                @if($subIndex === 0)
+                                <td rowspan="{{ $rowspan }}">
+                                    <a href="{{ route('admin.main-types.edit', $mainType->Id_Main_Type) }}" class="btn btn-warning btn-sm text-white"><i class="fas fa-edit"></i></a>
+                                    <button type="button" class="btn btn-danger btn-sm delete-btn" data-id="{{ $mainType->Id_Main_Type }}"><i class="fas fa-trash"></i></button>
+                                </td>
+                                @endif
+                            </tr>
+                            @empty
+                            <tr>
+                                <td>{{ $index + 1 }}</td>
+                                <td class="fw-bold">{{ $mainType->Main_Type }}</td>
+                                <td class="text-muted fst-italic">Belum ada sub type</td>
+                                <td>
+                                    <a href="{{ route('admin.main-types.edit', $mainType->Id_Main_Type) }}" class="btn btn-warning btn-sm text-white"><i class="fas fa-edit"></i></a>
+                                    <button type="button" class="btn btn-danger btn-sm delete-btn" data-id="{{ $mainType->Id_Main_Type }}"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            @endforelse
+                            @empty
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-5">
+                                    <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                                    Belum ada kategori (Main Type).
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
                     </table>
                 </div>
             </div>
         </div>
     </div>
 </div>
-@endsection
 
 <div class="modal fade" id="importModal" tabindex="-1">
     <div class="modal-dialog">
@@ -59,37 +98,24 @@
         </div>
     </div>
 </div>
+@endsection
 
 @section('script')
 <script>
-    $(document).ready(function() {
-        var table = $('#mainTypesTable').DataTable({
-            pageLength: 50,
-            lengthMenu: [10, 25, 50, 100],
-            processing: true,
-            serverSide: true,
-            ajax: "{{ url('admin/main-types') }}",
-            columns: [
-                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-                { data: 'Main_Type', name: 'Main_Type' },
-                { data: 'types_count', name: 'types_count', searchable: false },
-                { data: 'action', name: 'action', orderable: false, searchable: false }
-            ]
-        });
-
-        $(document).on('click', '.delete-btn', function() {
-            var id = $(this).data('id');
-            if (confirm('Are you sure?')) {
-                $.ajax({
-                    url: "{{ url('admin/main-types') }}/" + id,
-                    type: 'DELETE',
-                    data: { _token: '{{ csrf_token() }}' },
-                    success: function(res) {
-                        table.ajax.reload();
-                    }
-                });
-            }
-        });
+    $(document).on('click', '.delete-btn', function() {
+        var id = $(this).data('id');
+        if (confirm('Yakin hapus kategori ini? Sub Type yang terhubung akan kehilangan kategorinya (tidak ikut terhapus).')) {
+            $.ajax({
+                url: "{{ url('admin/main-types') }}/" + id,
+                type: 'DELETE',
+                data: {
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(res) {
+                    location.reload();
+                }
+            });
+        }
     });
 </script>
 @endsection
