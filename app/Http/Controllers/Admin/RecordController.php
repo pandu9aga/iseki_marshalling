@@ -447,6 +447,9 @@ class RecordController extends Controller
             ->get(['id', 'nik', 'nama', 'photo_employee'])
             ->keyBy('nik');
 
+        $today = now()->format('Y-m-d');
+        $memberStats = $this->calculateMemberAreaStats($uniqueNiks, $employeesByNik, $today);
+
         $membersByArea = [];
         foreach ($memberAreas as $ma) {
             $emp = $employeesByNik->get($ma->nik);
@@ -459,16 +462,18 @@ class RecordController extends Controller
 
             // Cegah duplikasi member dalam area yang sama
             if (!isset($membersByArea[$areaKey][$emp->nik])) {
+                $stat = $memberStats[$emp->nik] ?? ['unit_selesai' => 0, 'part_selesai' => 0, 'part_kurang' => 0];
                 $membersByArea[$areaKey][$emp->nik] = [
-                    'id'    => $emp->id,
-                    'nik'   => $emp->nik,
-                    'nama'  => $emp->nama,
-                    'photo' => $emp->photo_employee ? $photoBase . '/' . $emp->photo_employee : null,
+                    'id'           => $emp->id,
+                    'nik'          => $emp->nik,
+                    'nama'         => $emp->nama,
+                    'photo'        => $emp->photo_employee ? $photoBase . '/' . $emp->photo_employee : null,
+                    'unit_selesai' => $stat['unit_selesai'],
+                    'part_selesai' => $stat['part_selesai'],
+                    'part_kurang'  => $stat['part_kurang'],
                 ];
             }
         }
-
-        $today = now()->format('Y-m-d');
 
         // 1. Perolehan unit (record) yang selesai hari ini:
         // Record hari ini yang seluruh recordLists-nya memiliki Time_Record != null
@@ -478,10 +483,10 @@ class RecordController extends Controller
             ->filter(fn($r) => $r->recordLists->isNotEmpty() && $r->recordLists->every(fn($rl) => $rl->Time_Record !== null))
             ->count();
 
-        // 2. Jumlah keseluruhan record list hari ini (semua item scan part pada record hari ini)
-        $todayRecordListsCount = Record_List::whereHas('record', function ($q) use ($today) {
-            $q->whereDate('Time_Record', $today);
-        })->count();
+        // 2. Jumlah keseluruhan record list (part yang selesai discan) hari ini
+        $todayRecordListsCount = Record_List::whereNotNull('Time_Record')
+            ->whereDate('Time_Record', $today)
+            ->count();
 
         // 3. Jumlah part salah hari ini (dari tabel part_kurangs category = 'salah' pada hari ini)
         $todayPartSalahCount = \App\Models\PartKurang::whereDate('comment_time', $today)
@@ -499,6 +504,91 @@ class RecordController extends Controller
         ));
     }
 
+    private function calculateMemberAreaStats($uniqueNiks, $employeesByNik, ?string $date = null): array
+    {
+        $stats = [];
+        $employeeIds = [];
+        $nikByEmpId = [];
+
+        foreach ($uniqueNiks as $nik) {
+            $stats[$nik] = [
+                'unit_selesai' => 0,
+                'part_selesai' => 0,
+                'part_kurang'  => 0,
+            ];
+            $emp = $employeesByNik->get($nik);
+            if ($emp) {
+                $employeeIds[] = $emp->id;
+                $nikByEmpId[$emp->id] = $nik;
+            }
+        }
+
+        if (empty($employeeIds)) {
+            return $stats;
+        }
+
+        // 1. Unit selesai per member (Record yang semua recordLists-nya memiliki Time_Record != null)
+        $recordsQuery = Record::with('recordLists')
+            ->whereIn('Id_User', $employeeIds);
+        if (!empty($date)) {
+            $recordsQuery->whereDate('Time_Record', $date);
+        }
+        $records = $recordsQuery->get();
+
+        foreach ($records as $r) {
+            if ($r->recordLists->isNotEmpty() && $r->recordLists->every(fn($rl) => $rl->Time_Record !== null)) {
+                $nik = $nikByEmpId[$r->Id_User] ?? null;
+                if ($nik && isset($stats[$nik])) {
+                    $stats[$nik]['unit_selesai']++;
+                }
+            }
+        }
+
+        // 2. Part selesai per member: jumlah item recordLists yang discan (Time_Record != null)
+        $partsQuery = Record_List::whereNotNull('Time_Record')
+            ->whereHas('record', function ($q) use ($employeeIds, $date) {
+                $q->whereIn('Id_User', $employeeIds);
+                if (!empty($date)) {
+                    $q->whereDate('Time_Record', $date);
+                }
+            })
+            ->with('record:Id_Record,Id_User');
+        $partLists = $partsQuery->get(['Id_Record_List', 'Id_Record']);
+
+        foreach ($partLists as $pl) {
+            if ($pl->record) {
+                $nik = $nikByEmpId[$pl->record->Id_User] ?? null;
+                if ($nik && isset($stats[$nik])) {
+                    $stats[$nik]['part_selesai']++;
+                }
+            }
+        }
+
+        // 3. Part kurang per member: dari tabel part_kurangs
+        $pkQuery = \App\Models\PartKurang::where(function ($q) use ($employeeIds, $uniqueNiks) {
+            $q->whereIn('id_user', $employeeIds)
+              ->orWhereIn('member_nik', $uniqueNiks);
+        });
+        if (!empty($date)) {
+            $pkQuery->whereDate('comment_time', $date);
+        }
+        $partKurangItems = $pkQuery->get(['id_user', 'member_nik']);
+
+        foreach ($partKurangItems as $pk) {
+            $nik = null;
+            if ($pk->member_nik && isset($stats[$pk->member_nik])) {
+                $nik = $pk->member_nik;
+            } elseif ($pk->id_user && isset($nikByEmpId[$pk->id_user])) {
+                $nik = $nikByEmpId[$pk->id_user];
+            }
+            if ($nik && isset($stats[$nik])) {
+                $stats[$nik]['part_kurang']++;
+            }
+        }
+
+        return $stats;
+    }
+
     public function partKurangStats(Request $request)
     {
         $date = $request->filter_date;
@@ -512,12 +602,10 @@ class RecordController extends Controller
             ->filter(fn($r) => $r->recordLists->isNotEmpty() && $r->recordLists->every(fn($rl) => $rl->Time_Record !== null))
             ->count();
 
-        // 2. Jumlah keseluruhan record list pada tanggal filter
-        $recordListsQuery = Record_List::query();
+        // 2. Jumlah keseluruhan record list (part yang selesai discan) pada tanggal filter
+        $recordListsQuery = Record_List::whereNotNull('Time_Record');
         if (!empty($date)) {
-            $recordListsQuery->whereHas('record', function ($q) use ($date) {
-                $q->whereDate('Time_Record', $date);
-            });
+            $recordListsQuery->whereDate('Time_Record', $date);
         }
         $recordListsCount = $recordListsQuery->count();
 
@@ -528,12 +616,23 @@ class RecordController extends Controller
         }
         $partSalahCount = $partSalahQuery->count();
 
+        // 4. Hitung statistik per member
+        $memberAreas = \App\Models\MemberArea::orderBy('area')->orderBy('nik')->get();
+        $uniqueNiks = $memberAreas->pluck('nik')->unique();
+        $employeesByNik = DB::connection('rifa')->table('employees')
+            ->whereIn('nik', $uniqueNiks)
+            ->get(['id', 'nik', 'nama', 'photo_employee'])
+            ->keyBy('nik');
+
+        $memberStats = $this->calculateMemberAreaStats($uniqueNiks, $employeesByNik, $date);
+
         return response()->json([
             'success'            => true,
             'date'               => $date,
             'done_records'       => number_format($doneRecords),
             'record_lists_count' => number_format($recordListsCount),
             'part_salah_count'   => number_format($partSalahCount),
+            'member_stats'       => $memberStats,
         ]);
     }
 

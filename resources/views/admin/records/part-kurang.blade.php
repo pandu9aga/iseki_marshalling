@@ -170,6 +170,31 @@
         display: inline-block;
         border: 1px solid #f8bbd0;
     }
+    .member-stat-badge {
+        font-size: 0.72rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-weight: 600;
+        line-height: 1.2;
+    }
+    .member-stat-badge.badge-unit {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+        border: 1px solid #c8e6c9;
+    }
+    .member-stat-badge.badge-part {
+        background-color: #e3f2fd;
+        color: #1565c0;
+        border: 1px solid #bbdefb;
+    }
+    .member-stat-badge.badge-kurang {
+        background-color: #fff3e0;
+        color: #e65100;
+        border: 1px solid #ffe0b2;
+    }
 </style>
 @endsection
 
@@ -252,40 +277,72 @@
 
         @if(!empty($membersByArea) && count($membersByArea) > 0)
         <!-- Card Profil Member Marshalling Berdasarkan Area -->
-        <div class="card mb-3 shadow-sm border-0">
+        <div class="card mb-3 shadow-sm border-0" id="sectionMemberArea">
+            @php
+                $initialActiveAreaCount = 0;
+                foreach ($membersByArea as $areaKey => $membersList) {
+                    $hasActive = collect($membersList)->contains(function($item) {
+                        return ($item['unit_selesai'] ?? 0) > 0 || ($item['part_selesai'] ?? 0) > 0 || ($item['part_kurang'] ?? 0) > 0;
+                    });
+                    if ($hasActive) $initialActiveAreaCount++;
+                }
+            @endphp
             <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
                 <span class="fw-bold text-dark" style="font-size: 0.95rem;">
                     <i class="fas fa-users text-primary me-2"></i>Profil Member Marshalling Berdasarkan Area
                 </span>
-                <span class="badge bg-light text-muted border">{{ count($membersByArea) }} Area Terdaftar</span>
+                <span class="badge bg-light text-muted border" id="badgeActiveAreaCount">{{ $initialActiveAreaCount }} Area Aktif</span>
             </div>
             <div class="card-body p-3">
-                <div class="row g-3">
+                <div class="alert alert-light border text-center py-3 mb-0 text-muted {{ $initialActiveAreaCount > 0 ? 'd-none' : '' }}" id="emptyMemberAreaAlert">
+                    <i class="fas fa-info-circle me-1 text-primary"></i>Tidak ada aktivitas member (Unit, Part, atau Kurang) pada tanggal terpilih.
+                </div>
+                <div class="row g-3" id="memberAreaListRow">
                     @foreach($membersByArea as $areaKey => $membersList)
-                    <div class="col-12 col-md-6 col-lg-4">
+                    @php
+                        $activeCountInThisArea = collect($membersList)->filter(function($item) {
+                            return ($item['unit_selesai'] ?? 0) > 0 || ($item['part_selesai'] ?? 0) > 0 || ($item['part_kurang'] ?? 0) > 0;
+                        })->count();
+                        $hasActiveInitialMember = $activeCountInThisArea > 0;
+                    @endphp
+                    <div class="col-12 col-md-6 col-lg-4 area-card-col {{ !$hasActiveInitialMember ? 'd-none' : '' }}" data-area="{{ $areaKey }}">
                         <div class="member-area-card p-3 h-100">
                             <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-2">
                                 <span class="area-badge-title">
                                     <i class="fas fa-map-marker-alt me-1"></i>{{ ucwords(str_replace('_', ' ', $areaKey)) }}
                                 </span>
-                                <span class="badge bg-secondary rounded-pill" style="font-size: 0.75rem;">
-                                    {{ count($membersList) }} Member
+                                <span class="badge bg-secondary rounded-pill area-member-badge" style="font-size: 0.75rem;">
+                                    <span class="area-active-count">{{ $activeCountInThisArea }}</span> Member
                                 </span>
                             </div>
-                            <div class="d-flex flex-column gap-2">
+                            <div class="d-flex flex-column gap-2 member-list-wrapper">
                                 @foreach($membersList as $m)
-                                <div class="d-flex align-items-center gap-2 p-1 rounded hover-bg">
+                                @php
+                                    $isZero = (($m['unit_selesai'] ?? 0) == 0 && ($m['part_selesai'] ?? 0) == 0 && ($m['part_kurang'] ?? 0) == 0);
+                                @endphp
+                                <div class="d-flex align-items-start gap-2 p-2 rounded hover-bg border member-item-row {{ $isZero ? 'd-none' : '' }}" data-nik="{{ $m['nik'] }}" style="background-color: #fafbfc;">
                                     @if(!empty($m['photo']))
-                                        <img src="{{ $m['photo'] }}" alt="{{ $m['nama'] }}" class="member-profile-thumb" onerror="this.onerror=null; this.src=''; this.className='member-profile-thumb-placeholder'; this.innerHTML='{{ strtoupper(substr($m['nama'], 0, 1)) }}';">
+                                        <img src="{{ $m['photo'] }}" alt="{{ $m['nama'] }}" class="member-profile-thumb mt-1" onerror="this.onerror=null; this.src=''; this.className='member-profile-thumb-placeholder mt-1'; this.innerHTML='{{ strtoupper(substr($m['nama'], 0, 1)) }}';">
                                     @else
-                                        <div class="member-profile-thumb-placeholder">
+                                        <div class="member-profile-thumb-placeholder mt-1">
                                             {{ strtoupper(substr($m['nama'], 0, 1)) }}
                                         </div>
                                     @endif
                                     <div class="overflow-hidden flex-grow-1">
-                                        <strong class="d-block text-truncate text-dark" style="font-size: 0.92rem;" title="{{ $m['nama'] }}">
+                                        <strong class="d-block text-truncate text-dark mb-1" style="font-size: 0.9rem;" title="{{ $m['nama'] }}">
                                             {{ $m['nama'] }}
                                         </strong>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            <span class="member-stat-badge badge-unit" title="Unit Selesai">
+                                                <i class="fas fa-check-circle"></i> Unit: <strong class="member-unit-val" data-nik="{{ $m['nik'] }}">{{ $m['unit_selesai'] ?? 0 }}</strong>
+                                            </span>
+                                            <span class="member-stat-badge badge-part" title="Part Selesai (Scanned)">
+                                                <i class="fas fa-boxes"></i> Part: <strong class="member-part-val" data-nik="{{ $m['nik'] }}">{{ $m['part_selesai'] ?? 0 }}</strong>
+                                            </span>
+                                            <span class="member-stat-badge badge-kurang" title="Part Kurang">
+                                                <i class="fas fa-exclamation-circle"></i> Kurang: <strong class="member-kurang-val" data-nik="{{ $m['nik'] }}">{{ $m['part_kurang'] ?? 0 }}</strong>
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                                 @endforeach
@@ -511,6 +568,53 @@
                         $('#statTodayDoneRecords').text(res.done_records);
                         $('#statTodayRecordLists').text(res.record_lists_count);
                         $('#statTodayPartSalah').text(res.part_salah_count);
+
+                        if (res.member_stats) {
+                            var visibleAreaCount = 0;
+                            var totalVisibleMembers = 0;
+
+                            // Update nilai tiap member dan atur visibilitas
+                            $('.member-item-row').each(function() {
+                                var nik = $(this).data('nik');
+                                var s = res.member_stats[nik];
+                                var unitVal = (s && s.unit_selesai !== undefined) ? parseInt(s.unit_selesai) : 0;
+                                var partVal = (s && s.part_selesai !== undefined) ? parseInt(s.part_selesai) : 0;
+                                var kurangVal = (s && s.part_kurang !== undefined) ? parseInt(s.part_kurang) : 0;
+
+                                $(this).find('.member-unit-val').text(unitVal);
+                                $(this).find('.member-part-val').text(partVal);
+                                $(this).find('.member-kurang-val').text(kurangVal);
+
+                                // Sembunyikan jika ketiga datanya bernilai 0
+                                if (unitVal === 0 && partVal === 0 && kurangVal === 0) {
+                                    $(this).addClass('d-none');
+                                } else {
+                                    $(this).removeClass('d-none');
+                                    totalVisibleMembers++;
+                                }
+                            });
+
+                            // Update tiap kolom card area: sembunyikan jika tidak ada member aktif di dalamnya
+                            $('.area-card-col').each(function() {
+                                var activeInArea = $(this).find('.member-item-row:not(.d-none)').length;
+                                $(this).find('.area-active-count').text(activeInArea);
+                                if (activeInArea === 0) {
+                                    $(this).addClass('d-none');
+                                } else {
+                                    $(this).removeClass('d-none');
+                                    visibleAreaCount++;
+                                }
+                            });
+
+                            // Update badge header dan pesan kosong
+                            if (visibleAreaCount === 0) {
+                                $('#emptyMemberAreaAlert').removeClass('d-none');
+                                $('#badgeActiveAreaCount').text('0 Area Aktif');
+                            } else {
+                                $('#emptyMemberAreaAlert').addClass('d-none');
+                                $('#badgeActiveAreaCount').text(visibleAreaCount + ' Area Aktif');
+                            }
+                        }
                     }
                 },
                 error: function(err) {
