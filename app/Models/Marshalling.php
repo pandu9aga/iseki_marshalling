@@ -34,4 +34,9 @@ class Marshalling extends Model
     {
         return $this->hasMany(Record_List::class, 'Id_Marshalling', 'Id_Marshalling');
     }
+
+    public function fotoPart()
+    {
+        return $this->hasOne(FotoPart::class, 'Id_Marshalling', 'Id_Marshalling');
+    }
 }

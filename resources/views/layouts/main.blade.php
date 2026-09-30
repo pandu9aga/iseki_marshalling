@@ -279,6 +279,12 @@
                                 <p class="{{ request()->routeIs('admin.part-kurang.*') ? 'text-primary' : '' }}">Part Kurang</p>
                             </a>
                         </li>
+                        <li class="nav-item {{ request()->routeIs('admin.foto-parts.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.foto-parts.index') }}">
+                                <i class="fas fa-camera"></i>
+                                <p class="{{ request()->routeIs('admin.foto-parts.*') ? 'text-primary' : '' }}">Photo Part</p>
+                            </a>
+                        </li>
                         <li class="nav-item {{ request()->routeIs('admin.punishments.*') ? 'active' : '' }}">
                             <a href="{{ route('admin.punishments.index') }}">
                                 <i class="fas fa-gavel"></i>

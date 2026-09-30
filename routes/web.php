@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\MarshallingController;
 use App\Http\Controllers\Admin\RecordController as AdminRecordController;
 use App\Http\Controllers\Admin\PunishmentController;
 use App\Http\Controllers\Admin\MemberAreaController;
+use App\Http\Controllers\Admin\MemberPerakitanController;
 use App\Http\Controllers\Member\RecordController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\SummaryController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\Perakitan\KanbanController as PerakitanKanbanController
 use App\Http\Controllers\Perakitan\ProsedurController as PerakitanProsedurController;
 use App\Http\Controllers\Perakitan\CommentController as PerakitanCommentController;
 use App\Http\Controllers\PublicPartKurangController;
+use App\Http\Controllers\Admin\FotoPartController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -33,6 +35,8 @@ Route::prefix('part-kurang')->name('public.part-kurang.')->group(function () {
     Route::get('/', [PublicPartKurangController::class, 'index'])->name('index');
     Route::post('/check-member', [PublicPartKurangController::class, 'checkMember'])->name('check-member');
     Route::get('/search-kanban', [PublicPartKurangController::class, 'searchKanban'])->name('search-kanban');
+    Route::get('/record-boxes', [PublicPartKurangController::class, 'recordBoxes'])->name('record-boxes');
+    Route::get('/record-items', [PublicPartKurangController::class, 'recordItems'])->name('record-items');
     Route::post('/{id}/store', [PublicPartKurangController::class, 'store'])->name('store');
     Route::get('/member-reports', [PublicPartKurangController::class, 'memberReports'])->name('member-reports');
     Route::post('/{id}/receive', [PublicPartKurangController::class, 'markReceived'])->name('receive');
@@ -51,6 +55,10 @@ Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function
     Route::resource('types', TypeController::class);
     Route::post('main-types/import', [MainTypeController::class, 'import'])->name('main-types.import');
     Route::resource('main-types', MainTypeController::class);
+    Route::get('foto-parts', [FotoPartController::class, 'index'])->name('foto-parts.index');
+    Route::get('foto-parts/{type}/{area}/boxes', [FotoPartController::class, 'boxes'])->name('foto-parts.boxes');
+    Route::get('foto-parts/{type}/{area}/boxes/{box}', [FotoPartController::class, 'parts'])->name('foto-parts.parts');
+    Route::post('foto-parts/part/{marshalling}/upload', [FotoPartController::class, 'uploadPhoto'])->name('foto-parts.upload');
     Route::get('marshallings/export', [MarshallingController::class, 'export'])->name('marshallings.export');
     Route::post('marshallings/import', [MarshallingController::class, 'import'])->name('marshallings.import');
     Route::resource('marshallings', MarshallingController::class);
@@ -76,6 +84,12 @@ Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function
     Route::post('member-areas', [MemberAreaController::class, 'store'])->name('member-areas.store');
     Route::post('member-areas/{id}/upload-audio', [MemberAreaController::class, 'uploadAudio'])->name('member-areas.upload-audio');
     Route::delete('member-areas/{memberArea}', [MemberAreaController::class, 'destroy'])->name('member-areas.destroy');
+
+    Route::get('member-perakitans', [MemberPerakitanController::class, 'index'])->name('member-perakitans.index');
+    Route::get('member-perakitans/search', [MemberPerakitanController::class, 'search'])->name('member-perakitans.search');
+    Route::post('member-perakitans', [MemberPerakitanController::class, 'store'])->name('member-perakitans.store');
+    Route::put('member-perakitans/{memberPerakitan}', [MemberPerakitanController::class, 'update'])->name('member-perakitans.update');
+    Route::delete('member-perakitans/{memberPerakitan}', [MemberPerakitanController::class, 'destroy'])->name('member-perakitans.destroy');
 });
 
 Route::middleware('auth:member')->prefix('member')->name('member.')->group(function () {
