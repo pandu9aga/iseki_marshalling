@@ -297,6 +297,12 @@
                                 <p class="{{ request()->routeIs('admin.member-areas.*') ? 'text-primary' : '' }}">Member Area</p>
                             </a>
                         </li>
+                        <li class="nav-item {{ request()->routeIs('admin.map-areas.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.map-areas.index') }}">
+                                <i class="fas fa-map"></i>
+                                <p class="{{ request()->routeIs('admin.map-areas.*') ? 'text-primary' : '' }}">Map Area</p>
+                            </a>
+                        </li>
                         @endif
 
                         @if(Auth::guard('member')->check())

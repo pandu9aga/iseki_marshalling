@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\MarshallingController;
 use App\Http\Controllers\Admin\RecordController as AdminRecordController;
 use App\Http\Controllers\Admin\PunishmentController;
 use App\Http\Controllers\Admin\MemberAreaController;
+use App\Http\Controllers\Admin\MapAreaController;
 use App\Http\Controllers\Admin\MemberPerakitanController;
 use App\Http\Controllers\Member\RecordController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -81,6 +82,9 @@ Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function
     Route::delete('punishments/{punishment}', [PunishmentController::class, 'destroy'])->name('punishments.destroy');
     Route::get('member-areas', [MemberAreaController::class, 'index'])->name('member-areas.index');
     Route::get('member-areas/search', [MemberAreaController::class, 'search'])->name('member-areas.search');
+    
+    Route::post('map-areas/import', [MapAreaController::class, 'import'])->name('map-areas.import');
+    Route::resource('map-areas', MapAreaController::class);
     Route::post('member-areas', [MemberAreaController::class, 'store'])->name('member-areas.store');
     Route::post('member-areas/{id}/upload-audio', [MemberAreaController::class, 'uploadAudio'])->name('member-areas.upload-audio');
     Route::delete('member-areas/{memberArea}', [MemberAreaController::class, 'destroy'])->name('member-areas.destroy');
