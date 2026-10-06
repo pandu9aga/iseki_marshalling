@@ -21,6 +21,7 @@ class MarshallingController extends Controller
             if ($request->filled('type_id')) {
                 $data->where('Id_Type', $request->type_id);
             }
+            $data->where('Is_Active', 1);
             return datatables($data)
                 ->addIndexColumn()
                 ->addColumn('type_name', function ($row) {
@@ -138,7 +139,7 @@ class MarshallingController extends Controller
         if ($request->filled('area')) {
             $query->where('Area', $request->area);
         }
-        $marshallings = $query->orderBy('Area')->orderBy('Sequence_No')->get();
+        $marshallings = $query->where('Is_Active', 1)->orderBy('Area')->orderBy('Sequence_No')->get();
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -181,95 +182,144 @@ class MarshallingController extends Controller
         try {
             $file = $request->file('file');
             $ext = strtolower($file->getClientOriginalExtension());
-
-            if ($ext === 'xls') {
-                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
-            } else {
-                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
-            }
-
+            $reader = $ext === 'xls' ? new \PhpOffice\PhpSpreadsheet\Reader\Xls() : new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
             $spreadsheet = $reader->load($file->getPathname());
-            $sheet = $spreadsheet->getActiveSheet();
-            $rows = $sheet->toArray(null, true, true, false);
-
-            $validModes = ['manual', 'ai'];
-            $validAreas = ['sub_assy', 'sub_engine', 'sub_engine_a', 'sub_engine_b', 'transmisi', 'transmisi_a', 'transmisi_b', 'transmisi_c', 'main_line', 'mowcol', 'front_axle'];
+            
             $imported = 0;
             $skipped = 0;
-            $totalRows = count($rows) - 1;
-            $importedSlots = [];
-            foreach ($rows as $i => $row) {
-                if ($i === 0) {
-                    continue;
+            $newActiveKeys = []; // To track which area & types are processed immediately
+            
+            foreach ($spreadsheet->getAllSheets() as $sheet) {
+                $sheetTitle = strtolower(trim($sheet->getTitle()));
+                $baseArea = ($sheetTitle === 'mower' || $sheetTitle === 'collector') ? 'mowcol' : $sheetTitle;
+                
+                $rows = $sheet->toArray(null, true, true, false);
+                if (count($rows) < 9) continue;
+                
+                // Parse headers at row 8 (index 7)
+                $headerRow = $rows[7];
+                $typeMap = [];
+                // Col R is index 17
+                for ($c = 17; $c < count($headerRow); $c++) {
+                    $typeName = trim($headerRow[$c] ?? '');
+                    if ($typeName !== '') {
+                        $type = Type::firstOrCreate(['Type' => $typeName]);
+                        $typeMap[$c] = $type->Id_Type;
+                    }
                 }
-
-                $sequenceNo = is_numeric(trim($row[0] ?? '')) ? (int) trim($row[0] ?? '') : trim($row[0] ?? '');
-                $typeTractor = trim($row[1] ?? '');
-                if ($sequenceNo === '' || $typeTractor === '') {
-                    $skipped++;
-                    continue;
+                
+                // Process data rows starting at row 9 (index 8)
+                for ($r = 8; $r < count($rows); $r++) {
+                    $row = $rows[$r];
+                    
+                    $codePart = trim($row[2] ?? ''); // C
+                    $namePart = trim($row[3] ?? ''); // D
+                    $codeRack = trim($row[10] ?? ''); // K
+                    $locationRack = trim($row[11] ?? ''); // L
+                    $skipMark = trim($row[12] ?? ''); // M
+                    $subArea = trim($row[13] ?? ''); // N
+                    $noInstruction = trim($row[14] ?? ''); // O
+                    $box = trim($row[15] ?? ''); // P
+                    $difference = trim($row[16] ?? ''); // Q
+                    
+                    if ($skipMark !== '' || $codePart === '' || $locationRack === '') {
+                        $skipped++;
+                        continue;
+                    }
+                    
+                    $area = $baseArea;
+                    if ($subArea !== '') {
+                        $area .= '_' . strtolower($subArea);
+                    }
+                    
+                    $mapArea = \App\Models\MapArea::where('Area', $area)->where('Location_Rack', $locationRack)->first();
+                    $sequenceNo = $mapArea ? $mapArea->Sequence_No : 0;
+                    
+                    $isActive = ($noInstruction === '') ? 1 : 0;
+                    
+                    // Parse difference overrides if any
+                    $diffOverrides = [];
+                    if ($difference !== '') {
+                        $diffParts = explode(';', $difference);
+                        foreach ($diffParts as $dp) {
+                            if (strpos($dp, ':') !== false) {
+                                [$tName, $boxQtys] = explode(':', $dp, 2);
+                                $tName = trim($tName);
+                                $typeObj = Type::firstOrCreate(['Type' => $tName]);
+                                $tId = $typeObj->Id_Type;
+                                $diffOverrides[$tId] = [];
+                                
+                                $bqParts = explode(',', $boxQtys);
+                                foreach ($bqParts as $bq) {
+                                    if (strpos($bq, '=') !== false) {
+                                        [$bName, $bQty] = explode('=', $bq, 2);
+                                        $diffOverrides[$tId][] = ['box' => trim($bName), 'qty' => (int)trim($bQty)];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Process for each Type
+                    foreach ($typeMap as $colIdx => $typeId) {
+                        $qtyStr = trim($row[$colIdx] ?? '');
+                        
+                        $entries = [];
+                        if (isset($diffOverrides[$typeId]) && count($diffOverrides[$typeId]) > 0) {
+                            foreach ($diffOverrides[$typeId] as $ov) {
+                                $entries[] = ['box' => $ov['box'], 'qty' => $ov['qty']];
+                            }
+                        } elseif (is_numeric($qtyStr) && $qtyStr > 0) {
+                            $entries[] = ['box' => $box, 'qty' => (int)$qtyStr];
+                        }
+                        
+                        foreach ($entries as $entry) {
+                            Marshalling::updateOrCreate([
+                                'Id_Type' => $typeId,
+                                'Area' => $area,
+                                'Sequence_No' => $sequenceNo,
+                                'Code_Part' => $codePart,
+                                'Name_Part' => $namePart,
+                                'Box' => $entry['box']
+                            ], [
+                                'Code_Rack' => $codeRack,
+                                'Difference' => $difference,
+                                'Location_Rack' => $locationRack,
+                                'Qty' => $entry['qty'],
+                                'Mode' => 'manual',
+                                'No_Instruction' => $noInstruction !== '' ? $noInstruction : null,
+                                'Is_Active' => $isActive,
+                            ]);
+                            $imported++;
+                            
+                            if ($isActive === 1) {
+                                $newActiveKeys[$typeId . '|' . $area][] = $sequenceNo;
+                            }
+                        }
+                    }
                 }
-
-                $type = Type::where('Type', $typeTractor)->first();
-                if (!$type) {
-                    $skipped++;
-                    continue;
-                }
-
-                $mode = strtolower(trim($row[9] ?? ''));
-                $area = str_replace([' ', '-'], '_', strtolower(trim($row[10] ?? '')));
-                if (!in_array($mode, $validModes)) {
-                    $skipped++;
-                    continue;
-                }
-                if (!in_array($area, $validAreas)) {
-                    $skipped++;
-                    continue;
-                }
-
-                $slotKey = $type->Id_Type . '|' . $area;
-                if (!array_key_exists($slotKey, $importedSlots)) {
-                    $importedSlots[$slotKey] = [];
-                }
-                $importedSlots[$slotKey][] = $sequenceNo;
-
-                Marshalling::updateOrCreate(
-                    [
-                        'Id_Type' => $type->Id_Type,
-                        'Area' => $area,
-                        'Sequence_No' => $sequenceNo,
-                    ],
-                    [
-                        'Code_Part' => trim($row[2] ?? ''),
-                        'Name_Part' => trim($row[3] ?? ''),
-                        'Code_Rack' => trim($row[4] ?? ''),
-                        'Difference' => trim($row[5] ?? '') ?: '',
-                        'Location_Rack' => trim($row[6] ?? ''),
-                        'Box' => trim($row[7] ?? ''),
-                        'Qty' => trim($row[8] ?? '') !== '' ? trim($row[8] ?? '') : 0,
-                        'Mode' => $mode,
-                    ]
-                );
-                $imported++;
             }
-
-            $deleted = 0;
-            foreach ($importedSlots as $slotKey => $sequences) {
-                [$idType, $area] = explode('|', $slotKey, 2);
-                $deleted += Marshalling::where('Id_Type', $idType)
+            
+            // Deactivate old records for active imports
+            $deactivated = 0;
+            foreach ($newActiveKeys as $key => $seqs) {
+                [$idType, $area] = explode('|', $key);
+                $deactivated += Marshalling::where('Id_Type', $idType)
                     ->where('Area', $area)
-                    ->whereNotIn('Sequence_No', $sequences)
-                    ->delete();
+                    ->whereNotIn('Sequence_No', $seqs)
+                    ->where('Is_Active', 1)
+                    ->update(['Is_Active' => 0]);
             }
-
-            $msg = "$imported of $totalRows marshallings imported.";
-            if ($deleted > 0) $msg .= " $deleted marshalling lama dihapus (tidak ada di excel).";
-            if ($skipped > 0) $msg .= " $skipped rows skipped (invalid type/mode/area or empty).";
-            return redirect()->route('admin.types.index')
+            
+            $msg = "$imported marshallings imported/updated.";
+            if ($deactivated > 0) $msg .= " $deactivated marshalling lama di-nonaktifkan.";
+            if ($skipped > 0) $msg .= " $skipped rows skipped.";
+            
+            return redirect()->route('admin.marshallings.index')
                 ->with('success', $msg);
 
         } catch (\Exception $e) {
-            return redirect()->route('admin.types.index')
+            return redirect()->route('admin.marshallings.index')
                 ->with('error', 'Import failed: ' . $e->getMessage());
         }
     }
