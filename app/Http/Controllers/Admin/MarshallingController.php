@@ -41,7 +41,7 @@ class MarshallingController extends Controller
         $types = Type::all();
         $selectedTypeId = $request->type_id;
 
-        $query = Marshalling::query();
+        $query = Marshalling::query()->where('Is_Active', 1);
         $selectedType = null;
         if ($selectedTypeId) {
             $selectedType = Type::find($selectedTypeId);
@@ -189,9 +189,13 @@ class MarshallingController extends Controller
             $skipped = 0;
             $newActiveKeys = []; // To track which area & types are processed immediately
             
+            $allowedAreas = ['front_axle', 'sub_engine', 'transmisi', 'sub_assy', 'main_line', 'inspeksi', 'mowcol'];
+            
             foreach ($spreadsheet->getAllSheets() as $sheet) {
                 $sheetTitle = strtolower(trim($sheet->getTitle()));
                 $baseArea = ($sheetTitle === 'mower' || $sheetTitle === 'collector') ? 'mowcol' : $sheetTitle;
+                
+                if (!in_array($baseArea, $allowedAreas)) continue;
                 
                 $rows = $sheet->toArray(null, true, true, false);
                 if (count($rows) < 9) continue;
@@ -212,15 +216,16 @@ class MarshallingController extends Controller
                 for ($r = 8; $r < count($rows); $r++) {
                     $row = $rows[$r];
                     
-                    $codePart = trim($row[2] ?? ''); // C
-                    $namePart = trim($row[3] ?? ''); // D
-                    $codeRack = trim($row[10] ?? ''); // K
-                    $locationRack = trim($row[11] ?? ''); // L
-                    $skipMark = trim($row[12] ?? ''); // M
-                    $subArea = trim($row[13] ?? ''); // N
-                    $noInstruction = trim($row[14] ?? ''); // O
-                    $box = trim($row[15] ?? ''); // P
-                    $difference = trim($row[16] ?? ''); // Q
+                    $blok = trim($row[2] ?? ''); // C (BLOK)
+                    $codePart = trim($row[3] ?? ''); // D (CODE NUMBER)
+                    $namePart = trim($row[4] ?? ''); // E (NAME OF PART)
+                    $codeRack = trim($row[10] ?? ''); // K (KODE RAK)
+                    $locationRack = trim($row[11] ?? ''); // L (NOMER RAK)
+                    $skipMark = trim($row[12] ?? ''); // M (PART DI LUAR AREA)
+                    $subArea = trim($row[13] ?? ''); // N (KODE LIST)
+                    $noInstruction = trim($row[14] ?? ''); // O (NO INTRUKSI)
+                    $box = trim($row[15] ?? ''); // P (BOX)
+                    $difference = trim($row[16] ?? ''); // Q (PEMBEDA)
                     
                     if ($skipMark !== '' || $codePart === '' || $locationRack === '') {
                         $skipped++;
@@ -263,6 +268,11 @@ class MarshallingController extends Controller
                     // Process for each Type
                     foreach ($typeMap as $colIdx => $typeId) {
                         $qtyStr = trim($row[$colIdx] ?? '');
+                        if ($qtyStr === '') continue;
+                        
+                        // Check if cell is strikethrough
+                        $isStrikethrough = $sheet->getCell([$colIdx + 1, $r + 1])->getStyle()->getFont()->getStrikethrough();
+                        if ($isStrikethrough) continue;
                         
                         $entries = [];
                         if (isset($diffOverrides[$typeId]) && count($diffOverrides[$typeId]) > 0) {
