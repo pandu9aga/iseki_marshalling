@@ -175,6 +175,7 @@ class MarshallingController extends Controller
 
     public function import(Request $request)
     {
+        set_time_limit(0); // Unlimited execution time for large imports
         $request->validate([
             'file' => 'required|mimes:xlsx,xls',
         ]);
@@ -220,7 +221,8 @@ class MarshallingController extends Controller
                     $codePart = trim($row[3] ?? ''); // D (CODE NUMBER)
                     $namePart = trim($row[4] ?? ''); // E (NAME OF PART)
                     $codeRack = trim($row[10] ?? ''); // K (KODE RAK)
-                    $locationRack = trim($row[11] ?? ''); // L (NOMER RAK)
+                    $locationRackRaw = trim($row[11] ?? ''); // L (NOMER RAK)
+                    $locationRack = strpos($locationRackRaw, ',') !== false ? trim(explode(',', $locationRackRaw)[0]) : $locationRackRaw;
                     $skipMark = trim($row[12] ?? ''); // M (PART DI LUAR AREA)
                     $subArea = trim($row[13] ?? ''); // N (KODE LIST)
                     $noInstruction = trim($row[14] ?? ''); // O (NO INTRUKSI)
