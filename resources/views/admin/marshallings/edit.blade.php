@@ -75,6 +75,9 @@
                                 <option value="main_line" {{ $marshalling->Area == 'main_line' ? 'selected' : '' }}>Main Line</option>
                                 <option value="mowcol" {{ $marshalling->Area == 'mowcol' ? 'selected' : '' }}>Mowcol</option>
                                 <option value="front_axle" {{ $marshalling->Area == 'front_axle' ? 'selected' : '' }}>Front Axle</option>
+                                <option value="inspeksi" {{ $marshalling->Area == 'inspeksi' ? 'selected' : '' }}>Inspeksi</option>
+                                <option value="line_a" {{ $marshalling->Area == 'line_a' ? 'selected' : '' }}>Line A</option>
+                                <option value="line_b" {{ $marshalling->Area == 'line_b' ? 'selected' : '' }}>Line B</option>
                             </select>
                         </div>
                     </div>

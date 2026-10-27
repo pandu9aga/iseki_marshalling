@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class MemberAreaController extends Controller
 {
-    protected $validAreas = ['sub_assy', 'sub_engine', 'transmisi', 'main_line', 'mowcol', 'front_axle'];
+    protected $validAreas = ['sub_assy', 'sub_engine', 'transmisi', 'main_line', 'mowcol', 'front_axle', 'inspeksi', 'line_a', 'line_b'];
 
     public function index(Request $request)
     {

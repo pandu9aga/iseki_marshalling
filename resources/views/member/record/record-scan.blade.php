@@ -91,7 +91,7 @@
                 <h1 class="text-center text-primary mb-0 rack-big-text"><strong>{{ $recordList->Location_Rack }}</strong></h1>
                 <h5>{{ $recordList->Code_Part }} - {{ $recordList->Name_Part }}</h5>
                 <p class="text-muted mb-0">Code: <strong class="text-primary detail-rack">{{ $recordList->Code_Rack }}</strong> | Box: <strong class="text-primary detail-rack">{{ $recordList->Box }}</strong> | Qty: <strong class="text-primary detail-rack">{{ $recordList->Qty }}</strong></p>
-                <p class="text-muted mb-0">Mode: <strong class="text-primary">{{ ucfirst($recordList->Mode) }}</strong> | Pembeda: <strong class="text-primary">{{ $recordList->Difference }}</strong></p>
+                <p class="text-muted mb-0">Mode: <strong class="text-primary">{{ ucfirst($recordList->Mode) }}</strong> | Pembeda: <strong class="text-primary">{!! str_replace(';', '<br>', $recordList->Difference) !!}</strong></p>
             </div>
         </div>
 

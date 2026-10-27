@@ -204,7 +204,7 @@
             html += '<div class="row mb-3"><div class="col-5 slide-label">Code Rack</div><div class="col-7 slide-value">' + escHtml(item.Code_Rack) + '</div></div>';
             html += '<div class="row mb-3"><div class="col-5 slide-label">Box</div><div class="col-7 slide-value">' + escHtml(item.Box || '-') + '</div></div>';
             html += '<div class="row mb-3"><div class="col-5 slide-label">Qty</div><div class="col-7 slide-value">' + item.Qty + '</div></div>';
-            html += '<div class="row mb-3"><div class="col-5 slide-label">Difference</div><div class="col-7 slide-value">' + escHtml(item.Difference || '-') + '</div></div>';
+            html += '<div class="row mb-3"><div class="col-5 slide-label">Difference</div><div class="col-7 slide-value">' + (item.Difference ? escHtml(item.Difference).replace(/;/g, '<br>') : '-') + '</div></div>';
             html += '<hr>';
             html += '<div class="row mb-3"><div class="col-5 slide-label">Seq Record</div><div class="col-7 slide-value">' + escHtml(item.sequence) + '</div></div>';
             html += '<div class="row mb-3"><div class="col-5 slide-label">Prod Date</div><div class="col-7 slide-value">' + escHtml(item.production_date) + '</div></div>';

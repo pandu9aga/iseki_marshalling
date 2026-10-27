@@ -70,7 +70,7 @@
                                 <td style="font-size:0.8rem;">{{ $rl->Name_Part ? (strlen($rl->Name_Part) > 20 ? substr($rl->Name_Part, 0, 20) . '...' : $rl->Name_Part) : '-' }}</td>
                                 <td>{!! $rl->Mode === 'ai' ? '<span class="badge bg-info">AI</span>' : '<span class="badge bg-secondary">Manual</span>' !!}</td>
                                 <td>{{ $rl->Code_Rack }}</td>
-                                <td>{{ $rl->Difference ?? '-' }}</td>
+                                <td>{!! str_replace(';', '<br>', $rl->Difference ?? '-') !!}</td>
                                 <td>{{ $rl->Box ?? '-' }}</td>
                                 <td>{{ $rl->Qty }}</td>
                                 <td>{{ $rl->Qty_Record ?? '-' }}</td>

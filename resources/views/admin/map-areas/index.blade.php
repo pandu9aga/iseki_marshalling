@@ -15,7 +15,7 @@
             <div class="card-header">
                 <ul class="nav nav-pills nav-secondary" id="areaTabs" role="tablist">
                     @php
-                        $areas = ['front_axle', 'sub_engine', 'transmisi', 'sub_assy', 'main_line', 'inspeksi', 'mowcol'];
+                        $areas = ['front_axle', 'sub_engine', 'transmisi', 'sub_assy', 'main_line', 'inspeksi', 'mowcol', 'line_a', 'line_b'];
                     @endphp
                     @foreach($areas as $index => $area)
                     <li class="nav-item">

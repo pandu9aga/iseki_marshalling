@@ -219,7 +219,7 @@
                 var modeBadge = rl.Mode === 'ai' ? '<span class="badge bg-info">AI</span>' : '<span class="badge bg-secondary">Manual</span>';
                 var enterTime = rl.Time_Record ? rl.Time_Record.substring(0, 10) + '<br>' + rl.Time_Record.substring(11, 19) : '-';
                 var namePart = rl.Name_Part ? (rl.Name_Part.length > 15 ? rl.Name_Part.substring(0, 15) + '...' : rl.Name_Part) : '-';
-                html += '<tr><td>' + rl.Sequence_No + '</td><td>' + rl.Code_Part + '</td><td style="font-size:0.7rem;">' + namePart + '</td><td>' + modeBadge + '</td><td>' + rl.Code_Rack + '</td><td>' + (rl.Difference || '-') + '</td><td>' + (rl.Location_Rack || '-') + '</td><td>' + (rl.Box || '-') + '</td><td>' + rl.Qty + '</td><td>' + (rl.Qty_Record || '-') + '</td><td>' + enterTime + '</td><td>' + statusHtml + '</td></tr>';
+                html += '<tr><td>' + rl.Sequence_No + '</td><td>' + rl.Code_Part + '</td><td style="font-size:0.7rem;">' + namePart + '</td><td>' + modeBadge + '</td><td>' + rl.Code_Rack + '</td><td>' + (rl.Difference ? rl.Difference.replace(/;/g, '<br>') : '-') + '</td><td>' + (rl.Location_Rack || '-') + '</td><td>' + (rl.Box || '-') + '</td><td>' + rl.Qty + '</td><td>' + (rl.Qty_Record || '-') + '</td><td>' + enterTime + '</td><td>' + statusHtml + '</td></tr>';
             });
             html += '</tbody></table></div>';
             $('#recordDetailContent').html(html);

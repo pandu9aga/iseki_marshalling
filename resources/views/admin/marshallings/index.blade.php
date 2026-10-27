@@ -102,7 +102,7 @@
                 { data: 'Code_Part', name: 'Code_Part' },
                 { data: 'Name_Part', name: 'Name_Part' },
                 { data: 'Code_Rack', name: 'Code_Rack' },
-                { data: 'Difference', name: 'Difference' },
+                { data: 'Difference', name: 'Difference', render: function(data) { return data ? data.replace(/;/g, '<br>') : '-'; } },
                 { data: 'Location_Rack', name: 'Location_Rack' },
                 { data: 'Box', name: 'Box' },
                 { data: 'Qty', name: 'Qty' },

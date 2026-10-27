@@ -187,8 +187,10 @@ class RecordController extends Controller
             $subAreas = ['transmisi_a', 'transmisi_b', 'transmisi_c', 'transmisi'];
             $allMarshallings = Marshalling::whereIn('Area', $subAreas)
                 ->where('Id_Type', $type->Id_Type)
+                ->where('Is_Active', 1)
                 ->orderByRaw("FIELD(Area, 'transmisi_a', 'transmisi_b', 'transmisi_c', 'transmisi')")
                 ->orderBy('Sequence_No')
+                ->orderBy('Box')
                 ->get();
 
             $marshallings = $allMarshallings;
@@ -197,15 +199,19 @@ class RecordController extends Controller
             $subAreas = ['sub_engine_a', 'sub_engine_b', 'sub_engine'];
             $allMarshallings = Marshalling::whereIn('Area', $subAreas)
                 ->where('Id_Type', $type->Id_Type)
+                ->where('Is_Active', 1)
                 ->orderByRaw("FIELD(Area, 'sub_engine_a', 'sub_engine_b', 'sub_engine')")
                 ->orderBy('Sequence_No')
+                ->orderBy('Box')
                 ->get();
 
             $marshallings = $allMarshallings;
         } else {
             $marshallings = Marshalling::where('Area', $request->area)
                 ->where('Id_Type', $type->Id_Type)
+                ->where('Is_Active', 1)
                 ->orderBy('Sequence_No')
+                ->orderBy('Box')
                 ->get();
         }
 
@@ -364,6 +370,19 @@ class RecordController extends Controller
                 return $redirect;
             }
 
+            // Trigger iseki_efficiency for marshalling area scan when last part is done
+            try {
+                \Illuminate\Support\Facades\Http::timeout(10)->post('http://192.168.173.201/iseki_efficiency/public/api/marshalling-scan', [
+                    'area' => $record->Area,
+                    'type' => $record->Type,
+                    'sequence_no' => $record->Sequence_No_Record,
+                    'production_date' => $record->Production_Date_Record,
+                    'id_member' => $member->id ?? null,
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Gagal mengirim scan marshalling ke iseki_efficiency: ' . $e->getMessage());
+            }
+
             return redirect()->route('member.record.create')
                 ->with(['success' => 'All parts recorded successfully!', 'remark_record_id' => $record->Id_Record]);
         }
@@ -455,6 +474,19 @@ class RecordController extends Controller
             }
 
             return $redirect;
+        }
+
+        // Trigger iseki_efficiency for marshalling area scan when last part is done
+        try {
+            \Illuminate\Support\Facades\Http::timeout(10)->post('http://192.168.173.201/iseki_efficiency/public/api/marshalling-scan', [
+                'area' => $record->Area,
+                'type' => $record->Type,
+                'sequence_no' => $record->Sequence_No_Record,
+                'production_date' => $record->Production_Date_Record,
+                'id_member' => $member->id ?? null,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Gagal mengirim scan marshalling ke iseki_efficiency: ' . $e->getMessage());
         }
 
         return redirect()->route('member.record.create')
