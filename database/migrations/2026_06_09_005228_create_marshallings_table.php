@@ -22,7 +22,6 @@ return new class extends Migration
             $table->enum('Mode', ['manual', 'ai'])->default('manual');
             $table->enum('Area', ['sub_assy', 'sub_engine', 'transmisi', 'main_line', 'mowcol', 'front_axle']);
 
-            $table->foreign('Id_Type')->references('Id_Type')->on('types')->onDelete('cascade');
         });
     }
 

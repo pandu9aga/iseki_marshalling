@@ -249,6 +249,12 @@
                                 <p class="{{ request()->routeIs('admin.main-types.*') ? 'text-primary' : '' }}">Kategori (Main Type)</p>
                             </a>
                         </li>
+                        <li class="nav-item {{ request()->routeIs('admin.foto-parts.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.foto-parts.index') }}">
+                                <i class="fas fa-camera"></i>
+                                <p class="{{ request()->routeIs('admin.foto-parts.*') ? 'text-primary' : '' }}">Foto Part</p>
+                            </a>
+                        </li>
                         <li class="nav-item {{ request()->routeIs('admin.records.*') && !request()->routeIs('admin.ng.*') ? 'active' : '' }}">
                             <a href="{{ route('admin.records.index') }}">
                                 <i class="fas fa-file-alt"></i>
@@ -279,12 +285,6 @@
                                 <p class="{{ request()->routeIs('admin.part-kurang.*') ? 'text-primary' : '' }}">Part Kurang</p>
                             </a>
                         </li>
-                        <li class="nav-item {{ request()->routeIs('admin.foto-parts.*') ? 'active' : '' }}">
-                            <a href="{{ route('admin.foto-parts.index') }}">
-                                <i class="fas fa-camera"></i>
-                                <p class="{{ request()->routeIs('admin.foto-parts.*') ? 'text-primary' : '' }}">Photo Part</p>
-                            </a>
-                        </li>
                         <li class="nav-item {{ request()->routeIs('admin.punishments.*') ? 'active' : '' }}">
                             <a href="{{ route('admin.punishments.index') }}">
                                 <i class="fas fa-gavel"></i>
@@ -295,6 +295,12 @@
                             <a href="{{ route('admin.member-areas.index') }}">
                                 <i class="fas fa-map-marked-alt"></i>
                                 <p class="{{ request()->routeIs('admin.member-areas.*') ? 'text-primary' : '' }}">Member Area</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('admin.member-perakitans.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.member-perakitans.index') }}">
+                                <i class="fas fa-people-carry"></i>
+                                <p class="{{ request()->routeIs('admin.member-perakitans.*') ? 'text-primary' : '' }}">Member Perakitan</p>
                             </a>
                         </li>
                         @endif

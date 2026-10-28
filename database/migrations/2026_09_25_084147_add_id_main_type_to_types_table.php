@@ -14,6 +14,9 @@ return new class extends Migration
         Schema::table('types', function (Blueprint $table) {
             $table->integer('Id_Main_Type')->nullable();
         });
+        Schema::table('marshallings', function (Blueprint $table) {
+            $table->foreign('Id_Type')->references('Id_Type')->on('types')->onDelete('cascade');
+        });
     }
 
     /**

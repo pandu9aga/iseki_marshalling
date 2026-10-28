@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Marshalling;
+use App\Models\MemberPerakitan;
 use App\Models\PartKurang;
 use App\Models\Record;
+use App\Models\Type;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -49,6 +52,7 @@ class PublicPartKurangController extends Controller
             ->where('nik', $nik)
             ->first(['id', 'nik', 'nama', 'photo_employee', 'team']);
 
+
         if (!$employee) {
             return response()->json([
                 'valid'   => false,
@@ -60,6 +64,8 @@ class PublicPartKurangController extends Controller
         $photoBase = '/iseki_rifa/public/photo_employee';
         $photoUrl = $employee->photo_employee ? $photoBase . '/' . $employee->photo_employee : null;
 
+        $ifPerakitan = MemberPerakitan::where('nik', $nik)->first(['box']);
+
         return response()->json([
             'valid'  => true,
             'member' => [
@@ -67,6 +73,7 @@ class PublicPartKurangController extends Controller
                 'nik'   => $employee->nik,
                 'nama'  => $employee->nama,
                 'team'  => $employee->team ?? '-',
+                'box'   => $ifPerakitan->box ?? '-',
                 'photo' => $photoUrl,
             ],
         ]);
@@ -119,6 +126,122 @@ class PublicPartKurangController extends Controller
         return response()->json([
             'found'   => true,
             'records' => $results,
+        ]);
+    }
+
+    /**
+     * Ambil marshallings master untuk 1 Type + Area, dengan expand area induk
+     * (transmisi -> transmisi_a/b/c, sub_engine -> sub_engine_a/b) sama seperti
+     * Member\RecordController::store().
+     */
+    private function marshallingsFor($typeName, $area)
+    {
+        $type = Type::where('Type', $typeName)->first();
+        if (!$type) {
+            return collect();
+        }
+
+        if ($area === 'transmisi') {
+            $areas = ['transmisi_a', 'transmisi_b', 'transmisi_c', 'transmisi'];
+        } elseif ($area === 'sub_engine') {
+            $areas = ['sub_engine_a', 'sub_engine_b', 'sub_engine'];
+        } else {
+            $areas = [$area];
+        }
+
+        return Marshalling::with('fotoPart')
+            ->where('Id_Type', $type->Id_Type)
+            ->whereIn('Area', $areas)
+            ->orderBy('Box')
+            ->orderBy('Sequence_No')
+            ->get();
+    }
+
+    /**
+     * Daftar box (dikelompokkan dari master marshallings) untuk 1 Type + Area,
+     * lengkap dengan foto referensi part dari foto_parts jika ada.
+     * Jika NIK pelapor sudah terdaftar di member_perakitans untuk area ini,
+     * sertakan juga daftar box yang jadi tanggung jawabnya (assigned_boxes).
+     */
+    public function recordBoxes(Request $request)
+    {
+        $request->validate([
+            'type' => 'required|string',
+            'area' => 'required|string',
+            'nik'  => 'nullable|string',
+        ]);
+
+        $marshallings = $this->marshallingsFor($request->type, $request->area);
+
+        $boxes = $marshallings->groupBy('Box')->map(function ($items, $box) {
+            $photo = null;
+            foreach ($items as $item) {
+                if ($item->fotoPart && $item->fotoPart->Photo_Path) {
+                    $photo = asset($item->fotoPart->Photo_Path);
+                    break;
+                }
+            }
+
+            return [
+                'Box'       => $box,
+                'Qty_Parts' => $items->count(),
+                'Photo'     => $photo,
+            ];
+        })->values();
+
+        $assignedBoxes = [];
+        if ($request->filled('nik')) {
+            $availableBoxes = $boxes->pluck('Box')->map(fn ($b) => strtoupper(trim($b)))->all();
+
+            $assignedBoxes = MemberPerakitan::where('nik', trim($request->nik))
+                ->where('area', $request->area)
+                ->pluck('box')
+                ->map(fn ($b) => strtoupper(trim($b)))
+                ->filter(fn ($b) => in_array($b, $availableBoxes))
+                ->values()
+                ->all();
+        }
+
+        return response()->json([
+            'boxes'          => $boxes,
+            'assigned_boxes' => $assignedBoxes,
+        ]);
+    }
+
+    /**
+     * Daftar item/part untuk 1 atau beberapa Box dalam 1 Type + Area.
+     */
+    public function recordItems(Request $request)
+    {
+        $request->validate([
+            'type'    => 'required|string',
+            'area'    => 'required|string',
+            'boxes'   => 'required|array|min:1',
+            'boxes.*' => 'string',
+        ]);
+
+        $wantedBoxes = collect($request->boxes)->map(fn ($b) => strtoupper(trim($b)))->all();
+
+        $marshallings = $this->marshallingsFor($request->type, $request->area)
+            ->filter(fn ($m) => in_array(strtoupper(trim($m->Box)), $wantedBoxes))
+            ->values();
+
+        $items = $marshallings->map(function ($m) {
+            return [
+                'Id_Marshalling' => $m->Id_Marshalling,
+                'Sequence_No'    => $m->Sequence_No,
+                'Code_Part'      => $m->Code_Part,
+                'Name_Part'      => $m->Name_Part,
+                'Code_Rack'      => $m->Code_Rack,
+                'Location_Rack'  => $m->Location_Rack,
+                'Box'            => $m->Box,
+                'Qty'            => $m->Qty,
+                'Photo'          => ($m->fotoPart && $m->fotoPart->Photo_Path) ? asset($m->fotoPart->Photo_Path) : null,
+            ];
+        });
+
+        return response()->json([
+            'items' => $items,
         ]);
     }
 
