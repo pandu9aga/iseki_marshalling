@@ -173,6 +173,121 @@ class MarshallingController extends Controller
         return response()->download($tempPath, $filename)->deleteFileAfterSend(true);
     }
 
+    public function exportZip()
+    {
+        set_time_limit(0);
+
+        // Ambil semua data marshalling yang aktif dengan relasi type
+        $marshallings = Marshalling::with('type')
+            ->where('Is_Active', 1)
+            ->orderBy('Area')
+            ->orderBy('Sequence_No')
+            ->get();
+
+        if ($marshallings->isEmpty()) {
+            return redirect()->back()->with('error', 'Tidak ada data marshalling untuk diekspor.');
+        }
+
+        // Kelompokkan berdasarkan Area lalu Id_Type
+        $grouped = $marshallings->groupBy(['Area', 'Id_Type']);
+
+        $tempBaseDir = storage_path('app/temp_export_zip_' . uniqid());
+        if (!file_exists($tempBaseDir)) {
+            mkdir($tempBaseDir, 0777, true);
+        }
+
+        $headers = ['No', 'Type_Tractor', 'Code_Part', 'Name_Part', 'Rack', 'Pembeda', 'Lorong', 'Box', 'Qty', 'Mode (manual/ai)', 'Area (sub_assy/sub_engine/sub_engine_a/sub_engine_b/transmisi/transmisi_a/transmisi_b/transmisi_c/main_line/mowcol/front_axle)'];
+
+        $filesToZip = [];
+
+        foreach ($grouped as $area => $typesGroup) {
+            $cleanArea = preg_replace('/[^A-Za-z0-9_\-]/', '_', $area ?: 'unknown_area');
+            $areaDir = $tempBaseDir . DIRECTORY_SEPARATOR . $cleanArea;
+            if (!file_exists($areaDir)) {
+                mkdir($areaDir, 0777, true);
+            }
+
+            foreach ($typesGroup as $typeId => $items) {
+                $typeName = $items->first()->type ? $items->first()->type->Type : 'Unknown_Type';
+                $cleanTypeName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $typeName);
+
+                // Nama file excel menyertakan area dan tipe: [Area]_[Tipe].xlsx
+                $excelFileName = $cleanArea . '_' . $cleanTypeName . '.xlsx';
+                $excelFilePath = $areaDir . DIRECTORY_SEPARATOR . $excelFileName;
+                $relativeZipPath = $cleanArea . '/' . $excelFileName;
+
+                $spreadsheet = new Spreadsheet();
+                $sheet = $spreadsheet->getActiveSheet();
+
+                foreach (range('A', 'K') as $i => $col) {
+                    $sheet->setCellValue($col . '1', $headers[$i]);
+                }
+
+                $row = 2;
+                foreach ($items as $m) {
+                    $sheet->setCellValue('A' . $row, $m->Sequence_No);
+                    $sheet->setCellValue('B' . $row, $m->type ? $m->type->Type : '');
+                    $sheet->setCellValue('C' . $row, $m->Code_Part);
+                    $sheet->setCellValue('D' . $row, $m->Name_Part);
+                    $sheet->setCellValue('E' . $row, $m->Code_Rack);
+                    $sheet->setCellValue('F' . $row, $m->Difference);
+                    $sheet->setCellValue('G' . $row, $m->Location_Rack);
+                    $sheet->setCellValue('H' . $row, $m->Box);
+                    $sheet->setCellValue('I' . $row, $m->Qty);
+                    $sheet->setCellValue('J' . $row, $m->Mode);
+                    $sheet->setCellValue('K' . $row, $m->Area);
+                    $row++;
+                }
+
+                $writer = new Xlsx($spreadsheet);
+                $writer->save($excelFilePath);
+                $spreadsheet->disconnectWorksheets();
+                unset($spreadsheet);
+
+                $filesToZip[] = [
+                    'full_path' => $excelFilePath,
+                    'zip_path' => $relativeZipPath
+                ];
+            }
+        }
+
+        // Buat file ZIP
+        $zipFileName = 'marshallings_export_all_' . date('Ymd_His') . '.zip';
+        $zipFilePath = storage_path('app/' . $zipFileName);
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zipFilePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+            foreach ($filesToZip as $file) {
+                $zip->addFile($file['full_path'], $file['zip_path']);
+            }
+            $zip->close();
+        }
+
+        // Bersihkan folder temporer
+        $this->deleteDirectory($tempBaseDir);
+
+        return response()->download($zipFilePath, $zipFileName)->deleteFileAfterSend(true);
+    }
+
+    private function deleteDirectory($dir)
+    {
+        if (!file_exists($dir)) {
+            return true;
+        }
+        if (!is_dir($dir)) {
+            return unlink($dir);
+        }
+        foreach (scandir($dir) as $item) {
+            if ($item == '.' || $item == '..') {
+                continue;
+            }
+            if (!$this->deleteDirectory($dir . DIRECTORY_SEPARATOR . $item)) {
+                return false;
+            }
+        }
+        return rmdir($dir);
+    }
+
     public function import(Request $request)
     {
         set_time_limit(0); // Unlimited execution time for large imports
