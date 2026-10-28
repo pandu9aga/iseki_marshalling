@@ -112,7 +112,7 @@
                 { data: 'Qty_Record', name: 'Qty_Record' },
                 { data: 'Code_Part', name: 'Code_Part' },
                 { data: 'Name_Part', name: 'Name_Part' },
-                { data: 'Difference', name: 'Difference' },
+                { data: 'Difference', name: 'Difference', render: function(data) { return data ? data.replace(/;/g, '<br>') : '-'; } },
                 { data: 'Box', name: 'Box' },
                 { data: 'area_record', name: 'area_record' },
                 { data: 'production_date', name: 'production_date' },
@@ -139,7 +139,7 @@
             html += '<strong>Expected Qty:</strong> ' + resp.Qty + '<br>';
             html += '<strong>Recorded Qty:</strong> ' + (resp.Qty_Record || '-') + '<br>';
             html += '<strong>Code Rack:</strong> ' + resp.Code_Rack + '<br>';
-            html += '<strong>Difference:</strong> ' + (resp.Difference || '-') + '<br>';
+            html += '<strong>Difference:</strong> ' + (resp.Difference ? resp.Difference.replace(/;/g, '<br>') : '-') + '<br>';
             html += '<strong>Box:</strong> ' + (resp.Box || '-') + '<br>';
             html += '<strong>Mode:</strong> ' + (resp.Mode === 'ai' ? 'AI' : 'Manual');
             if (resp.Image_Ng) {

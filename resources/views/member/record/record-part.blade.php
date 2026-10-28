@@ -65,7 +65,7 @@
                                 <td>{{ $rl->Sequence_No }}</td>
                                 <td>{{ $rl->Code_Rack }}</td>
                                 <td>{{ $rl->Location_Rack }}</td>
-                                <td class="wrap-cell">{{ $rl->Difference }}</td>
+                                <td class="wrap-cell">{!! str_replace(';', '<br>', $rl->Difference) !!}</td>
                                 <td>{{ $rl->Box }}</td>
                                 <td class="wrap-cell">{{ $rl->Code_Part }}</td>
                                 <td class="wrap-cell">{{ $rl->Name_Part }}</td>

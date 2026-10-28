@@ -301,6 +301,10 @@
                             <a href="{{ route('admin.member-perakitans.index') }}">
                                 <i class="fas fa-people-carry"></i>
                                 <p class="{{ request()->routeIs('admin.member-perakitans.*') ? 'text-primary' : '' }}">Member Perakitan</p>
+                        <li class="nav-item {{ request()->routeIs('admin.map-areas.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.map-areas.index') }}">
+                                <i class="fas fa-map"></i>
+                                <p class="{{ request()->routeIs('admin.map-areas.*') ? 'text-primary' : '' }}">Map Area</p>
                             </a>
                         </li>
                         @endif

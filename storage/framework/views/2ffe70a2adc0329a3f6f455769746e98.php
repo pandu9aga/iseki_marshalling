@@ -279,6 +279,12 @@
                                 <p class="<?php echo e(request()->routeIs('admin.part-kurang.*') ? 'text-primary' : ''); ?>">Part Kurang</p>
                             </a>
                         </li>
+                        <li class="nav-item <?php echo e(request()->routeIs('admin.foto-parts.*') ? 'active' : ''); ?>">
+                            <a href="<?php echo e(route('admin.foto-parts.index')); ?>">
+                                <i class="fas fa-camera"></i>
+                                <p class="<?php echo e(request()->routeIs('admin.foto-parts.*') ? 'text-primary' : ''); ?>">Photo Part</p>
+                            </a>
+                        </li>
                         <li class="nav-item <?php echo e(request()->routeIs('admin.punishments.*') ? 'active' : ''); ?>">
                             <a href="<?php echo e(route('admin.punishments.index')); ?>">
                                 <i class="fas fa-gavel"></i>
@@ -289,6 +295,12 @@
                             <a href="<?php echo e(route('admin.member-areas.index')); ?>">
                                 <i class="fas fa-map-marked-alt"></i>
                                 <p class="<?php echo e(request()->routeIs('admin.member-areas.*') ? 'text-primary' : ''); ?>">Member Area</p>
+                            </a>
+                        </li>
+                        <li class="nav-item <?php echo e(request()->routeIs('admin.map-areas.*') ? 'active' : ''); ?>">
+                            <a href="<?php echo e(route('admin.map-areas.index')); ?>">
+                                <i class="fas fa-map"></i>
+                                <p class="<?php echo e(request()->routeIs('admin.map-areas.*') ? 'text-primary' : ''); ?>">Map Area</p>
                             </a>
                         </li>
                         <?php endif; ?>

@@ -20,6 +20,7 @@
             <div class="my-2">
                 <button type="button" class="btn btn-warning text-white" data-bs-toggle="modal" data-bs-target="#importModal"><i class="fas fa-file-import"></i> Import</button>
                 <a href="{{ route('admin.marshallings.export', request()->only(['type_id', 'area'])) }}" class="btn btn-success" onclick="event.preventDefault(); var url=this.href; window.open(url);"><i class="fas fa-file-excel"></i> Export</a>
+                <a href="{{ route('admin.marshallings.export-zip') }}" class="btn btn-secondary text-white" onclick="event.preventDefault(); var url=this.href; window.open(url);"><i class="fas fa-file-archive"></i> Export All (ZIP)</a>
                 <a href="{{ route('admin.marshallings.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Marshalling</a>
             </div>
         </div>
@@ -102,7 +103,7 @@
                 { data: 'Code_Part', name: 'Code_Part' },
                 { data: 'Name_Part', name: 'Name_Part' },
                 { data: 'Code_Rack', name: 'Code_Rack' },
-                { data: 'Difference', name: 'Difference' },
+                { data: 'Difference', name: 'Difference', render: function(data) { return data ? data.replace(/;/g, '<br>') : '-'; } },
                 { data: 'Location_Rack', name: 'Location_Rack' },
                 { data: 'Box', name: 'Box' },
                 { data: 'Qty', name: 'Qty' },

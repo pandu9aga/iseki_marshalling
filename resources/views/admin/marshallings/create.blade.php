@@ -74,6 +74,9 @@
                                 <option value="main_line">Main Line</option>
                                 <option value="mowcol">Mowcol</option>
                                 <option value="front_axle">Front Axle</option>
+                                <option value="inspeksi">Inspeksi</option>
+                                <option value="line_a">Line A</option>
+                                <option value="line_b">Line B</option>
                             </select>
                         </div>
                     </div>

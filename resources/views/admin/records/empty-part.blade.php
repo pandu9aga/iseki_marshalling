@@ -100,7 +100,7 @@
                 { data: 'Qty_Record', name: 'Qty_Record' },
                 { data: 'Code_Part', name: 'Code_Part' },
                 { data: 'Name_Part', name: 'Name_Part' },
-                { data: 'Difference', name: 'Difference' },
+                { data: 'Difference', name: 'Difference', render: function(data) { return data ? data.replace(/;/g, '<br>') : '-'; } },
                 { data: 'Box', name: 'Box' },
                 { data: 'area_record', name: 'area_record' },
                 { data: 'production_date', name: 'production_date' },

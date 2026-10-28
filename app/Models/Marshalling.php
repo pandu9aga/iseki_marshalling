@@ -23,6 +23,8 @@ class Marshalling extends Model
         'Qty',
         'Mode',
         'Area',
+        'No_Instruction',
+        'Is_Active',
     ];
 
     public function type()
