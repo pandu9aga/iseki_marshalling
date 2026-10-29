@@ -296,16 +296,9 @@
     function setupAudioElement(audio, speed, shouldAdjustPitch) {
         if (!audio) return;
         audio.playbackRate = speed || 1.0;
-        if (shouldAdjustPitch) {
-            audio.preservesPitch = false;
-            if ('mozPreservesPitch' in audio) audio.mozPreservesPitch = false;
-            if ('webkitPreservesPitch' in audio) audio.webkitPreservesPitch = false;
-        } else {
-            // Normal (folder a tidak perlu di-adjust)
-            audio.preservesPitch = true;
-            if ('mozPreservesPitch' in audio) audio.mozPreservesPitch = true;
-            if ('webkitPreservesPitch' in audio) audio.webkitPreservesPitch = true;
-        }
+        audio.preservesPitch = true;
+        if ('mozPreservesPitch' in audio) audio.mozPreservesPitch = true;
+        if ('webkitPreservesPitch' in audio) audio.webkitPreservesPitch = true;
     }
 
     function getFastAudio(ch, theme, speed) {
@@ -503,7 +496,9 @@
      */
     function parseLocationToTokens(str) {
         if (!str) return [];
-        var parts = str.toString().match(/[a-zA-Z]+|[0-9]+/g);
+        // Hapus huruf awalan jika diawali huruf (misal M1-7B -> 1-7B, GR4-90C -> 4-90C)
+        var cleanedStr = str.toString().trim().replace(/^[a-zA-Z]+/, '');
+        var parts = cleanedStr.match(/[a-zA-Z]+|[0-9]+/g);
         if (!parts) return [];
         var tokens = [];
         parts.forEach(function(part) {
@@ -525,48 +520,21 @@
     var qtyValue = '{{ $recordList->Qty }}';
 
     function playSequence() {
-        // 1. Bunyikan Location Rack (sound b, speed 1.08 melengking halus)
+        // 1. Bunyikan Location Rack (sound b, speed 1.3)
         var locationTokens = parseLocationToTokens(locationValue);
         playCharSounds(locationTokens, 0, 'b', 1.3, function() {
             loopTimeout = setTimeout(function() {
-                // 2. Bunyikan Qty (sound a, normal tanpa adjust)
+                // 2. Bunyikan Qty (sound a, normal)
                 var qtyTokens = parseQtyToTokens(qtyValue);
                 playCharSounds(qtyTokens, 0, 'a', 1.0, function() {
                     loopTimeout = setTimeout(function() {
-                        // 3. Bunyikan Box (sound b): diawali 'boks' lalu kode box
-                        function afterBoks() {
+                        // 3. Bunyikan kode Box langsung (tanpa suara ucapan 'boks')
+                        playCharSounds(boxValue.toLowerCase().split(''), 0, 'b', 1.08, function() {
+                            // Repeat loop pemutaran suara kembali ke awal setelah jeda 500ms
                             loopTimeout = setTimeout(function() {
-                                playCharSounds(boxValue.toLowerCase().split(''), 0, 'b', 1.08, function() {
-                                    // Repeat loop pemutaran suara kembali ke awal setelah jeda 500ms
-                                    loopTimeout = setTimeout(function() {
-                                        playSequence();
-                                    }, 500);
-                                });
-                            }, 100);
-                        }
-
-                        var boksAudio = getBoksAudio('b', 1.08);
-                        if (boksAudio) {
-                            boksAudio.currentTime = 0;
-                            boksAudio.play().then(function() {
-                                var duration = boksAudio.duration;
-                                if (!duration || duration === Infinity || isNaN(duration)) {
-                                    boksAudio.onended = afterBoks;
-                                } else {
-                                    boksAudio.onended = null;
-                                    currentTimeout = setTimeout(function() {
-                                        boksAudio.pause();
-                                        currentTimeout = null;
-                                        afterBoks();
-                                    }, ((duration * 0.9) / boksAudio.playbackRate) * 1000);
-                                }
-                            }).catch(function(error) {
-                                console.log("Playback boks dicegah:", error);
-                                handleAutoplayBlocked();
-                            });
-                        } else {
-                            afterBoks();
-                        }
+                                playSequence();
+                            }, 500);
+                        });
                     }, 200);
                 });
             }, 200);

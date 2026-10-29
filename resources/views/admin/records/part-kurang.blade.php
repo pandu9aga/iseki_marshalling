@@ -494,17 +494,17 @@
     var panggilanAudio = document.getElementById('panggilanPlayer');
     var namaAudio = document.getElementById('namaPlayer');
 
-    // Tune audio slideshow agar nada lebih tinggi/melengking (tanpa CDN)
+    // Tune audio slideshow agar nada normal
     function setupAudioTuning(el, rate) {
         if (!el) return;
-        el.playbackRate = rate || 1.18; // ~18% lebih tinggi & melengking
-        el.preservesPitch = false;
-        if ('mozPreservesPitch' in el) el.mozPreservesPitch = false;
-        if ('webkitPreservesPitch' in el) el.webkitPreservesPitch = false;
+        el.playbackRate = rate || 1.0;
+        el.preservesPitch = true;
+        if ('mozPreservesPitch' in el) el.mozPreservesPitch = true;
+        if ('webkitPreservesPitch' in el) el.webkitPreservesPitch = true;
     }
 
-    setupAudioTuning(panggilanAudio, 1.18);
-    setupAudioTuning(namaAudio, 1.15);
+    setupAudioTuning(panggilanAudio, 1.0);
+    setupAudioTuning(namaAudio, 1.0);
 
     $(document).ready(function() {
         var table = $('#partKurangTable').DataTable({

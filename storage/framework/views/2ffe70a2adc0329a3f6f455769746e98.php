@@ -249,6 +249,12 @@
                                 <p class="<?php echo e(request()->routeIs('admin.main-types.*') ? 'text-primary' : ''); ?>">Kategori (Main Type)</p>
                             </a>
                         </li>
+                        <li class="nav-item <?php echo e(request()->routeIs('admin.foto-parts.*') ? 'active' : ''); ?>">
+                            <a href="<?php echo e(route('admin.foto-parts.index')); ?>">
+                                <i class="fas fa-camera"></i>
+                                <p class="<?php echo e(request()->routeIs('admin.foto-parts.*') ? 'text-primary' : ''); ?>">Foto Part</p>
+                            </a>
+                        </li>
                         <li class="nav-item <?php echo e(request()->routeIs('admin.records.*') && !request()->routeIs('admin.ng.*') ? 'active' : ''); ?>">
                             <a href="<?php echo e(route('admin.records.index')); ?>">
                                 <i class="fas fa-file-alt"></i>
@@ -279,12 +285,6 @@
                                 <p class="<?php echo e(request()->routeIs('admin.part-kurang.*') ? 'text-primary' : ''); ?>">Part Kurang</p>
                             </a>
                         </li>
-                        <li class="nav-item <?php echo e(request()->routeIs('admin.foto-parts.*') ? 'active' : ''); ?>">
-                            <a href="<?php echo e(route('admin.foto-parts.index')); ?>">
-                                <i class="fas fa-camera"></i>
-                                <p class="<?php echo e(request()->routeIs('admin.foto-parts.*') ? 'text-primary' : ''); ?>">Photo Part</p>
-                            </a>
-                        </li>
                         <li class="nav-item <?php echo e(request()->routeIs('admin.punishments.*') ? 'active' : ''); ?>">
                             <a href="<?php echo e(route('admin.punishments.index')); ?>">
                                 <i class="fas fa-gavel"></i>
@@ -297,6 +297,10 @@
                                 <p class="<?php echo e(request()->routeIs('admin.member-areas.*') ? 'text-primary' : ''); ?>">Member Area</p>
                             </a>
                         </li>
+                        <li class="nav-item <?php echo e(request()->routeIs('admin.member-perakitans.*') ? 'active' : ''); ?>">
+                            <a href="<?php echo e(route('admin.member-perakitans.index')); ?>">
+                                <i class="fas fa-people-carry"></i>
+                                <p class="<?php echo e(request()->routeIs('admin.member-perakitans.*') ? 'text-primary' : ''); ?>">Member Perakitan</p>
                         <li class="nav-item <?php echo e(request()->routeIs('admin.map-areas.*') ? 'active' : ''); ?>">
                             <a href="<?php echo e(route('admin.map-areas.index')); ?>">
                                 <i class="fas fa-map"></i>

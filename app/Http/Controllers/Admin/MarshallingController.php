@@ -425,7 +425,7 @@ class MarshallingController extends Controller
                         $box = trim($row[15] ?? ''); // P (BOX)
                         $difference = trim($row[16] ?? ''); // Q (PEMBEDA)
                         
-                        if ($skipMark !== '' || $codePart === '') {
+                        if ($skipMark !== '' || $codePart === '' || $locationRack === '') {
                             // Only count skipped rows once per sheet
                             if ($colIdx === 17) $skipped++;
                             continue;

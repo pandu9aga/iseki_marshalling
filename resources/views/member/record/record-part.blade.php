@@ -128,10 +128,10 @@
     function getFastAudio(ch) {
         if (!audioCache[ch]) {
             var audio = new Audio('{{ asset("assets/sounds/" . config("app.sound_theme", "a")) }}/' + ch + '.mp3');
-            audio.playbackRate = 1.85; // Speed audio
-            audio.preservesPitch = false;
-            if ('mozPreservesPitch' in audio) audio.mozPreservesPitch = false;
-            if ('webkitPreservesPitch' in audio) audio.webkitPreservesPitch = false;
+            audio.playbackRate = 1; // Speed audio
+            audio.preservesPitch = true;
+            if ('mozPreservesPitch' in audio) audio.mozPreservesPitch = true;
+            if ('webkitPreservesPitch' in audio) audio.webkitPreservesPitch = true;
             audio.preload = 'auto'; 
             audioCache[ch] = audio;
         }
@@ -209,10 +209,16 @@
         if (!currentRow) return;
         
         var cells = currentRow.querySelectorAll('td');
-        if (cells.length < 2) return;
+        if (cells.length < 3) return;
         
-        var codeRack = cells[1].textContent.trim().toLowerCase();
-        var chars = codeRack.split('');
+        // Ambil Location_Rack (kolom index 2)
+        var locationRack = cells[2].textContent.trim();
+        
+        // Jika diawali huruf, buang huruf di awal hingga bertemu angka pertama
+        // Contoh: M1-7B -> 1-7B, GR4-90C -> 4-90C
+        locationRack = locationRack.replace(/^[a-zA-Z]+/, '');
+        
+        var chars = locationRack.toLowerCase().split('');
         
         playCharSounds(chars, 0);
     }

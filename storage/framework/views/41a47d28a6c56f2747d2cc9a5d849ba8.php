@@ -950,7 +950,7 @@
             html += '      <div class="text-danger fw-bold text-start" style="font-size:1.15rem;"><i class="fas fa-clipboard-list me-1"></i>Catatan Part Kurang:</div>';
             html += '      <div>' + categoryBadge + '</div>';
             html += '    </div>';
-            html += '    <div class="comment-big-box"><span class="comment-text-inner">' + escHtml(item.perakitan_comment) + '</span></div>';
+            html += '    <div class="comment-big-box text-wrap"><span class="comment-text-inner">' + escHtml(item.perakitan_comment) + '</span></div>';
             html += '  </div>';
             html += '</div>';
 
