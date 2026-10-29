@@ -494,11 +494,9 @@
      * - Huruf dieja satu per satu (misal 'A' -> 'a')
      * - Angka / blok angka dibaca dengan kaidah bilangan Indonesia (misal '103' -> ['100', '3'])
      */
-    function parseLocationToTokens(str) {
-        if (!str) return [];
-        // Hapus huruf awalan jika diawali huruf (misal M1-7B -> 1-7B, GR4-90C -> 4-90C)
-        var cleanedStr = str.toString().trim().replace(/^[a-zA-Z]+/, '');
-        var parts = cleanedStr.match(/[a-zA-Z]+|[0-9]+/g);
+    function parseLocationSegmentToTokens(segment) {
+        if (!segment) return [];
+        var parts = segment.match(/[a-zA-Z]+|[0-9]+/g);
         if (!parts) return [];
         var tokens = [];
         parts.forEach(function(part) {
@@ -519,10 +517,37 @@
     var boxValue = '{{ $recordList->Box }}';
     var qtyValue = '{{ $recordList->Qty }}';
 
+    function playLocationSounds(onComplete) {
+        var cleanedLoc = (locationValue || '').toString().trim().replace(/^[a-zA-Z]+/, '');
+        if (!cleanedLoc) {
+            if (onComplete) onComplete();
+            return;
+        }
+
+        if (cleanedLoc.indexOf('-') !== -1) {
+            var segments = cleanedLoc.split('-');
+            var seg1Tokens = parseLocationSegmentToTokens(segments[0]);
+            var seg2Tokens = parseLocationSegmentToTokens(segments.slice(1).join('-'));
+
+            // Sebelum strip pakai theme 'b', sesudah strip pakai theme 'a' (suara beda selang-seling)
+            playCharSounds(seg1Tokens, 0, 'b', 1.3, function() {
+                loopTimeout = setTimeout(function() {
+                    playCharSounds(seg2Tokens, 0, 'a', 1.3, function() {
+                        if (onComplete) onComplete();
+                    });
+                }, 120);
+            });
+        } else {
+            var tokens = parseLocationSegmentToTokens(cleanedLoc);
+            playCharSounds(tokens, 0, 'b', 1.3, function() {
+                if (onComplete) onComplete();
+            });
+        }
+    }
+
     function playSequence() {
-        // 1. Bunyikan Location Rack (sound b, speed 1.3)
-        var locationTokens = parseLocationToTokens(locationValue);
-        playCharSounds(locationTokens, 0, 'b', 1.3, function() {
+        // 1. Bunyikan Location Rack (selang-seling theme sebelum dan sesudah tanda '-')
+        playLocationSounds(function() {
             loopTimeout = setTimeout(function() {
                 // 2. Bunyikan Qty (sound a, normal)
                 var qtyTokens = parseQtyToTokens(qtyValue);
