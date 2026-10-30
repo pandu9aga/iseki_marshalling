@@ -877,5 +877,40 @@
     $('#partForm').on('submit', function() {
         stopAllSounds();
     });
+
+    // Auto Focus Permanen ke input scanner
+    function keepScannerFocused() {
+        // Jangan paksa fokus jika mode kamera aktif atau user sedang mengisi input lain (misal Qty_Record, modal remark, dll)
+        if (isCameraScanning) return;
+        var activeEl = document.activeElement;
+        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT')) {
+            if (activeEl.id !== 'scannerRackInput') return;
+        }
+        if ($('#usbScannerBox').is(':visible') && !$('#scannerRackInput').is(':disabled')) {
+            $('#scannerRackInput').focus({ preventScroll: true });
+        }
+    }
+
+    // Kembalikan fokus saat user menyentuh layar / klik / scroll
+    $(document).on('click touchstart touchend', function(e) {
+        // Abaikan jika yang diklik adalah tombol/input form lain
+        if ($(e.target).closest('input, textarea, select, button, a, .modal, .camera-scanner-container').length) {
+            return;
+        }
+        setTimeout(keepScannerFocused, 100);
+    });
+
+    $(window).on('scroll', function() {
+        clearTimeout(window._scrollFocusTimeout);
+        window._scrollFocusTimeout = setTimeout(keepScannerFocused, 250);
+    });
+
+    // Event blur: jika input scanner kehilangan fokus tanpa disengaja, tarik fokus kembali
+    $('#scannerRackInput').on('blur', function() {
+        setTimeout(keepScannerFocused, 150);
+    });
+
+    // Interval penjaga (heartbeat) untuk memastikan input selalu siap menerima barcode
+    setInterval(keepScannerFocused, 1000);
 </script>
 @endsection

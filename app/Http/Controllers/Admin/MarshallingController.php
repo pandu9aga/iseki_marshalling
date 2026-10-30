@@ -433,6 +433,10 @@ class MarshallingController extends Controller
                         
                         $qtyStr = trim($row[$colIdx] ?? '');
                         if ($qtyStr === '') continue;
+
+                        // Ekstrak angka dari $qtyStr (misal '1u' -> 1, '3u' -> 3)
+                        $numericQty = (int)preg_replace('/[^0-9]/', '', $qtyStr);
+                        if ($numericQty <= 0) continue;
                         
                         // Check if cell is strikethrough (can be slow, but necessary)
                         $isStrikethrough = $sheet->getCell([$colIdx + 1, $r + 1])->getStyle()->getFont()->getStrikethrough();
@@ -473,7 +477,8 @@ class MarshallingController extends Controller
                                     foreach ($bqParts as $bq) {
                                         if (strpos($bq, '=') !== false) {
                                             [$bName, $bQty] = explode('=', $bq, 2);
-                                            $diffOverrides[$tId][] = ['box' => trim($bName), 'qty' => (int)trim($bQty)];
+                                            $parsedBQty = (int)preg_replace('/[^0-9]/', '', trim($bQty));
+                                            $diffOverrides[$tId][] = ['box' => trim($bName), 'qty' => $parsedBQty];
                                         }
                                     }
                                 }
@@ -485,8 +490,8 @@ class MarshallingController extends Controller
                             foreach ($diffOverrides[$typeId] as $ov) {
                                 $entries[] = ['box' => $ov['box'], 'qty' => $ov['qty']];
                             }
-                        } elseif (is_numeric($qtyStr) && $qtyStr > 0) {
-                            $entries[] = ['box' => $box, 'qty' => (int)$qtyStr];
+                        } elseif ($numericQty > 0) {
+                            $entries[] = ['box' => $box, 'qty' => $numericQty];
                         }
                         
                         foreach ($entries as $entry) {
