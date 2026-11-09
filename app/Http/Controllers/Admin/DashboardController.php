@@ -17,7 +17,7 @@ class DashboardController extends Controller
         $date = $request->date ?: now()->format('Y-m-d');
         $today = now()->format('Y-m-d');
 
-        $query = Record::with(['recordLists', 'member']);
+        $query = Record::with(['recordLists', 'member', 'pendings']);
 
         if ($date == $today) {
             $query->where(function ($q) use ($date) {
@@ -31,11 +31,26 @@ class DashboardController extends Controller
         }
 
         $allRecords = $query->get();
-        $records = $allRecords->groupBy('Id_User')->map(function ($userRecords) {
-            return $userRecords->groupBy('Type');
+
+        // Calculate duration for each record
+        $allRecords->each(function ($record) {
+            $record->computed_duration = $record->calculateDurationSeconds();
         });
 
-        $totalMembers = $records->count();
+        // Part di-scan per area+member, dan kanban yang dibantu per area+helper
+        $partsByMember = [];
+        $helped = [];
+        foreach ($allRecords as $r) {
+            foreach ($r->scannersSummary() as $s) {
+                $partsByMember[$r->Area][$s['id']] = ($partsByMember[$r->Area][$s['id']] ?? 0) + $s['parts'];
+                if ($s['role'] === 'Helper') {
+                    $helped[$r->Area][$s['id']][] = $s + ['record' => $r];
+                }
+            }
+        }
+
+        $personIds = $allRecords->pluck('Id_User')->merge(collect($helped)->flatMap(fn($h) => array_keys($h)))->unique();
+        $totalMembers = $personIds->count();
         $totalRecords = $allRecords->count();
         $totalDone = $allRecords->filter(fn($r) => $r->recordLists->every(fn($rl) => $rl->Time_Record !== null))->count();
         $totalProgress = $totalRecords - $totalDone;
@@ -52,28 +67,38 @@ class DashboardController extends Controller
             })
             ->count();
 
-        $chartData = [];
-        $userIds = [];
-        foreach ($records as $userId => $typeGroups) {
-            $userIds[] = $userId;
-        }
-        if (!empty($userIds)) {
-            $users = Member::whereIn('id', $userIds)->get()->keyBy('id');
-        } else {
-            $users = collect();
-        }
-        foreach ($records as $userId => $typeGroups) {
-            $memberName = $users->has($userId) ? $users[$userId]->nama : 'Unknown';
-            $doneCount = 0;
-            foreach ($typeGroups as $type => $typeRecords) {
-                $doneCount += $typeRecords->filter(fn($r) => $r->recordLists->every(fn($rl) => $rl->Time_Record !== null))->count();
+        $users = $personIds->isEmpty() ? collect() : Member::whereIn('id', $personIds->all())->get()->keyBy('id');
+        $names = $users->pluck('nama', 'id');
+
+        // Group by Area -> User -> Type (helper tanpa record sendiri di area itu dapat grup kosong)
+        $records = $allRecords->groupBy('Area')->sortKeys()->map(function ($areaRecords, $area) use ($users, $helped) {
+            $groups = $areaRecords->groupBy('Id_User')->map(fn($userRecords) => $userRecords->groupBy('Type'));
+            foreach (array_keys($helped[$area] ?? []) as $hid) {
+                if (!$groups->has($hid)) {
+                    $groups[$hid] = collect();
+                }
             }
-            $chartData[] = ['member' => $memberName, 'done' => $doneCount];
+            return $groups->sortBy(fn($typeGroups, $userId) => $users->has($userId) ? strtolower($users[$userId]->nama) : 'unknown');
+        });
+
+        $chartData = [];
+        foreach ($records as $area => $areaGroups) {
+            foreach ($areaGroups as $userId => $typeGroups) {
+                $memberName = $users->has($userId) ? $users[$userId]->nama : 'Unknown';
+                $doneCount = 0;
+                foreach ($typeGroups as $type => $typeRecords) {
+                    $doneCount += $typeRecords->filter(fn($r) => $r->recordLists->every(fn($rl) => $rl->Time_Record !== null))->count();
+                }
+                
+                $areaLabel = ucwords(str_replace('_', ' ', $area));
+                $chartData[] = ['member' => $areaLabel . ' - ' . $memberName, 'done' => $doneCount,
+                    'helper' => collect($helped[$area][$userId] ?? [])->sum('parts')];
+            }
         }
 
         return view('admin.dashboard', compact(
             'records', 'date', 'totalMembers', 'totalRecords',
-            'totalDone', 'totalProgress', 'totalNg', 'chartData'
+            'totalDone', 'totalProgress', 'totalNg', 'chartData', 'partsByMember', 'helped', 'names'
         ));
     }
 
@@ -82,7 +107,7 @@ class DashboardController extends Controller
         $date = $request->date ?: now()->format('Y-m-d');
         $today = now()->format('Y-m-d');
 
-        $query = Record::with(['recordLists', 'member']);
+        $query = Record::with(['recordLists', 'member', 'pendings']);
 
         if ($date == $today) {
             $query->where(function ($q) use ($date) {

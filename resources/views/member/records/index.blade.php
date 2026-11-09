@@ -12,10 +12,16 @@
 <div class="container">
     <div class="page-inner">
         <div class="page-header d-flex justify-content-between align-items-center">
-            <h4 class="page-title text-primary mb-0">My Record List</h4>
+            <h4 class="page-title text-primary mb-0">Riwayat Hari Ini</h4>
             <div>
                 <a href="{{ route('member.record.create') }}" class="btn btn-primary btn-sm"><i class="fas fa-qrcode"></i> New Record</a>
             </div>
+        </div>
+        <div class="d-flex flex-wrap mb-3" style="gap: 8px;">
+            <span class="badge bg-secondary" style="font-size:13px; padding:6px 10px;">Total: {{ $counts->sum() }}</span>
+            <span class="badge bg-success" style="font-size:13px; padding:6px 10px;">Selesai: {{ $counts['Selesai'] ?? 0 }}</span>
+            <span class="badge bg-primary" style="font-size:13px; padding:6px 10px;">Dikerjakan: {{ $counts['Dikerjakan'] ?? 0 }}</span>
+            <span class="badge bg-warning text-dark" style="font-size:13px; padding:6px 10px;">Pending: {{ $counts['Pending'] ?? 0 }}</span>
         </div>
         <div class="card">
             <div class="card-body">
@@ -29,7 +35,9 @@
                                 <th>Production Date</th>
                                 <th>Area</th>
                                 <th>Time Record</th>
+                                <th>Peran</th>
                                 <th>Status</th>
+                                <th>Remark</th>
                             </tr>
                         </thead>
                     </table>
@@ -57,15 +65,10 @@
                 { data: 'Production_Date_Record', name: 'Production_Date_Record' },
                 { data: 'Area', name: 'Area' },
                 { data: 'Time_Record', name: 'Time_Record' },
-                { data: 'status', name: 'status' }
-            ],
-            createdRow: function(row, data, dataIndex) {
-                $(row).css('cursor', 'pointer');
-                $(row).attr('title', 'Click to view');
-                $(row).on('click', function() {
-                    window.location = "{{ url('member/record') }}/" + data.DT_RowId + "/record-part";
-                });
-            }
+                { data: 'peran', name: 'peran', orderable: false, searchable: false },
+                { data: 'status', name: 'status', orderable: false, searchable: false },
+                { data: 'Remark', name: 'Remark' }
+            ]
         });
     });
 </script>

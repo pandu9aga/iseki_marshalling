@@ -74,6 +74,10 @@
                                 <th>Member</th>
                                 <th>Time Record</th>
                                 <th>Status</th>
+                                <th>Remark</th>
+                                @if($canDelete)
+                                <th>Action</th>
+                                @endif
                             </tr>
                         </thead>
                     </table>
@@ -111,6 +115,23 @@
 @section('script')
 <script>
     $(document).ready(function() {
+        var canDelete = @json($canDelete ?? false);
+        var tableColumns = [
+            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+            { data: 'Sequence_No_Record', name: 'Sequence_No_Record' },
+            { data: 'Production_Date_Record', name: 'Production_Date_Record' },
+            { data: 'Type', name: 'Type' },
+            { data: 'Area', name: 'Area' },
+            { data: 'member_name', name: 'member_name' },
+            { data: 'Time_Record', name: 'Time_Record' },
+            { data: 'status', name: 'status' },
+            { data: 'remark', name: 'remark' }
+        ];
+
+        if (canDelete) {
+            tableColumns.push({ data: 'action', name: 'action', orderable: false, searchable: false });
+        }
+
         var table = $('#recordsTable').DataTable({
             pageLength: 50,
             lengthMenu: [10, 25, 50, 100],
@@ -125,20 +146,36 @@
                     d.filter_type = $('#filterForm [name="filter_type"]').val();
                 }
             },
-            columns: [
-                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-                { data: 'Sequence_No_Record', name: 'Sequence_No_Record' },
-                { data: 'Production_Date_Record', name: 'Production_Date_Record' },
-                { data: 'Type', name: 'Type' },
-                { data: 'Area', name: 'Area' },
-                { data: 'member_name', name: 'member_name' },
-                { data: 'Time_Record', name: 'Time_Record' },
-                { data: 'status', name: 'status' }
-            ],
+            columns: tableColumns,
             createdRow: function(row, data, dataIndex) {
                 $(row).css('cursor', 'pointer');
-                $(row).on('click', function() {
+                $(row).on('click', function(e) {
+                    if ($(e.target).closest('.delete-btn').length > 0) {
+                        return;
+                    }
                     showRecordDetail(data.Id_Record);
+                });
+            }
+        });
+
+        $(document).on('click', '.delete-btn', function(e) {
+            e.stopPropagation();
+            var id = $(this).data('id');
+            if (confirm('Apakah Anda yakin ingin menghapus record ini beserta seluruh list part-nya?')) {
+                $.ajax({
+                    url: "{{ url('admin/records') }}/" + id,
+                    type: 'DELETE',
+                    data: { _token: '{{ csrf_token() }}' },
+                    success: function(res) {
+                        if (res.success) {
+                            table.ajax.reload();
+                        } else {
+                            alert(res.message || 'Gagal menghapus record');
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('Terjadi kesalahan saat menghapus record.');
+                    }
                 });
             }
         });
@@ -163,8 +200,9 @@
             html += '<strong>Production Date:</strong> ' + data.Production_Date_Record + '<br>';
             html += '<strong>Type:</strong> ' + data.Type + '<br>';
             html += '<strong>Area:</strong> ' + formattedArea + '<br>';
-            html += '<strong>Member:</strong> ' + (data.member ? data.member.nama : '-') + '</div>';
-            html += '<div class="table-responsive"><table class="table table-bordered table-sm" style="font-size:0.75rem;"><thead><tr><th style="white-space:nowrap;">Seq</th><th style="white-space:nowrap;">Code Part</th><th style="white-space:nowrap;">Name Part</th><th style="white-space:nowrap;">Mode</th><th style="white-space:nowrap;">Code<br>Rack</th><th style="white-space:nowrap;">Box</th><th style="white-space:nowrap;">Qty</th><th style="white-space:nowrap;">Qty<br>Rec</th><th style="white-space:nowrap;">Time<br>Rec</th><th style="white-space:nowrap;">Stat</th></tr></thead><tbody>';
+            html += '<strong>Member:</strong> ' + (data.member ? data.member.nama : '-') + '<br>';
+            html += '<strong>Remark:</strong> ' + (data.Remark ? data.Remark : '-') + '</div>';
+            html += '<div class="table-responsive"><table class="table table-bordered table-sm" style="font-size:0.75rem;"><thead><tr><th style="white-space:nowrap;">Seq</th><th style="white-space:nowrap;">Code Part</th><th style="white-space:nowrap;">Name Part</th><th style="white-space:nowrap;">Mode</th><th style="white-space:nowrap;">Code<br>Rack</th><th style="white-space:nowrap;">Diff</th><th style="white-space:nowrap;">Location</th><th style="white-space:nowrap;">Box</th><th style="white-space:nowrap;">Qty</th><th style="white-space:nowrap;">Qty<br>Rec</th><th style="white-space:nowrap;">Time<br>Rec</th><th style="white-space:nowrap;">Stat</th><th style="white-space:nowrap;">Discan<br>oleh</th></tr></thead><tbody>';
             data.record_lists.forEach(function(rl) {
                 var statusHtml = '';
                 if (!rl.Time_Record) {
@@ -181,7 +219,7 @@
                 var modeBadge = rl.Mode === 'ai' ? '<span class="badge bg-info">AI</span>' : '<span class="badge bg-secondary">Manual</span>';
                 var enterTime = rl.Time_Record ? rl.Time_Record.substring(0, 10) + '<br>' + rl.Time_Record.substring(11, 19) : '-';
                 var namePart = rl.Name_Part ? (rl.Name_Part.length > 15 ? rl.Name_Part.substring(0, 15) + '...' : rl.Name_Part) : '-';
-                html += '<tr><td>' + rl.Sequence_No + '</td><td>' + rl.Code_Part + '</td><td style="font-size:0.7rem;">' + namePart + '</td><td>' + modeBadge + '</td><td>' + rl.Code_Rack + '</td><td>' + (rl.Box || '-') + '</td><td>' + rl.Qty + '</td><td>' + (rl.Qty_Record || '-') + '</td><td>' + enterTime + '</td><td>' + statusHtml + '</td></tr>';
+                html += '<tr><td>' + rl.Sequence_No + '</td><td>' + rl.Code_Part + '</td><td style="font-size:0.7rem;">' + namePart + '</td><td>' + modeBadge + '</td><td>' + rl.Code_Rack + '</td><td>' + (rl.Difference ? rl.Difference.replace(/;/g, '<br>') : '-') + '</td><td>' + (rl.Location_Rack || '-') + '</td><td>' + (rl.Box || '-') + '</td><td>' + rl.Qty + '</td><td>' + (rl.Qty_Record || '-') + '</td><td>' + enterTime + '</td><td>' + statusHtml + '</td><td>' + (rl.Scanner || '-') + '</td></tr>';
             });
             html += '</tbody></table></div>';
             $('#recordDetailContent').html(html);

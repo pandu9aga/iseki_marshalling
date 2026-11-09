@@ -15,6 +15,9 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    // Fitur pending kanban: nonaktif secara default, set PENDING_ENABLED=true untuk mengaktifkan lagi
+    'pending_enabled' => (bool) env('PENDING_ENABLED', false),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment
@@ -40,6 +43,9 @@ return [
     */
 
     'debug' => (bool) env('APP_DEBUG', false),
+
+    // Khusus development: klik Code Rack di halaman scan (desktop) = dianggap scan benar. JANGAN aktifkan di server produksi.
+    'dev_click_scan' => (bool) env('DEV_CLICK_SCAN', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -123,4 +129,8 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'sound_theme' => env('SOUND_THEME', 'a'),
+
 ];
+
+

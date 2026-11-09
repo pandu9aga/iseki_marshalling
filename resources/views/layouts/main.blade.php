@@ -13,6 +13,15 @@
     <link rel="stylesheet" href="{{ asset('assets/css/kaiadmin.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/css/all.min.css') }}" />
 
+    <!-- Dynamic Favicon -->
+    <script src="/iseki_pro_app/js/dynamic-favicon.js"></script>
+    <script>document.addEventListener("DOMContentLoaded", function() { setDynamicFavicon("trolley", "Marshalling"); });</script>
+
+    <!-- Dynamic Favicon Assets -->
+    <link rel="stylesheet" href="/iseki_pro_app/css/icon.css">
+    <script src="/iseki_pro_app/js/dynamic-favicon.js"></script>
+    <script>document.addEventListener("DOMContentLoaded", function() { setDynamicFavicon("trolley", "Marshalling"); });</script>
+
     <style>
         :root {
             --primary: #F36494;
@@ -107,6 +116,85 @@
                 color: #FFFFFF;
             }
         }
+
+        /* Floating Toast Alert Part Kurang */
+        #partKurangToastContainer {
+            position: fixed;
+            top: 80px;
+            right: 24px;
+            z-index: 99999;
+            width: 360px;
+            max-width: calc(100vw - 36px);
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .part-kurang-toast {
+            pointer-events: auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08);
+            border: 1px solid #ffeeba;
+            border-left: 6px solid #ffc107;
+            overflow: hidden;
+            animation: slideInDown 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .part-kurang-toast-header {
+            padding: 10px 14px;
+            background: #fff8e1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #fff2b2;
+        }
+        .part-kurang-toast-body {
+            padding: 12px 14px;
+        }
+        .part-kurang-toast .comment-text {
+            background: #fff9e6;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-weight: 700;
+            color: #212529;
+            font-size: 0.95rem;
+            word-break: break-word;
+            border: 1px dashed #ffd54f;
+            margin-top: 6px;
+            margin-bottom: 6px;
+        }
+
+        /* Custom Purple Outline Button (for kategori salah) */
+        .btn-outline-purple {
+            color: #6f42c1 !important;
+            border-color: #6f42c1 !important;
+            background-color: transparent !important;
+        }
+        .btn-outline-purple:hover {
+            color: #ffffff !important;
+            background-color: #6f42c1 !important;
+            border-color: #6f42c1 !important;
+        }
+        .btn-check:checked + .btn-outline-purple,
+        .btn-check:active + .btn-outline-purple,
+        .btn-outline-purple.active,
+        .btn-outline-purple:active {
+            color: #ffffff !important;
+            background-color: #6f42c1 !important;
+            border-color: #6f42c1 !important;
+            box-shadow: 0 0 0 0.25rem rgba(111, 66, 193, 0.4) !important;
+        }
     </style>
     @yield('style')
 </head>
@@ -137,6 +225,12 @@
                                 <p class="{{ request()->routeIs('admin.dashboard') ? 'text-primary' : '' }}">Dashboard</p>
                             </a>
                         </li>
+                        <li class="nav-item {{ request()->routeIs('admin.summary') ? 'active' : '' }}">
+                            <a href="{{ route('admin.summary') }}">
+                                <i class="fas fa-chart-line"></i>
+                                <p class="{{ request()->routeIs('admin.summary') ? 'text-primary' : '' }}">Rangkuman Jam</p>
+                            </a>
+                        </li>
                         <li class="nav-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
                             <a href="{{ route('admin.users.index') }}">
                                 <i class="fas fa-users-cog"></i>
@@ -147,6 +241,18 @@
                             <a href="{{ route('admin.types.index') }}">
                                 <i class="fas fa-car"></i>
                                 <p class="{{ request()->routeIs('admin.types.*') ? 'text-primary' : '' }}">Type Traktor</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('admin.main-types.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.main-types.index') }}">
+                                <i class="fas fa-layer-group"></i>
+                                <p class="{{ request()->routeIs('admin.main-types.*') ? 'text-primary' : '' }}">Kategori (Main Type)</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('admin.foto-parts.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.foto-parts.index') }}">
+                                <i class="fas fa-camera"></i>
+                                <p class="{{ request()->routeIs('admin.foto-parts.*') ? 'text-primary' : '' }}">Foto Part</p>
                             </a>
                         </li>
                         <li class="nav-item {{ request()->routeIs('admin.records.*') && !request()->routeIs('admin.ng.*') ? 'active' : '' }}">
@@ -161,19 +267,107 @@
                                 <p class="{{ request()->routeIs('admin.ng.*') ? 'text-primary' : '' }}">NG</p>
                             </a>
                         </li>
+                        <li class="nav-item {{ request()->routeIs('admin.empty-part.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.empty-part.index') }}">
+                                <i class="fas fa-box-open"></i>
+                                <p class="{{ request()->routeIs('admin.empty-part.*') ? 'text-primary' : '' }}">Empty Part</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('admin.report-empty.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.report-empty.list') }}">
+                                <i class="fas fa-flag"></i>
+                                <p class="{{ request()->routeIs('admin.report-empty.*') ? 'text-primary' : '' }}">Report Empty</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('admin.part-kurang.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.part-kurang.list') }}">
+                                <i class="fas fa-clipboard-list"></i>
+                                <p class="{{ request()->routeIs('admin.part-kurang.*') ? 'text-primary' : '' }}">Part Kurang</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('admin.punishments.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.punishments.index') }}">
+                                <i class="fas fa-gavel"></i>
+                                <p class="{{ request()->routeIs('admin.punishments.*') ? 'text-primary' : '' }}">Punishment</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('admin.member-areas.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.member-areas.index') }}">
+                                <i class="fas fa-map-marked-alt"></i>
+                                <p class="{{ request()->routeIs('admin.member-areas.*') ? 'text-primary' : '' }}">Member Area</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('admin.member-perakitans.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.member-perakitans.index') }}">
+                                <i class="fas fa-people-carry"></i>
+                                <p class="{{ request()->routeIs('admin.member-perakitans.*') ? 'text-primary' : '' }}">Member Perakitan</p>
+                        <li class="nav-item {{ request()->routeIs('admin.map-areas.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.map-areas.index') }}">
+                                <i class="fas fa-map"></i>
+                                <p class="{{ request()->routeIs('admin.map-areas.*') ? 'text-primary' : '' }}">Map Area</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('admin.marshalling-settings.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.marshalling-settings.index') }}">
+                                <i class="fas fa-sort-amount-down"></i>
+                                <p class="{{ request()->routeIs('admin.marshalling-settings.*') ? 'text-primary' : '' }}">Marshalling Setting</p>
+                            </a>
+                        </li>
                         @endif
 
                         @if(Auth::guard('member')->check())
-                        <li class="nav-item {{ request()->routeIs('member.records.index') ? 'active' : '' }}">
-                            <a href="{{ route('member.records.index') }}">
-                                <i class="fas fa-list"></i>
-                                <p class="{{ request()->routeIs('member.records.index') ? 'text-primary' : '' }}">Record List</p>
-                            </a>
-                        </li>
                         <li class="nav-item {{ request()->routeIs('member.record.create') ? 'active' : '' }}">
                             <a href="{{ route('member.record.create') }}">
                                 <i class="fas fa-qrcode"></i>
                                 <p class="{{ request()->routeIs('member.record.create') ? 'text-primary' : '' }}">Scan Record</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('member.records.index') ? 'active' : '' }}">
+                            <a href="{{ route('member.records.index') }}">
+                                <i class="fas fa-history"></i>
+                                <p class="{{ request()->routeIs('member.records.index') ? 'text-primary' : '' }}">Riwayat Hari Ini</p>
+                            </a>
+                        </li>
+                        @endif
+
+                        @if(Auth::guard('perakitan')->check())
+                        <li class="nav-item {{ request()->routeIs('perakitan.dashboard') ? 'active' : '' }}">
+                            <a href="{{ route('perakitan.dashboard') }}">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <p class="{{ request()->routeIs('perakitan.dashboard') ? 'text-primary' : '' }}">Dashboard</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('perakitan.kanban.*') ? 'active' : '' }}">
+                            <a href="{{ route('perakitan.kanban.index') }}">
+                                <i class="fas fa-qrcode"></i>
+                                <p class="{{ request()->routeIs('perakitan.kanban.*') ? 'text-primary' : '' }}">Scan Kanban</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('perakitan.prosedur.*') ? 'active' : '' }}">
+                            <a href="{{ route('perakitan.prosedur.index') }}">
+                                <i class="fas fa-file-pdf"></i>
+                                <p class="{{ request()->routeIs('perakitan.prosedur.*') ? 'text-primary' : '' }}">Prosedur</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('perakitan.comment.*') ? 'active' : '' }}">
+                            <a href="{{ route('perakitan.comment.index') }}">
+                                <i class="fas fa-comment-dots"></i>
+                                <p class="{{ request()->routeIs('perakitan.comment.*') ? 'text-primary' : '' }}">Part Kurang</p>
+                            </a>
+                        </li>
+                        @endif
+
+                        @if(!Auth::guard('admin')->check() && !Auth::guard('member')->check() && !Auth::guard('perakitan')->check())
+                        <li class="nav-item {{ request()->routeIs('public.part-kurang.*') ? 'active' : '' }}">
+                            <a href="{{ route('public.part-kurang.index') }}">
+                                <i class="fas fa-clipboard-list"></i>
+                                <p class="{{ request()->routeIs('public.part-kurang.*') ? 'text-primary' : '' }}">Part Kurang</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('login') ? 'active' : '' }}">
+                            <a href="{{ route('login') }}">
+                                <i class="fas fa-sign-in-alt"></i>
+                                <p>Halaman Login</p>
                             </a>
                         </li>
                         @endif
@@ -199,14 +393,17 @@
                 <nav class="navbar navbar-header navbar-expand-lg border-bottom" data-background-color="purple">
                     <div class="container-fluid">
                         <ul class="navbar-nav topbar-nav ms-md-auto align-items-center">
+                            @if(Auth::guard('admin')->check() || Auth::guard('member')->check() || Auth::guard('perakitan')->check())
                             <li class="nav-item dropdown hidden-caret">
                                 <a class="dropdown-toggle profile-pic" data-bs-toggle="dropdown" href="#" aria-expanded="false">
                                     <span class="profile-username">
                                         <span class="fw-bold text-white">
                                             @if(Auth::guard('admin')->check())
-                                                {{ Auth::guard('admin')->user()->name }}
+                                                 {{ Auth::guard('admin')->user()->name }}
                                             @elseif(Auth::guard('member')->check())
                                                 {{ Auth::guard('member')->user()->nama }}
+                                            @elseif(Auth::guard('perakitan')->check())
+                                                {{ Auth::guard('perakitan')->user()->nama }}
                                             @endif
                                         </span>
                                     </span>
@@ -227,6 +424,7 @@
                                     <i class="fas fa-user"></i>
                                     @if(Auth::guard('admin')->check()) {{ Auth::guard('admin')->user()->name }}
                                     @elseif(Auth::guard('member')->check()) {{ Auth::guard('member')->user()->nama }}
+                                    @elseif(Auth::guard('perakitan')->check()) {{ Auth::guard('perakitan')->user()->nama }}
                                     @endif
                                 </div>
                             </li>
@@ -235,6 +433,13 @@
                                     <i class="fas fa-sign-out-alt"></i> Logout
                                 </a>
                             </li>
+                            @else
+                            <li class="nav-item">
+                                <a href="{{ route('login') }}" class="btn btn-light btn-sm text-primary fw-bold px-3">
+                                    <i class="fas fa-sign-in-alt me-1"></i>Login
+                                </a>
+                            </li>
+                            @endif
                         </ul>
                     </div>
                 </nav>
@@ -289,14 +494,143 @@
     <script src="{{ asset('assets/js/core/bootstrap.min.js') }}"></script>
     <script src="{{ asset('assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js') }}"></script>
     <script src="{{ asset('assets/js/plugin/datatables/datatables.min.js') }}"></script>
+    <script src="{{ asset('assets/js/plugin/sweetalert/sweetalert2.all.min.js') }}"></script>
     <script src="{{ asset('assets/js/kaiadmin.min.js') }}"></script>
+    <script src="{{ asset('assets/js/sound-cache.js') }}?v={{ file_exists(public_path('assets/js/sound-cache.js')) ? filemtime(public_path('assets/js/sound-cache.js')) : '1' }}"></script>
     <script>
         $.ajaxSetup({
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             }
         });
+        if (window.SoundCache) {
+            window.SoundCache.init("{{ asset('') }}");
+        }
     </script>
+
+    @if(Auth::guard('member')->check())
+    <!-- Container Toast Notifikasi Part Kurang Realtime -->
+    <div id="partKurangToastContainer"></div>
+
+    <script>
+        (function() {
+            function escapeHtml(str) {
+                if (!str) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            function pollPartKurangNotifications() {
+                $.ajax({
+                    url: "{{ route('member.part-kurang.active-notifications') }}",
+                    type: "GET",
+                    dataType: "json",
+                    cache: false,
+                    data: { _t: new Date().getTime() },
+                    success: function(res) {
+                        if (!res || !res.notifications) return;
+                        var container = $('#partKurangToastContainer');
+                        var activeIdsOnServer = {};
+
+                        res.notifications.forEach(function(item) {
+                            activeIdsOnServer[item.id] = true;
+
+                            var toastElId = 'pk_toast_' + item.id;
+                            if ($('#' + toastElId).length === 0) {
+                                var catBadge = '';
+                                var cat = (item.category || 'kurang').toLowerCase();
+                                if (cat === 'kosong') {
+                                    catBadge = '<span class="badge bg-danger text-white"><i class="fas fa-times-circle me-1"></i>Kosong</span>';
+                                } else if (cat === 'salah') {
+                                    catBadge = '<span class="badge text-white" style="background-color: #6f42c1;"><i class="fas fa-exclamation-circle me-1"></i>Salah</span>';
+                                } else {
+                                    catBadge = '<span class="badge bg-warning text-dark"><i class="fas fa-exclamation-triangle me-1"></i>Kurang</span>';
+                                }
+
+                                var html = '' +
+                                    '<div class="part-kurang-toast shadow" id="' + toastElId + '">' +
+                                    '  <div class="part-kurang-toast-header">' +
+                                    '    <div class="d-flex align-items-center gap-2">' +
+                                    '      ' + catBadge +
+                                    '      <small class="text-muted fw-bold">' + escapeHtml(item.sequence_no) + ' (' + escapeHtml(item.area) + ')</small>' +
+                                    '    </div>' +
+                                    '    <button type="button" class="btn-close btn-sm ms-2" title="Tutup Notifikasi" data-id="' + item.id + '" style="font-size: 0.75rem;"></button>' +
+                                    '  </div>' +
+                                    '  <div class="part-kurang-toast-body">' +
+                                    '    <div class="d-flex align-items-center mb-1 text-dark">' +
+                                    '      <i class="fas fa-user-circle text-secondary me-2 fs-5"></i>' +
+                                    '      <div>' +
+                                    '        <strong class="d-block text-dark" style="font-size: 0.95rem;">' + escapeHtml(item.reporter_name) + '</strong>' +
+                                    '        <small class="text-muted"><i class="far fa-clock me-1"></i>' + escapeHtml(item.comment_time) + '</small>' +
+                                    '      </div>' +
+                                    '    </div>' +
+                                    '    <div class="comment-text">' + escapeHtml(item.comment) + '</div>' +
+                                    '  </div>' +
+                                    '</div>';
+
+                                container.append(html);
+                            }
+                        });
+
+                        // Hapus toast di DOM jika sudah tidak pending atau sudah di-dismiss di database
+                        $('.part-kurang-toast').each(function() {
+                            var tid = $(this).attr('id').replace('pk_toast_', '');
+                            if (!activeIdsOnServer[tid]) {
+                                $(this).fadeOut(300, function() { $(this).remove(); });
+                            }
+                        });
+                    },
+                    error: function(err) {
+                        console.warn('Gagal memuat notifikasi part kurang:', err);
+                    }
+                });
+            }
+
+            // Event handler klik tombol tutup pada toast (disimpan langsung ke database)
+            $(document).on('click', '#partKurangToastContainer .btn-close', function(e) {
+                e.preventDefault();
+                var id = $(this).data('id');
+
+                var toast = $('#pk_toast_' + id);
+                toast.css({
+                    opacity: 0,
+                    transform: 'translateY(-20px) scale(0.95)'
+                });
+                setTimeout(function() {
+                    toast.remove();
+                }, 300);
+
+                // Simpan status penutupan ke database
+                var dismissUrl = "{{ route('member.part-kurang.dismiss', ':id') }}".replace(':id', id);
+                $.ajax({
+                    url: dismissUrl,
+                    type: "POST",
+                    dataType: "json",
+                    data: {
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    error: function(err) {
+                        console.warn('Gagal menyimpan penutupan notifikasi ke database:', err);
+                    }
+                });
+            });
+
+            // Jalankan polling pertama kali dan ulangi setiap 5 detik
+            $(document).ready(function() {
+                // Bersihkan cache lama localStorage jika ada
+                try { localStorage.removeItem('dismissed_pk_ids'); } catch(e) {}
+
+                pollPartKurangNotifications();
+                setInterval(pollPartKurangNotifications, 5000);
+            });
+        })();
+    </script>
+    @endif
+
     @yield('script')
 </body>
 </html>

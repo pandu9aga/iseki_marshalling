@@ -66,10 +66,18 @@
                                 <option value="">Select Area</option>
                                 <option value="sub_assy" {{ $marshalling->Area == 'sub_assy' ? 'selected' : '' }}>Sub Assy</option>
                                 <option value="sub_engine" {{ $marshalling->Area == 'sub_engine' ? 'selected' : '' }}>Sub Engine</option>
+                                <option value="sub_engine_a" {{ $marshalling->Area == 'sub_engine_a' ? 'selected' : '' }}>Sub Engine A</option>
+                                <option value="sub_engine_b" {{ $marshalling->Area == 'sub_engine_b' ? 'selected' : '' }}>Sub Engine B</option>
                                 <option value="transmisi" {{ $marshalling->Area == 'transmisi' ? 'selected' : '' }}>Transmisi</option>
+                                <option value="transmisi_a" {{ $marshalling->Area == 'transmisi_a' ? 'selected' : '' }}>Transmisi A</option>
+                                <option value="transmisi_b" {{ $marshalling->Area == 'transmisi_b' ? 'selected' : '' }}>Transmisi B</option>
+                                <option value="transmisi_c" {{ $marshalling->Area == 'transmisi_c' ? 'selected' : '' }}>Transmisi C</option>
                                 <option value="main_line" {{ $marshalling->Area == 'main_line' ? 'selected' : '' }}>Main Line</option>
                                 <option value="mowcol" {{ $marshalling->Area == 'mowcol' ? 'selected' : '' }}>Mowcol</option>
                                 <option value="front_axle" {{ $marshalling->Area == 'front_axle' ? 'selected' : '' }}>Front Axle</option>
+                                <option value="inspeksi" {{ $marshalling->Area == 'inspeksi' ? 'selected' : '' }}>Inspeksi</option>
+                                <option value="line_a" {{ $marshalling->Area == 'line_a' ? 'selected' : '' }}>Line A</option>
+                                <option value="line_b" {{ $marshalling->Area == 'line_b' ? 'selected' : '' }}>Line B</option>
                             </select>
                         </div>
                     </div>

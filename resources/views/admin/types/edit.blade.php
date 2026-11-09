@@ -12,6 +12,15 @@
                     @csrf
                     @method('PUT')
                     <div class="mb-3">
+                        <label class="form-label">Kategori (Main Type)</label>
+                        <select name="Id_Main_Type" class="form-control">
+                            <option value="">-- Pilih Kategori (Opsional) --</option>
+                            @foreach($mainTypes as $mt)
+                                <option value="{{ $mt->Id_Main_Type }}" {{ $type->Id_Main_Type == $mt->Id_Main_Type ? 'selected' : '' }}>{{ $mt->Main_Type }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">ID Type</label>
                         <input type="number" name="Id_Type" class="form-control" value="{{ $type->Id_Type }}" required>
                     </div>

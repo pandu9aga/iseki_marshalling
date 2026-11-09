@@ -6,6 +6,7 @@
     .table-xs td, .table-xs th { padding: 2px 4px !important; font-size: 11px !important; white-space: nowrap; }
     .table-xs .badge { font-size: 11px !important; padding: 1px 3px !important; }
     .table-xs td { max-width: 80px; overflow: hidden; text-overflow: ellipsis; }
+    .table-xs td.wrap-cell { white-space: normal !important; word-break: break-word; overflow: visible; text-overflow: clip; max-width: 120px; }
 </style>
 @endsection
 
@@ -16,6 +17,9 @@
             <div class="text-truncate">
                 <h4 class="page-title text-primary mb-0">Record Part</h4>
                 <small class="text-truncate d-block">Record: {{ $record->Sequence_No_Record }} | Area: {{ ucwords(str_replace('_', ' ', $record->Area)) }}</small>
+                @if($record->Remark)
+                <small class="text-truncate d-block text-muted mt-1"><strong>Remark:</strong> {{ $record->Remark }}</small>
+                @endif
             </div>
             <a href="{{ route('member.records.index') }}" class="btn btn-secondary btn-sm flex-shrink-0"><i class="fas fa-arrow-left"></i> Back</a>
         </div>
@@ -28,6 +32,7 @@
                                 <th style="width: 5%;">Seq</th>
                                 <th style="width: 12%;">Code Rack</th>
                                 <th style="width: 10%;">Location</th>
+                                <th style="width: 10%;">Diff</th>
                                 <th style="width: 8%;">Box</th>
                                 <th style="width: 15%;">Code Part</th>
                                 <th>Name Part</th>
@@ -60,13 +65,14 @@
                                 <td>{{ $rl->Sequence_No }}</td>
                                 <td>{{ $rl->Code_Rack }}</td>
                                 <td>{{ $rl->Location_Rack }}</td>
+                                <td class="wrap-cell">{!! str_replace(';', '<br>', $rl->Difference) !!}</td>
                                 <td>{{ $rl->Box }}</td>
-                                <td>{{ $rl->Code_Part }}</td>
-                                <td>{{ $rl->Name_Part }}</td>
+                                <td class="wrap-cell">{{ $rl->Code_Part }}</td>
+                                <td class="wrap-cell">{{ $rl->Name_Part }}</td>
                                 <td>{{ $rl->Qty }}</td>
                                 <td>{{ ucfirst($rl->Mode) }}</td>
                                 <td>{{ $rl->Qty_Record ?? '-' }}</td>
-                                <td>{{ $rl->Time_Record ?? '-' }}</td>
+                                <td class="wrap-cell">{{ $rl->Time_Record ?? '-' }}</td>
                                 <td>
                                     @if($isDone)
                                         @if($isOk)
@@ -121,8 +127,11 @@
 
     function getFastAudio(ch) {
         if (!audioCache[ch]) {
-            var audio = new Audio('{{ asset("assets/sounds") }}/' + ch + '.mp3');
-            audio.playbackRate = 1.3; //Speed audio
+            var audio = new Audio('{{ asset("assets/sounds/" . config("app.sound_theme", "a")) }}/' + ch + '.mp3');
+            audio.playbackRate = 1; // Speed audio
+            audio.preservesPitch = true;
+            if ('mozPreservesPitch' in audio) audio.mozPreservesPitch = true;
+            if ('webkitPreservesPitch' in audio) audio.webkitPreservesPitch = true;
             audio.preload = 'auto'; 
             audioCache[ch] = audio;
         }
@@ -200,10 +209,16 @@
         if (!currentRow) return;
         
         var cells = currentRow.querySelectorAll('td');
-        if (cells.length < 2) return;
+        if (cells.length < 3) return;
         
-        var codeRack = cells[1].textContent.trim().toLowerCase();
-        var chars = codeRack.split('');
+        // Ambil Location_Rack (kolom index 2)
+        var locationRack = cells[2].textContent.trim();
+        
+        // Jika diawali huruf, buang huruf di awal hingga bertemu angka pertama
+        // Contoh: M1-7B -> 1-7B, GR4-90C -> 4-90C
+        locationRack = locationRack.replace(/^[a-zA-Z]+/, '');
+        
+        var chars = locationRack.toLowerCase().split('');
         
         playCharSounds(chars, 0);
     }

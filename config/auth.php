@@ -52,6 +52,11 @@ return [
             'driver' => 'session',
             'provider' => 'members',
         ],
+
+        'perakitan' => [
+            'driver' => 'session',
+            'provider' => 'perakitans',
+        ],
     ],
 
     'providers' => [
@@ -68,6 +73,11 @@ return [
         'members' => [
             'driver' => 'eloquent',
             'model' => App\Models\Member::class,
+        ],
+
+        'perakitans' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Perakitan::class,
         ],
     ],
 

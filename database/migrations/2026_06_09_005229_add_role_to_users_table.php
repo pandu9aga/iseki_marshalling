@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->string('role')->default('admin');
+            $table->dropUnique(['email']); // SQLite tidak bisa drop kolom yang masih punya index unik
             $table->dropColumn('email');
             $table->dropColumn('email_verified_at');
         });

@@ -19,5 +19,31 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e, \Illuminate\Http\Request $request) {
+            if ($request->is('member/record/*') || $request->is('member/records/*')) {
+                return redirect()->route('member.record.create')
+                    ->with('error', 'Halaman atau data record tidak ditemukan / telah dihapus. Silahkan scan QR kanban baru.');
+            }
+        });
+
+        // Login kena throttle: tampilkan pesan ramah, bukan halaman 429 mentah
+        $exceptions->render(function (\Illuminate\Http\Exceptions\ThrottleRequestsException $e, \Illuminate\Http\Request $request) {
+            if ($request->is('login/*')) {
+                return redirect()->route('login')
+                    ->withErrors(['auth_error' => 'Terlalu banyak percobaan login. Coba lagi dalam 1 menit.']);
+            }
+        });
+
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, \Illuminate\Http\Request $request) {
+            if (in_array($e->getStatusCode(), [409, 419])) {
+                \Illuminate\Support\Facades\Auth::guard('admin')->logout();
+                \Illuminate\Support\Facades\Auth::guard('member')->logout();
+                \Illuminate\Support\Facades\Auth::guard('perakitan')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect()->route('login')
+                    ->with('error', 'Sesi login telah diperbarui. Silahkan login kembali.');
+            }
+        });
     })->create();

@@ -23,4 +23,14 @@ class Member extends Authenticatable
     protected $hidden = [
         'password',
     ];
+
+    public function isPunished()
+    {
+        return Punishment::where('nik', $this->nik)->exists();
+    }
+
+    public function registeredAreas()
+    {
+        return MemberArea::where('nik', $this->nik)->pluck('area')->unique()->values();
+    }
 }

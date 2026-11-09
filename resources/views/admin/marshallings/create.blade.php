@@ -65,10 +65,18 @@
                                 <option value="">Select Area</option>
                                 <option value="sub_assy">Sub Assy</option>
                                 <option value="sub_engine">Sub Engine</option>
+                                <option value="sub_engine_a">Sub Engine A</option>
+                                <option value="sub_engine_b">Sub Engine B</option>
                                 <option value="transmisi">Transmisi</option>
+                                <option value="transmisi_a">Transmisi A</option>
+                                <option value="transmisi_b">Transmisi B</option>
+                                <option value="transmisi_c">Transmisi C</option>
                                 <option value="main_line">Main Line</option>
                                 <option value="mowcol">Mowcol</option>
                                 <option value="front_axle">Front Axle</option>
+                                <option value="inspeksi">Inspeksi</option>
+                                <option value="line_a">Line A</option>
+                                <option value="line_b">Line B</option>
                             </select>
                         </div>
                     </div>

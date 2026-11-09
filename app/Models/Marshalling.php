@@ -8,7 +8,8 @@ class Marshalling extends Model
 {
     protected $table = 'marshallings';
     protected $primaryKey = 'Id_Marshalling';
-    public $timestamps = false;
+    const CREATED_AT = null;
+    const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
         'Id_Type',
@@ -22,7 +23,20 @@ class Marshalling extends Model
         'Qty',
         'Mode',
         'Area',
+        'No_Instruction',
+        'Is_Active',
     ];
+
+    // Sub-area per area induk (urutan = urutan scan); area lain tidak punya sub-area
+    const SUB_AREAS = [
+        'transmisi' => ['transmisi_a', 'transmisi_b', 'transmisi_c', 'transmisi'],
+        'sub_engine' => ['sub_engine_a', 'sub_engine_b', 'sub_engine'],
+    ];
+
+    public static function subAreasOf(string $area): array
+    {
+        return self::SUB_AREAS[$area] ?? [$area];
+    }
 
     public function type()
     {
@@ -32,5 +46,13 @@ class Marshalling extends Model
     public function recordLists()
     {
         return $this->hasMany(Record_List::class, 'Id_Marshalling', 'Id_Marshalling');
+    }
+
+    // Foto part dari aplikasi iseki_recorder: route /part-photo/{name} redirect ke file foto (name = Code_Rack)
+    public function getPhotoUrlAttribute()
+    {
+        return $this->Code_Rack
+            ? 'http://192.168.173.201/iseki_recorder/public/part-photo/' . rawurlencode($this->Code_Rack)
+            : null;
     }
 }
