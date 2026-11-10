@@ -61,6 +61,37 @@ class MainTypeController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function destroyCascade($id)
+    {
+        $mainType = \App\Models\MainType::with('types')->findOrFail($id);
+        $typeIds = $mainType->types->pluck('Id_Type')->toArray();
+        $typeNames = $mainType->types->pluck('Type')->toArray();
+        $typesCount = count($typeIds);
+
+        $marshallingsCount = 0;
+        if (!empty($typeIds)) {
+            $marshallingsCount = \App\Models\Marshalling::whereIn('Id_Type', $typeIds)->count();
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($mainType, $typeIds) {
+            if (!empty($typeIds)) {
+                // Hapus semua data marshalling milik sub types ini
+                \App\Models\Marshalling::whereIn('Id_Type', $typeIds)->delete();
+                // Hapus semua tipe traktor milik kategori ini
+                \App\Models\Type::whereIn('Id_Type', $typeIds)->delete();
+            }
+            // Hapus kategori main type
+            $mainType->delete();
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "Kategori '{$mainType->Main_Type}', {$typesCount} tipe traktor, dan {$marshallingsCount} list marshalling berhasil dihapus.",
+            'types_count' => $typesCount,
+            'marshallings_count' => $marshallingsCount
+        ]);
+    }
+
     public function import(Request $request)
     {
         $request->validate([

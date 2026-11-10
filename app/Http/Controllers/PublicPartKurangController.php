@@ -136,12 +136,13 @@ class PublicPartKurangController extends Controller
      */
     private function marshallingsFor($typeName, $area)
     {
-        $type = Type::where('Type', $typeName)->first();
+        $type = Type::findByRawType($typeName);
         if (!$type) {
             return collect();
         }
 
-        return Marshalling::where('Id_Type', $type->Id_Type)
+        return Marshalling::with('fotoPart')
+            ->where('Id_Type', $type->Id_Type)
             ->where('Is_Active', 1)
             ->whereIn('Area', Marshalling::subAreasOf($area))
             ->orderBy('Box')
@@ -151,7 +152,7 @@ class PublicPartKurangController extends Controller
 
     /**
      * Daftar box (dikelompokkan dari master marshallings) untuk 1 Type + Area,
-     * lengkap dengan foto referensi part dari iseki_recorder (route part-photo per Code_Rack).
+     * lengkap dengan foto referensi part dari foto_parts jika ada (atau recorder).
      * Jika NIK pelapor sudah terdaftar di member_perakitans untuk area ini,
      * sertakan juga daftar box yang jadi tanggung jawabnya (assigned_boxes).
      */
@@ -166,9 +167,21 @@ class PublicPartKurangController extends Controller
         $marshallings = $this->marshallingsFor($request->type, $request->area);
 
         $boxes = $marshallings->groupBy('Box')->map(function ($items, $box) {
+            $photo = null;
+            foreach ($items as $item) {
+                if ($item->fotoPart && $item->fotoPart->Photo_Path) {
+                    $photo = asset($item->fotoPart->Photo_Path);
+                    break;
+                }
+            }
+            if (!$photo) {
+                $photo = $items->first()->photo_url ?? null;
+            }
+
             return [
                 'Box'       => $box,
                 'Qty_Parts' => $items->count(),
+                'Photo'     => $photo,
             ];
         })->values();
 
@@ -219,7 +232,7 @@ class PublicPartKurangController extends Controller
                 'Location_Rack'  => $m->Location_Rack,
                 'Box'            => $m->Box,
                 'Qty'            => $m->Qty,
-                'Photo'          => $m->photo_url,
+                'Photo'          => ($m->fotoPart && $m->fotoPart->Photo_Path) ? asset($m->fotoPart->Photo_Path) : $m->photo_url,
             ];
         });
 

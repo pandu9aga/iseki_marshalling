@@ -55,4 +55,9 @@ class Marshalling extends Model
             ? 'http://192.168.173.201/iseki_recorder/public/part-photo/' . rawurlencode($this->Code_Rack)
             : null;
     }
+
+    public function fotoPart()
+    {
+        return $this->hasOne(FotoPart::class, 'Id_Marshalling', 'Id_Marshalling');
+    }
 }

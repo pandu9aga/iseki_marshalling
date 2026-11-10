@@ -37,8 +37,8 @@
                                 <td><i class="fas fa-tractor me-2 text-muted"></i>{{ $subType->Type }}</td>
                                 @if($subIndex === 0)
                                 <td rowspan="{{ $rowspan }}">
-                                    <a href="{{ route('admin.main-types.edit', $mainType->Id_Main_Type) }}" class="btn btn-warning btn-sm text-white"><i class="fas fa-edit"></i></a>
-                                    <button type="button" class="btn btn-danger btn-sm delete-btn" data-id="{{ $mainType->Id_Main_Type }}"><i class="fas fa-trash"></i></button>
+                                    <a href="{{ route('admin.main-types.edit', $mainType->Id_Main_Type) }}" class="btn btn-warning btn-sm text-white" title="Edit"><i class="fas fa-edit"></i></a>
+                                    <button type="button" class="btn btn-danger btn-sm delete-cascade-btn" data-id="{{ $mainType->Id_Main_Type }}" data-name="{{ $mainType->Main_Type }}" data-count="{{ $subTypes->count() }}" title="Hapus Kategori, Type & List Marshalling"><i class="fas fa-trash-alt"></i></button>
                                 </td>
                                 @endif
                             </tr>
@@ -48,8 +48,8 @@
                                 <td class="fw-bold">{{ $mainType->Main_Type }}</td>
                                 <td class="text-muted fst-italic">Belum ada sub type</td>
                                 <td>
-                                    <a href="{{ route('admin.main-types.edit', $mainType->Id_Main_Type) }}" class="btn btn-warning btn-sm text-white"><i class="fas fa-edit"></i></a>
-                                    <button type="button" class="btn btn-danger btn-sm delete-btn" data-id="{{ $mainType->Id_Main_Type }}"><i class="fas fa-trash"></i></button>
+                                    <a href="{{ route('admin.main-types.edit', $mainType->Id_Main_Type) }}" class="btn btn-warning btn-sm text-white" title="Edit"><i class="fas fa-edit"></i></a>
+                                    <button type="button" class="btn btn-danger btn-sm delete-cascade-btn" data-id="{{ $mainType->Id_Main_Type }}" data-name="{{ $mainType->Main_Type }}" data-count="0" title="Hapus Kategori"><i class="fas fa-trash-alt"></i></button>
                                 </td>
                             </tr>
                             @endforelse
@@ -102,17 +102,34 @@
 
 @section('script')
 <script>
-    $(document).on('click', '.delete-btn', function() {
+    $(document).on('click', '.delete-cascade-btn', function() {
         var id = $(this).data('id');
-        if (confirm('Yakin hapus kategori ini? Sub Type yang terhubung akan kehilangan kategorinya (tidak ikut terhapus).')) {
+        var name = $(this).data('name');
+        var count = $(this).data('count');
+
+        var message = 'PERINGATAN!\n\nApakah Anda yakin ingin menghapus kategori "' + name + '"?\n' +
+                      'Semua tipe traktor di bawah kategori ini (' + count + ' tipe) dan SELURUH LIST MARSHALLING-nya akan ikut dihapus secara permanen!';
+
+        if (confirm(message)) {
+            var btn = $(this);
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
             $.ajax({
-                url: "{{ url('admin/main-types') }}/" + id,
+                url: "{{ url('admin/main-types') }}/" + id + "/cascade",
                 type: 'DELETE',
                 data: {
                     _token: '{{ csrf_token() }}'
                 },
                 success: function(res) {
+                    if (res.success) {
+                        alert(res.message);
+                    }
                     location.reload();
+                },
+                error: function(xhr) {
+                    btn.prop('disabled', false).html('<i class="fas fa-trash-alt"></i>');
+                    var err = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Terjadi kesalahan saat menghapus data.';
+                    alert('Gagal: ' + err);
                 }
             });
         }

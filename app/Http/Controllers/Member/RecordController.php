@@ -299,7 +299,7 @@ class RecordController extends Controller
             return response()->json([]);
         }
 
-        $type = Type::where('Type', $typeName)->first();
+        $type = Type::findByRawType($typeName);
         if (!$type) {
             return response()->json([]);
         }
@@ -370,21 +370,21 @@ class RecordController extends Controller
                 ->with('matched_areas', $matchedAreas);
         }
 
+        $rawType = trim($request->type);
+        $type = Type::findByRawType($rawType);
+
+        if (!$type) {
+            return redirect()->back()->with('error', 'Type "' . $request->type . '" tidak ditemukan di master data.');
+        }
+
         $record = Record::create([
             'Id_User' => $member->id,
             'Sequence_No_Record' => $request->sequence_no,
             'Production_Date_Record' => $request->production_date,
-            'Type' => $request->type,
+            'Type' => $rawType,
             'Area' => $request->area,
             'Time_Record' => now(),
         ]);
-
-        $type = Type::where('Type', trim($request->type))->first();
-
-        if (!$type) {
-            $record->delete();
-            return redirect()->back()->with('error', 'Type "' . $request->type . '" tidak ditemukan di master data.');
-        }
 
         // Urutan scan diputuskan sekali di sini (default global / pengecualian per No. Sequence produksi)
         $mode = MarshallingSetting::scanOrderFor($request->sequence_no);
