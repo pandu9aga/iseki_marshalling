@@ -65,6 +65,7 @@ class Record extends Model
         return $this->scannersSummary()->where('role', 'Helper')
             ->map(fn ($h) => ($names[$h['id']] ?? '-') . " ({$h['parts']} part)")->implode(', ');
     }
+
     /**
      * Hitung durasi penyelesaian record dalam detik.
      * Durasi = selisih waktu record_list pertama dan terakhir, dikurangi jam istirahat.
@@ -108,6 +109,7 @@ class Record extends Model
             }
         }
         $totalSeconds -= $pendingSeconds;
+
         $dayOfWeek = $firstTime->dayOfWeek; // 0=Minggu, 1=Senin, ..., 5=Jumat, 6=Sabtu
 
         // Definisi jam istirahat

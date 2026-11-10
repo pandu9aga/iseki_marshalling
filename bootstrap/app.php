@@ -33,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     ->withErrors(['auth_error' => 'Terlalu banyak percobaan login. Coba lagi dalam 1 menit.']);
             }
         });
+
         $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, \Illuminate\Http\Request $request) {
             if (in_array($e->getStatusCode(), [409, 419])) {
                 \Illuminate\Support\Facades\Auth::guard('admin')->logout();

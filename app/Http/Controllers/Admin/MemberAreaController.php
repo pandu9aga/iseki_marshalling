@@ -100,7 +100,7 @@ class MemberAreaController extends Controller
         $audioName = null;
         if ($request->hasFile('audio')) {
             $file = $request->file('audio');
-            $ext = $file->getClientOriginalExtension() ?: 'mp3';
+            $ext = $file->extension() ?: 'mp3';
             $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', strtolower($member->nama));
             $audioName = $nik . '_' . $safeName . '_' . time() . '.' . $ext;
             $file->move(public_path('assets/sounds/members'), $audioName);
@@ -130,7 +130,7 @@ class MemberAreaController extends Controller
         }
 
         $file = $request->file('audio');
-        $ext = $file->getClientOriginalExtension() ?: 'mp3';
+        $ext = $file->extension() ?: 'mp3';
         $safeName = $member ? preg_replace('/[^a-zA-Z0-9_-]/', '_', strtolower($member->nama)) : 'member';
         $audioName = $memberArea->nik . '_' . $safeName . '_' . time() . '.' . $ext;
         $file->move(public_path('assets/sounds/members'), $audioName);

@@ -51,6 +51,7 @@ class RecordController extends Controller
 
             // nama helper: satu query rifa per request DataTable (bukan per baris)
             $names = null;
+
             return datatables($data)
                 ->addIndexColumn()
                 ->addColumn('member_name', function ($row) use (&$names) {
