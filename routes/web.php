@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\PunishmentController;
 use App\Http\Controllers\Admin\MemberAreaController;
 use App\Http\Controllers\Admin\MapAreaController;
 use App\Http\Controllers\Admin\MarshallingSettingController;
+use App\Http\Controllers\Admin\FotoPartController;
 use App\Http\Controllers\Admin\MemberPerakitanController;
 use App\Http\Controllers\Member\RecordController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -20,7 +21,6 @@ use App\Http\Controllers\Perakitan\KanbanController as PerakitanKanbanController
 use App\Http\Controllers\Perakitan\ProsedurController as PerakitanProsedurController;
 use App\Http\Controllers\Perakitan\CommentController as PerakitanCommentController;
 use App\Http\Controllers\PublicPartKurangController;
-use App\Http\Controllers\Admin\FotoPartController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -60,6 +60,7 @@ Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function
     Route::get('foto-parts', [FotoPartController::class, 'index'])->name('foto-parts.index');
     Route::get('foto-parts/{type}/{area}/boxes', [FotoPartController::class, 'boxes'])->name('foto-parts.boxes');
     Route::get('foto-parts/{type}/{area}/boxes/{box}', [FotoPartController::class, 'parts'])->name('foto-parts.parts');
+    Route::post('foto-parts/part/{marshalling}/upload', [FotoPartController::class, 'uploadPhoto'])->name('foto-parts.upload');
     Route::get('marshallings/export', [MarshallingController::class, 'export'])->name('marshallings.export');
     Route::get('marshallings/export-zip', [MarshallingController::class, 'exportZip'])->name('marshallings.export-zip');
     Route::get('marshallings/history', [MarshallingController::class, 'history'])->name('marshallings.history');

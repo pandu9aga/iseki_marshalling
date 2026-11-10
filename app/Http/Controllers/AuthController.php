@@ -18,6 +18,9 @@ class AuthController extends Controller
         if (Auth::guard('perakitan')->check()) {
             return redirect()->route('perakitan.dashboard');
         }
+        if (Auth::guard('perakitan')->check()) {
+            return redirect()->route('perakitan.dashboard');
+        }
         return view('auth.login');
     }
 
