@@ -580,12 +580,11 @@
     var qtyValue = '{{ $recordList->Qty }}';
 
     function playLocationSounds(onComplete) {
-        // Mode box: baca lokasi penuh (huruf depan tidak dibuang), lebih lambat, ada jeda antar token
-        var cleanedLoc = (locationValue || '').toString().trim();
-        if (!isBoxMode) cleanedLoc = cleanedLoc.replace(/^[a-zA-Z]+/, '');
-        var locSpeed = isBoxMode ? 1.0 : 1.3;
-        var tokenGap = isBoxMode ? 120 : 0;
-        var dashGap = isBoxMode ? 250 : 120;
+        // Buang huruf di paling depan string agar pengejaan selalu mulai dari angka (misal: M55-5C -> 55-5C, GR3-3 -> 3-3)
+        var cleanedLoc = (locationValue || '').toString().trim().replace(/^[a-zA-Z]+/, '');
+        var locSpeed = 1.5; // Kecepatan suara (1.5 - 2.0)
+        var tokenGap = 0;   // Hilangkan jeda antar karakter
+        var dashGap  = 50;  // Jeda sangat singkat untuk tanda '-'
         if (!cleanedLoc) {
             if (onComplete) onComplete();
             return;
@@ -618,7 +617,7 @@
             loopTimeout = setTimeout(function() {
                 // 2. Bunyikan Qty (sound a, normal)
                 var qtyTokens = parseQtyToTokens(qtyValue);
-                playCharSounds(qtyTokens, 0, 'a', 1.0, function() {
+                playCharSounds(qtyTokens, 0, 'a', 1.5, function() {
                     loopTimeout = setTimeout(function() {
                         // Mode box: kode box sudah dibunyikan sekali di modal awal box
                         if (isBoxMode) {
@@ -626,15 +625,15 @@
                             return;
                         }
                         // 3. Bunyikan kode Box langsung (tanpa suara ucapan 'boks')
-                        playCharSounds(boxValue.toLowerCase().split(''), 0, 'b', 1.08, function() {
+                        playCharSounds(boxValue.toLowerCase().split(''), 0, 'b', 1.5, function() {
                             // Repeat loop pemutaran suara kembali ke awal setelah jeda 500ms
                             loopTimeout = setTimeout(function() {
                                 playSequence();
-                            }, 500);
+                            }, 300);
                         });
                     }, 200);
                 });
-            }, isBoxMode ? 350 : 200);
+            }, isBoxMode ? 200 : 200);
         });
     }
 
